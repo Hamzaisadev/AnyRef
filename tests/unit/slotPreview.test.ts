@@ -84,4 +84,19 @@ describe('S2-11: SlotPreview token colors and template parsing', () => {
     expect(optionalToken).toBeDefined();
     expect(optionalToken?.key).toBe('footer');
   });
+
+  it('mounts SlotPreview and template editing on /workspace/generate before save', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const generatePageSource = fs.readFileSync(
+      path.join(process.cwd(), 'src/app/(app)/workspace/generate/page.tsx'),
+      'utf8'
+    );
+
+    expect(generatePageSource).toContain('<SlotPreview');
+    expect(generatePageSource).toContain('validatePromptTemplate');
+    expect(generatePageSource).toContain('handleCollapseSlot');
+    expect(generatePageSource).toContain('handleMakeSlot');
+  });
 });
+

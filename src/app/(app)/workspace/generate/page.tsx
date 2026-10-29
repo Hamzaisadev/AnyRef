@@ -17,8 +17,13 @@ import {
   Tag,
   Loader2,
   ArrowRight,
+  Edit2,
+  X,
 } from 'lucide-react';
 import type { GenerateOutput } from '@/ai/schemas';
+import type { Slot } from '@/domain/slot';
+import { validatePromptTemplate } from '@/domain/validateTemplate';
+import { SlotPreview } from '@/components/SlotPreview';
 import { useBrand } from '@/context/BrandContext';
 
 export default function GenerateStudioPage() {
@@ -32,6 +37,10 @@ export default function GenerateStudioPage() {
   const [error, setError] = useState('');
   const [proposal, setProposal] = useState<GenerateOutput | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [isEditingTemplate, setIsEditingTemplate] = useState(false);
+  const [templateErrors, setTemplateErrors] = useState<string[]>([]);
+  const [newSlotKey, setNewSlotKey] = useState('');
+  const [newSlotLabel, setNewSlotLabel] = useState('');
 
   useEffect(() => {
     return () => {
@@ -50,6 +59,8 @@ export default function GenerateStudioPage() {
       setFile(selected);
       setPreviewUrl(URL.createObjectURL(selected));
       setProposal(null);
+      setIsEditingTemplate(false);
+      setTemplateErrors([]);
       setError('');
     }
   }
@@ -76,6 +87,8 @@ export default function GenerateStudioPage() {
       setFile(selected);
       setPreviewUrl(URL.createObjectURL(selected));
       setProposal(null);
+      setIsEditingTemplate(false);
+      setTemplateErrors([]);
       setError('');
     }
   }
@@ -109,6 +122,8 @@ export default function GenerateStudioPage() {
         setError(data.error?.message || 'Generation failed.');
       } else {
         setProposal(data.proposal);
+        setIsEditingTemplate(false);
+        setTemplateErrors([]);
       }
     } catch {
       setError('Network communication failed during generation.');
@@ -124,11 +139,69 @@ export default function GenerateStudioPage() {
     setTimeout(() => setCopiedTemplate(false), 2000);
   }
 
+  function handleCollapseSlot(slotKey: string) {
+    if (!proposal) return;
+    const slot = proposal.slots.find((s) => s.key === slotKey);
+    const replacement = slot?.default || slot?.label || '';
+    const updatedTemplate = proposal.prompt_template.replaceAll(`{{${slotKey}}}`, replacement);
+    const updatedSlots = proposal.slots.filter((s) => s.key !== slotKey);
+    setProposal({
+      ...proposal,
+      prompt_template: updatedTemplate,
+      slots: updatedSlots,
+    });
+    setTemplateErrors([]);
+  }
+
+  function handleMakeSlot() {
+    if (!proposal) return;
+    const rawKey = newSlotKey.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    if (!rawKey) return;
+    if (proposal.slots.some((s) => s.key === rawKey)) {
+      setTemplateErrors([`Slot "${rawKey}" already exists.`]);
+      return;
+    }
+
+    const label =
+      newSlotLabel.trim() || rawKey.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    const newSlot: Slot = {
+      key: rawKey,
+      label,
+      type: 'short_text',
+      required: true,
+      optional_block: false,
+      never_invent: false,
+      brand_field: null,
+    };
+
+    let updatedTemplate = proposal.prompt_template;
+    if (!updatedTemplate.includes(`{{${rawKey}}}`)) {
+      updatedTemplate = `${updatedTemplate.trim()} {{${rawKey}}}`;
+    }
+
+    setProposal({
+      ...proposal,
+      prompt_template: updatedTemplate,
+      slots: [...proposal.slots, newSlot],
+    });
+    setNewSlotKey('');
+    setNewSlotLabel('');
+    setTemplateErrors([]);
+  }
+
   async function handleSaveEntry() {
     if (!proposal || !selectedBrandId) return;
 
+    const validation = validatePromptTemplate(proposal.prompt_template, proposal.slots);
+    if (!validation.valid) {
+      setTemplateErrors(validation.errors);
+      setError(validation.errors[0] || 'Invalid prompt template.');
+      return;
+    }
+
     setSaving(true);
     setError('');
+    setTemplateErrors([]);
 
     try {
       let referencePath: string | null = null;
@@ -324,23 +397,45 @@ export default function GenerateStudioPage() {
             </h2>
 
             {proposal && (
-              <button
-                onClick={handleSaveEntry}
-                disabled={saving}
-                className="inline-flex items-center space-x-1.5 px-4 py-2 bg-success text-white text-xs font-semibold rounded-xl hover:opacity-90 transition-all shadow-xs active:scale-[0.98] disabled:opacity-50 min-h-[36px]"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Bookmark className="w-3.5 h-3.5" />
-                    <span>Save as Entry</span>
-                  </>
-                )}
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditingTemplate((prev) => !prev);
+                    setTemplateErrors([]);
+                  }}
+                  className="inline-flex items-center space-x-1.5 px-3 py-2 bg-surface-muted hover:bg-surface border border-border-subtle rounded-xl text-xs font-semibold text-ink transition-colors shadow-2xs min-h-[36px]"
+                >
+                  {isEditingTemplate ? (
+                    <>
+                      <X className="w-3.5 h-3.5" />
+                      <span>Done Editing</span>
+                    </>
+                  ) : (
+                    <>
+                      <Edit2 className="w-3.5 h-3.5 text-layout-layer" />
+                      <span>Edit Template</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleSaveEntry}
+                  disabled={saving}
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 bg-success text-white text-xs font-semibold rounded-xl hover:opacity-90 transition-all shadow-xs active:scale-[0.98] disabled:opacity-50 min-h-[36px]"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Bookmark className="w-3.5 h-3.5" />
+                      <span>Save as Entry</span>
+                    </>
+                  )}
+                </button>
+              </div>
             )}
           </div>
 
@@ -374,11 +469,68 @@ export default function GenerateStudioPage() {
                 </span>
               </div>
 
-              {/* Template Display */}
-              <div className="relative group">
-                <div className="p-4 bg-surface-muted rounded-xl border border-border-subtle font-mono text-xs text-ink/90 leading-relaxed whitespace-pre-wrap select-all max-h-60 overflow-y-auto">
-                  {proposal.prompt_template}
+              {/* Template Display & Pre-Save Editor */}
+              {isEditingTemplate && (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-semibold uppercase text-ink tracking-wider">
+                      Edit Template Syntax (Click slot chip below to collapse to text)
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={proposal.prompt_template}
+                      onChange={(e) => {
+                        setProposal({ ...proposal, prompt_template: e.target.value });
+                        setTemplateErrors([]);
+                      }}
+                      className="w-full p-3 bg-surface-muted rounded-xl border border-border-subtle font-mono text-xs text-ink focus:outline-none focus:ring-2 focus:ring-primary leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="p-3.5 rounded-xl border border-border-subtle bg-surface-muted space-y-2">
+                    <span className="block text-xs font-semibold text-ink">Make New Slot</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        type="text"
+                        value={newSlotKey}
+                        onChange={(e) => setNewSlotKey(e.target.value)}
+                        placeholder="slot_key"
+                        className="w-32 px-2.5 py-1.5 border border-border-subtle rounded-lg text-xs font-mono bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                      <input
+                        type="text"
+                        value={newSlotLabel}
+                        onChange={(e) => setNewSlotLabel(e.target.value)}
+                        placeholder="Label (e.g. Launch Year)"
+                        className="flex-1 min-w-[140px] px-2.5 py-1.5 border border-border-subtle rounded-lg text-xs bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleMakeSlot}
+                        className="px-3 py-1.5 bg-primary text-primary-fg rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity"
+                      >
+                        + Add Slot
+                      </button>
+                    </div>
+                  </div>
+
+                  {templateErrors.length > 0 && (
+                    <div className="p-3 rounded-xl bg-danger/10 border border-danger/20 text-danger text-xs space-y-1">
+                      {templateErrors.map((err, i) => (
+                        <p key={i}>{err}</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
+              )}
+
+              <div className="relative group">
+                <SlotPreview
+                  template={proposal.prompt_template}
+                  slots={proposal.slots}
+                  interactive={true}
+                  onCollapseSlot={handleCollapseSlot}
+                />
                 <button
                   onClick={handleCopyTemplate}
                   className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-surface border border-border-subtle text-layout-layer hover:text-ink shadow-2xs transition-all opacity-80 hover:opacity-100"
