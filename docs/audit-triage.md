@@ -37,7 +37,7 @@ Running status of external audit findings for Anyref stabilization.
 |---|---|---|---|---|---|---|
 | S2-1 | `workspace/generate` saves entry without uploading reference image | `src/app/workspace/generate/page.tsx` | `TODO` | | | |
 | S2-2 | `entries/[id]/compare` does not upload result image | `src/app/entries/[id]/compare/page.tsx` | `TODO` | | | |
-| S2-3 | Signed URLs expiry / missing authenticated asset route | `src/app/api/assets/[...path]/route.ts`, `src/services/assetService.ts`, `src/services/session.ts` | `CONFIRMED-FIXED` | pending | `tests/integration/stage2/s2_3_assetRoute.test.ts` | Implemented GET /api/assets/[...path] with strict bucket validation, user ownership verification (with staff override), and short-lived signed URL generation. Verified owner access, 403 cross-user denial, and 404 for missing assets against real Supabase. |
+| S2-3 | Signed URLs expiry / missing authenticated asset route | `src/app/api/assets/[...path]/route.ts`, `src/services/assetService.ts`, `src/services/session.ts` | `CONFIRMED-FIXED` | 5546b72 | `tests/integration/stage2/s2_3_assetRoute.test.ts` | Implemented GET /api/assets/[...path] with strict bucket validation, user ownership verification (with staff override), and short-lived signed URL generation. Verified owner access, 403 cross-user denial, and 404 for missing assets against real Supabase. |
 | S2-4 | Library cards show text snippet only, no thumbnails | `src/app/library/page.tsx` | `TODO` | | | |
 | S2-5 | Autofill Studio ends on read-only table | `src/app/autofill/page.tsx` | `TODO` | | | |
 | S2-6 | Library & Autofill ignore `activeBrandId` | `src/app/library/page.tsx`, `src/app/autofill/page.tsx` | `TODO` | | | |
