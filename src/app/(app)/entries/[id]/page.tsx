@@ -15,11 +15,17 @@ import {
   Sparkles,
   ArrowRight,
   Terminal,
+  Edit2,
+  Plus,
+  Loader2,
+  X,
 } from 'lucide-react';
 import type { Entry } from '@/domain/entry';
 import type { Brand } from '@/domain/brand';
-import { resolveBrandSlotValue } from '@/domain/slot';
+import { type Slot, resolveBrandSlotValue } from '@/domain/slot';
 import { renderPrompt, RenderResult } from '@/domain/renderPrompt';
+import { SlotPreview } from '@/components/SlotPreview';
+import { validatePromptTemplate } from '@/domain/validateTemplate';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -33,6 +39,15 @@ function WorkbenchContent({ id }: { id: string }) {
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Template editing state (S2-10)
+  const [isEditingTemplate, setIsEditingTemplate] = useState(false);
+  const [editedTemplate, setEditedTemplate] = useState('');
+  const [editedSlots, setEditedSlots] = useState<Slot[]>([]);
+  const [templateSaving, setTemplateSaving] = useState(false);
+  const [templateErrors, setTemplateErrors] = useState<string[]>([]);
+  const [newSlotKey, setNewSlotKey] = useState('');
+  const [newSlotLabel, setNewSlotLabel] = useState('');
 
   useEffect(() => {
     async function loadData() {
@@ -105,6 +120,98 @@ function WorkbenchContent({ id }: { id: string }) {
     await navigator.clipboard.writeText(renderResult.text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  function handleStartEditTemplate() {
+    if (!entry) return;
+    setEditedTemplate(entry.prompt_template);
+    setEditedSlots([...entry.slots]);
+    setTemplateErrors([]);
+    setNewSlotKey('');
+    setNewSlotLabel('');
+    setIsEditingTemplate(true);
+  }
+
+  function handleCancelEditTemplate() {
+    setIsEditingTemplate(false);
+    setTemplateErrors([]);
+  }
+
+  function handleCollapseSlot(slotKey: string) {
+    const slot = editedSlots.find((s) => s.key === slotKey);
+    const replacement = slot?.default || slot?.label || '';
+    const updatedTemplate = editedTemplate.replaceAll(`{{${slotKey}}}`, replacement);
+    const updatedSlots = editedSlots.filter((s) => s.key !== slotKey);
+    setEditedTemplate(updatedTemplate);
+    setEditedSlots(updatedSlots);
+  }
+
+  function handleMakeSlot() {
+    const rawKey = newSlotKey.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    if (!rawKey) return;
+    if (editedSlots.some((s) => s.key === rawKey)) {
+      setTemplateErrors([`Slot "${rawKey}" already exists.`]);
+      return;
+    }
+
+    const label =
+      newSlotLabel.trim() || rawKey.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    const newSlot: Slot = {
+      key: rawKey,
+      label,
+      type: 'short_text',
+      required: true,
+      optional_block: false,
+      never_invent: false,
+      brand_field: null,
+    };
+
+    let updatedTemplate = editedTemplate;
+    if (!updatedTemplate.includes(`{{${rawKey}}}`)) {
+      updatedTemplate = `${updatedTemplate.trim()} {{${rawKey}}}`;
+    }
+
+    setEditedTemplate(updatedTemplate);
+    setEditedSlots([...editedSlots, newSlot]);
+    setNewSlotKey('');
+    setNewSlotLabel('');
+    setTemplateErrors([]);
+  }
+
+  async function handleSaveTemplate() {
+    if (!entry) return;
+    const validation = validatePromptTemplate(editedTemplate, editedSlots);
+    if (!validation.valid) {
+      setTemplateErrors(validation.errors);
+      return;
+    }
+
+    setTemplateSaving(true);
+    setTemplateErrors([]);
+
+    try {
+      const res = await fetch(`/api/entries/${entry.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt_template: editedTemplate,
+          slots: editedSlots,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setTemplateErrors([data.error?.message || 'Failed to update template']);
+      } else {
+        const data = await res.json();
+        setEntry(data.entry);
+        setIsEditingTemplate(false);
+      }
+    } catch {
+      setTemplateErrors(['Network communication error while saving template']);
+    } finally {
+      setTemplateSaving(false);
+    }
   }
 
   if (loading) {
@@ -272,8 +379,148 @@ function WorkbenchContent({ id }: { id: string }) {
           </div>
         </div>
 
-        {/* Right: Live Prompt Preview & Attach Checklist (5 cols) */}
+        {/* Right: Template Architecture & Live Prompt Preview (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
+          {/* Template Architecture & Token Highlighting Card (S2-10, S2-11) */}
+          <div className="bg-surface p-6 rounded-2xl border border-border-subtle shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Tag className="w-4 h-4 text-primary" />
+                <h3 className="font-tight font-bold text-sm text-ink">
+                  Template Architecture &amp; Tokens
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={isEditingTemplate ? handleCancelEditTemplate : handleStartEditTemplate}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-surface-muted hover:bg-surface border border-border-subtle rounded-lg text-xs font-semibold text-ink transition-colors shadow-2xs cursor-pointer"
+              >
+                {isEditingTemplate ? (
+                  <>
+                    <X className="w-3.5 h-3.5" />
+                    <span>Cancel</span>
+                  </>
+                ) : (
+                  <>
+                    <Edit2 className="w-3.5 h-3.5 text-layout-layer" />
+                    <span>Edit Template</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Token Colors Legend */}
+            <div className="flex flex-wrap items-center gap-3 text-[11px] bg-surface-muted p-2.5 rounded-xl border border-border-subtle">
+              <span className="flex items-center space-x-1.5">
+                <span className="w-2 h-2 rounded-full bg-brand-layer" />
+                <span className="text-brand-layer font-medium">Brand Token</span>
+              </span>
+              <span className="flex items-center space-x-1.5">
+                <span className="w-2 h-2 rounded-full bg-accent" />
+                <span className="text-accent font-medium">Campaign Token</span>
+              </span>
+              <span className="flex items-center space-x-1.5">
+                <span className="w-2 h-2 rounded-full bg-layout-layer/60" />
+                <span className="text-layout-layer font-medium">Layout Text</span>
+              </span>
+            </div>
+
+            {isEditingTemplate ? (
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-semibold uppercase text-ink tracking-wider">
+                    Template Syntax (Click slot chip below to collapse to text)
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={editedTemplate}
+                    onChange={(e) => setEditedTemplate(e.target.value)}
+                    className="w-full p-3 bg-surface-muted rounded-xl border border-border-subtle font-mono text-xs text-ink focus:outline-none focus:ring-2 focus:ring-primary leading-relaxed"
+                  />
+                </div>
+
+                {/* Live Token Highlighting with Interactive Collapse */}
+                <SlotPreview
+                  template={editedTemplate}
+                  slots={editedSlots}
+                  interactive={true}
+                  onCollapseSlot={handleCollapseSlot}
+                />
+
+                {/* Make Slot Tool */}
+                <div className="p-3.5 rounded-xl border border-border-subtle bg-surface-muted space-y-2">
+                  <span className="block text-xs font-semibold text-ink">Make New Slot</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="text"
+                      value={newSlotKey}
+                      onChange={(e) => setNewSlotKey(e.target.value)}
+                      placeholder="slot_key"
+                      className="w-32 px-2.5 py-1.5 border border-border-subtle rounded-lg text-xs font-mono bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                    <input
+                      type="text"
+                      value={newSlotLabel}
+                      onChange={(e) => setNewSlotLabel(e.target.value)}
+                      placeholder="Label (e.g. Launch Year)"
+                      className="flex-1 min-w-[140px] px-2.5 py-1.5 border border-border-subtle rounded-lg text-xs bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleMakeSlot}
+                      disabled={!newSlotKey.trim()}
+                      className="inline-flex items-center space-x-1 px-3 py-1.5 bg-primary text-primary-fg rounded-lg text-xs font-semibold hover:opacity-90 disabled:opacity-40 cursor-pointer shadow-2xs"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Slot</span>
+                    </button>
+                  </div>
+                </div>
+
+                {templateErrors.length > 0 && (
+                  <div className="p-3 bg-danger/10 border border-danger/20 rounded-xl text-xs text-danger space-y-1">
+                    {templateErrors.map((err, i) => (
+                      <div key={i} className="flex items-center space-x-1.5">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>{err}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end space-x-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleCancelEditTemplate}
+                    className="px-3.5 py-1.5 border border-border-subtle rounded-lg text-xs font-semibold text-layout-layer hover:text-ink cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveTemplate}
+                    disabled={templateSaving}
+                    className="inline-flex items-center space-x-1.5 px-4 py-1.5 bg-primary text-primary-fg rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity shadow-2xs disabled:opacity-50 cursor-pointer"
+                  >
+                    {templateSaving ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Save Template</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <SlotPreview template={entry.prompt_template} slots={entry.slots} />
+            )}
+          </div>
+
           {/* Attach in Flow Checklist */}
           {renderResult.attachChecklist.length > 0 && (
             <div className="bg-surface p-6 rounded-2xl border border-border-subtle shadow-xs space-y-3.5">
