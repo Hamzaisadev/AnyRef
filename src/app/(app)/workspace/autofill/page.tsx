@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   UploadCloud,
   Package,
@@ -12,10 +13,13 @@ import {
   Loader2,
   ArrowRight,
   Sliders,
+  Copy,
+  Terminal,
 } from 'lucide-react';
 import type { Entry } from '@/domain/entry';
 import type { SanitizedAutofillResult } from '@/services/autofillService';
 import { useBrand } from '@/context/BrandContext';
+import { renderPrompt } from '@/domain/renderPrompt';
 
 export default function AutofillStudioPage() {
   const { activeBrand } = useBrand();
@@ -27,23 +31,39 @@ export default function AutofillStudioPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<SanitizedAutofillResult | null>(null);
+  const [editableValues, setEditableValues] = useState<Record<string, string>>({});
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
   useEffect(() => {
-    fetch('/api/entries')
+    return () => {
+      if (photoPreview && photoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(photoPreview);
+      }
+    };
+  }, [photoPreview]);
+
+  useEffect(() => {
+    const brandQuery = activeBrand?.id ? `?brand_id=${activeBrand.id}` : '';
+    fetch(`/api/entries${brandQuery}`)
       .then((res) => res.json())
       .then((data) => {
         const list: Entry[] = data.entries || [];
         setEntries(list);
-        if (list.length > 0 && !selectedEntryId) {
-          setSelectedEntryId(list[0]!.id);
+        if (list.length > 0) {
+          setSelectedEntryId((prev) => (list.some((e) => e.id === prev) ? prev : list[0]!.id));
+        } else {
+          setSelectedEntryId('');
         }
       });
-  }, [selectedEntryId]);
+  }, [activeBrand?.id]);
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files[0]) {
       const selected = e.target.files[0];
+      if (photoPreview && photoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(photoPreview);
+      }
       setPhoto(selected);
       setPhotoPreview(URL.createObjectURL(selected));
       setResult(null);
@@ -108,6 +128,18 @@ export default function AutofillStudioPage() {
         setError(data.error?.message || 'Autofill extraction failed.');
       } else {
         setResult(data.result);
+        const initial: Record<string, string> = {};
+        if (data.result.values) {
+          for (const [k, v] of Object.entries(data.result.values)) {
+            initial[k] = (v as { value: string }).value;
+          }
+        }
+        if (data.result.needs_you) {
+          for (const k of data.result.needs_you) {
+            initial[k] = '';
+          }
+        }
+        setEditableValues(initial);
       }
     } catch {
       setError('Network communication failed during autofill.');
@@ -115,6 +147,26 @@ export default function AutofillStudioPage() {
       setLoading(false);
     }
   }
+
+  const selectedEntry = entries.find((e) => e.id === selectedEntryId);
+  const liveRender = selectedEntry
+    ? renderPrompt(selectedEntry.prompt_template, selectedEntry.slots, editableValues)
+    : null;
+
+  async function handleCopyPrompt() {
+    if (!liveRender) return;
+    await navigator.clipboard.writeText(liveRender.text);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 2000);
+  }
+
+  const queryParams = new URLSearchParams();
+  for (const [k, v] of Object.entries(editableValues)) {
+    if (v.trim()) queryParams.set(k, v.trim());
+  }
+  const workbenchUrl = selectedEntryId
+    ? `/entries/${selectedEntryId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+    : '#';
 
   return (
     <div className="space-y-8">
@@ -295,30 +347,46 @@ export default function AutofillStudioPage() {
                 <span className="font-mono font-bold text-ink text-sm">{result.product_guess}</span>
               </div>
 
-              {/* Slots Provenance Table */}
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase text-ink tracking-wider">
-                  Extracted Slot Values
-                </h3>
-                <div className="space-y-2">
+              {/* Editable Slots Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold uppercase text-ink tracking-wider">
+                    Extracted &amp; Campaign Slots
+                  </h3>
+                  <span className="text-[11px] text-layout-layer">
+                    Edit inputs to update prompt live
+                  </span>
+                </div>
+
+                <div className="space-y-3">
                   {Object.entries(result.values).map(([key, item]) => (
                     <div
                       key={key}
-                      className="flex items-center justify-between p-3.5 rounded-xl border border-border-subtle bg-surface-muted text-xs hover:border-border-strong transition-colors"
+                      className="p-3.5 rounded-xl border border-border-subtle bg-surface-muted space-y-2 hover:border-border-strong transition-colors"
                     >
-                      <div className="space-y-0.5">
-                        <span className="font-mono font-bold text-ink block">{key}</span>
-                        <span className="text-ink/90 font-medium">{item.value}</span>
+                      <div className="flex items-center justify-between text-xs">
+                        <label htmlFor={`slot-${key}`} className="font-mono font-bold text-ink cursor-pointer">
+                          {key}
+                        </label>
+                        <span
+                          className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold uppercase shrink-0 ${
+                            item.source === 'brand_default'
+                              ? 'bg-brand-layer/15 text-brand-layer'
+                              : 'bg-primary/15 text-primary'
+                          }`}
+                        >
+                          {item.source === 'brand_default' ? 'Brand Default' : 'AI Inferred'}
+                        </span>
                       </div>
-                      <span
-                        className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold uppercase shrink-0 ${
-                          item.source === 'brand_default'
-                            ? 'bg-brand-layer/15 text-brand-layer'
-                            : 'bg-primary/15 text-primary'
-                        }`}
-                      >
-                        {item.source === 'brand_default' ? 'Brand Default' : 'AI Inferred'}
-                      </span>
+                      <input
+                        id={`slot-${key}`}
+                        type="text"
+                        value={editableValues[key] ?? item.value}
+                        onChange={(e) =>
+                          setEditableValues((prev) => ({ ...prev, [key]: e.target.value }))
+                        }
+                        className="w-full px-3 py-1.5 rounded-lg border border-border-subtle text-xs bg-surface text-ink font-medium focus:ring-2 focus:ring-primary focus:outline-none"
+                      />
                     </div>
                   ))}
 
@@ -326,19 +394,84 @@ export default function AutofillStudioPage() {
                   {result.needs_you.map((key) => (
                     <div
                       key={key}
-                      className="flex items-center justify-between p-3.5 rounded-xl border border-accent/25 bg-accent/5 text-xs"
+                      className="p-3.5 rounded-xl border border-accent/30 bg-accent/5 space-y-2"
                     >
-                      <div className="space-y-0.5">
-                        <span className="font-mono font-bold text-ink block">{key}</span>
-                        <span className="text-layout-layer italic">Kept blank for human input</span>
+                      <div className="flex items-center justify-between text-xs">
+                        <label htmlFor={`slot-${key}`} className="font-mono font-bold text-ink cursor-pointer">
+                          {key}
+                        </label>
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-full font-semibold uppercase bg-accent/20 text-accent shrink-0">
+                          Needs You (Rule 3)
+                        </span>
                       </div>
-                      <span className="text-[10px] px-2.5 py-0.5 rounded-full font-semibold uppercase bg-accent/20 text-accent shrink-0">
-                        Needs You (Rule 3)
-                      </span>
+                      <input
+                        id={`slot-${key}`}
+                        type="text"
+                        placeholder="Enter verified value (e.g. price/discount)..."
+                        value={editableValues[key] ?? ''}
+                        onChange={(e) =>
+                          setEditableValues((prev) => ({ ...prev, [key]: e.target.value }))
+                        }
+                        className="w-full px-3 py-1.5 rounded-lg border border-accent/40 text-xs bg-surface text-ink font-medium focus:ring-2 focus:ring-accent focus:outline-none placeholder:text-layout-layer/60"
+                      />
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* Live Rendered Prompt Box */}
+              {liveRender && (
+                <div className="space-y-3 pt-2 border-t border-border-subtle">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center space-x-1.5 text-xs font-semibold uppercase tracking-wider text-ink">
+                      <Terminal className="w-3.5 h-3.5 text-primary" />
+                      <span>Live Rendered Prompt</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={handleCopyPrompt}
+                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-surface-muted hover:bg-surface border border-border-subtle rounded-lg text-xs font-semibold text-ink transition-colors shadow-2xs cursor-pointer"
+                      >
+                        {copiedPrompt ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-brand-layer" />
+                            <span className="text-brand-layer">Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-layout-layer" />
+                            <span>Copy Prompt</span>
+                          </>
+                        )}
+                      </button>
+                      <Link
+                        href={workbenchUrl}
+                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-primary text-primary-fg rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity shadow-2xs"
+                      >
+                        <span>Open in Workbench</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-surface-muted rounded-xl border border-border-subtle font-mono text-xs text-ink/90 leading-relaxed whitespace-pre-wrap select-all max-h-64 overflow-y-auto">
+                    {liveRender.text}
+                  </div>
+
+                  {liveRender.missingRequired.length > 0 && (
+                    <div
+                      role="status"
+                      className="flex items-start space-x-2 p-3 bg-accent/10 border border-accent/20 rounded-xl text-xs text-accent font-medium leading-relaxed"
+                    >
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>
+                        Missing required inputs: <strong>{liveRender.missingRequired.join(', ')}</strong>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="py-24 text-center text-layout-layer space-y-3">

@@ -29,6 +29,8 @@ describe('S2-7: Prompt rendering with brand fields rather than raw mustache tags
         label: 'Brand Wordmark',
         type: 'short_text',
         required: true,
+        optional_block: false,
+        never_invent: false,
         brand_field: 'wordmark',
       },
       {
@@ -36,6 +38,8 @@ describe('S2-7: Prompt rendering with brand fields rather than raw mustache tags
         label: 'Headline',
         type: 'short_text',
         required: true,
+        optional_block: false,
+        never_invent: false,
         brand_field: null,
       },
       {
@@ -43,6 +47,8 @@ describe('S2-7: Prompt rendering with brand fields rather than raw mustache tags
         label: 'Primary Color',
         type: 'color',
         required: true,
+        optional_block: false,
+        never_invent: false,
         brand_field: 'colors_primary',
       },
       {
@@ -50,6 +56,8 @@ describe('S2-7: Prompt rendering with brand fields rather than raw mustache tags
         label: 'Legal Footer',
         type: 'short_text',
         required: false,
+        optional_block: true,
+        never_invent: false,
         brand_field: 'footer_text',
       },
     ];

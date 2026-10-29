@@ -30,3 +30,25 @@ export const Slot = z.object({
 });
 
 export type Slot = z.infer<typeof Slot>;
+
+import type { Brand } from './brand';
+
+export function resolveBrandSlotValue(slot: Slot, brand: Brand): string | undefined {
+  if (!slot.brand_field) return undefined;
+  switch (slot.brand_field) {
+    case 'colors_primary':
+      return brand.colors?.[0];
+    case 'colors_secondary':
+      return brand.colors?.[1];
+    case 'wordmark':
+      return brand.wordmark || undefined;
+    case 'name':
+      return brand.name || undefined;
+    case 'footer_text':
+      return brand.footer_text || undefined;
+    case 'slogan':
+      return brand.slogan || undefined;
+    default:
+      return undefined;
+  }
+}

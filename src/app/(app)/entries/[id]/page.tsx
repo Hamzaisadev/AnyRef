@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Copy,
   Check,
@@ -17,14 +18,15 @@ import {
 } from 'lucide-react';
 import type { Entry } from '@/domain/entry';
 import type { Brand } from '@/domain/brand';
+import { resolveBrandSlotValue } from '@/domain/slot';
 import { renderPrompt, RenderResult } from '@/domain/renderPrompt';
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function WorkbenchPage({ params }: PageProps) {
-  const { id } = use(params);
+function WorkbenchContent({ id }: { id: string }) {
+  const searchParams = useSearchParams();
   const [entry, setEntry] = useState<Entry | null>(null);
   const [brand, setBrand] = useState<Brand | null>(null);
   const [slotValues, setSlotValues] = useState<Record<string, string>>({});
@@ -44,25 +46,39 @@ export default function WorkbenchPage({ params }: PageProps) {
 
         // Fetch brand
         const brandRes = await fetch(`/api/brands/${loadedEntry.brand_id}`);
+        let loadedBrand: Brand | null = null;
         if (brandRes.ok) {
           const brandData = await brandRes.json();
-          const loadedBrand: Brand = brandData.brand;
+          loadedBrand = brandData.brand;
           setBrand(loadedBrand);
+        }
 
-          // Populate initial slot values with brand defaults
-          const initialValues: Record<string, string> = {};
-          for (const slot of loadedEntry.slots) {
-            if (slot.brand_field && loadedBrand) {
-              const brandVal = (loadedBrand as unknown as Record<string, string>)[slot.brand_field];
-              if (brandVal) {
-                initialValues[slot.key] = brandVal;
-              }
+        // Populate initial slot values with brand defaults, brand default_values, and query params
+        const initialValues: Record<string, string> = {};
+        for (const slot of loadedEntry.slots) {
+          if (loadedBrand) {
+            const brandVal = resolveBrandSlotValue(slot, loadedBrand);
+            const defVal = loadedBrand.default_values?.[slot.key];
+            if (brandVal) {
+              initialValues[slot.key] = brandVal;
+            } else if (defVal) {
+              initialValues[slot.key] = defVal;
             } else if (slot.default) {
               initialValues[slot.key] = slot.default;
             }
+          } else if (slot.default) {
+            initialValues[slot.key] = slot.default;
           }
-          setSlotValues(initialValues);
         }
+
+        // Search params take precedence if passed from autofill or URL
+        searchParams.forEach((val, key) => {
+          if (val) {
+            initialValues[key] = val;
+          }
+        });
+
+        setSlotValues(initialValues);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load workbench');
       } finally {
@@ -71,7 +87,7 @@ export default function WorkbenchPage({ params }: PageProps) {
     }
 
     loadData();
-  }, [id]);
+  }, [id, searchParams]);
 
   function handleSlotChange(key: string, value: string) {
     setSlotValues((prev) => ({
@@ -323,5 +339,21 @@ export default function WorkbenchPage({ params }: PageProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function WorkbenchPage({ params }: PageProps) {
+  const { id } = use(params);
+  return (
+    <Suspense
+      fallback={
+        <div className="py-24 text-center space-y-3">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-layout-layer text-sm font-medium">Loading workbench template...</p>
+        </div>
+      }
+    >
+      <WorkbenchContent id={id} />
+    </Suspense>
   );
 }
