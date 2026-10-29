@@ -412,7 +412,7 @@ create policy "refs_own_prefix" on storage.objects for all
 **Goal:** Transform database schema to support public multi-tenancy, RBAC roles (`owner`, `admin`, `user`), plans (`free`, `plus`), global system prompts, and SQL-enforced limit triggers.
 
 **Tasks**
-- [ ] Write migration `supabase/migrations/0002_roles_plans.sql`:
+- [x] Write migration `supabase/migrations/0002_roles_plans.sql`:
   - `app_role` enum (`'owner'`, `'admin'`, `'user'`), `account_status` enum (`'active'`, `'suspended'`, `'pending_deletion'`).
   - `plans` table (`id`, `name`, `price_usd_month`, `price_usd_year`, `limits`, `show_ads`, `is_active`) seeded with `free` and `plus`.
   - `profiles` table (`user_id`, `role`, `status`, `plan_id`, `plan_source`, `comp_until`, `tos_version`, `tos_accepted_at`, `age_confirmed_at`, `created_at`).
@@ -421,9 +421,9 @@ create policy "refs_own_prefix" on storage.objects for all
   - Globalize `system_prompts` (drop `user_id` ownership, add `updated_by` admin/owner only).
   - Helper functions `public.has_role(roles)` and `public.effective_limit(uid, key)`.
   - Database limit trigger `enforce_brand_limit()` on `brands`.
-- [ ] Create `scripts/bootstrap-owner.ts` using `OWNER_EMAIL`.
-- [ ] Update RLS policies: admin can view user profiles, spend analytics, and audit log, but CANNOT read user `brands`, `entries`, or images.
-- [ ] Update `src/lib/env.ts` with `OWNER_EMAIL` and `ADMIN_MFA_REQUIRED`.
+- [x] Create `scripts/bootstrap-owner.ts` using `OWNER_EMAIL`.
+- [x] Update RLS policies: admin can view user profiles, spend analytics, and audit log, but CANNOT read user `brands`, `entries`, or images.
+- [x] Update `src/lib/env.ts` with `OWNER_EMAIL` and `ADMIN_MFA_REQUIRED`.
 
 **Security checks:** no policy references `user_metadata`; owner uniqueness enforced by index + trigger.
 
@@ -438,14 +438,14 @@ create policy "refs_own_prefix" on storage.objects for all
 **Goal:** Open public sign-up, email verification, account lifecycle, central `can()` authorization, real `entitlements.ts`, and staff MFA.
 
 **Tasks**
-- [ ] Passwordless magic link + Google OAuth with automatic `profiles` row generation on sign-up.
-- [ ] Email-verified check in `requireUser()`; block sign-in for `suspended` and `pending_deletion` accounts.
-- [ ] Bot protection: Cloudflare Turnstile on sign-in; rate limits on sending magic links; disposable-email blocklist.
-- [ ] Terms of Service and age confirmation (minimum age 16) recorded in `consent_records`.
-- [ ] Central authorization service `src/services/authz.ts` implementing `can(actor, action, target)`.
-- [ ] Real entitlement engine `src/services/entitlements.ts` returning `{ role, planId, limits, features, showAds }`.
-- [ ] Staff TOTP MFA enrollment and AAL2 enforcement on `/admin`.
-- [ ] Self-serve account deletion (sets `pending_deletion`, 14-day recovery window) and async data export job.
+- [x] Passwordless magic link + Google OAuth with automatic `profiles` row generation on sign-up.
+- [x] Email-verified check in `requireUser()`; block sign-in for `suspended` and `pending_deletion` accounts.
+- [x] Bot protection: Cloudflare Turnstile on sign-in; rate limits on sending magic links; disposable-email blocklist.
+- [x] Terms of Service and age confirmation (minimum age 16) recorded in `consent_records`.
+- [x] Central authorization service `src/services/authz.ts` implementing `can(actor, action, target)`.
+- [x] Real entitlement engine `src/services/entitlements.ts` returning `{ role, planId, limits, features, showAds }`.
+- [x] Staff TOTP MFA enrollment and AAL2 enforcement on `/admin`.
+- [x] Self-serve account deletion (sets `pending_deletion`, 14-day recovery window) and async data export job.
 
 **Files:** `src/services/{authz,entitlements,accountService,exportService}.ts`, `src/app/(auth)/*`, `src/app/(app)/settings/*`, `scripts/bootstrap-owner.ts`, `src/middleware.ts`.
 
@@ -460,12 +460,12 @@ create policy "refs_own_prefix" on storage.objects for all
 **Goal:** Dedicated `/admin` interface for owner and operational staff with strict audit logging and privacy boundaries.
 
 **Tasks**
-- [ ] Admin layout with sub-nav: Overview, Users, Abuse Review, Plans, Engine, Cost & Limits, Audit Log, Staff.
-- [ ] Overview dashboard: signups, active users, AI calls, estimated cost today/7d, Plus subscribers, kill-switch state.
-- [ ] User directory: search, filter, detail view, actions (suspend, comp plan, quota override, force sign-out).
-- [ ] Abuse review workflow: requires explicit reason, logged to `audit_log`, shows flagged content.
-- [ ] Owner-only views: Plans editor, Engine system prompt editor & test run, Staff management (promote/demote admin).
-- [ ] Append-only `audit_log` recording every admin action in the same transaction.
+- [x] Admin layout with sub-nav: Overview, Users, Abuse Review, Plans, Engine, Cost & Limits, Audit Log, Staff.
+- [x] Overview dashboard: signups, active users, AI calls, estimated cost today/7d, Plus subscribers, kill-switch state.
+- [x] User directory: search, filter, detail view, actions (suspend, comp plan, quota override, force sign-out).
+- [x] Abuse review workflow: requires explicit reason, logged to `audit_log`, shows flagged content.
+- [x] Owner-only views: Plans editor, Engine system prompt editor & test run, Staff management (promote/demote admin).
+- [x] Append-only `audit_log` recording every admin action in the same transaction.
 
 **Files:** `src/app/(app)/admin/*`, `src/services/adminService.ts`, `src/data/auditRepo.ts`.
 
@@ -480,12 +480,12 @@ create policy "refs_own_prefix" on storage.objects for all
 **Goal:** Enforce plan limits, global cost cap, and merchant-of-record billing with idempotent webhooks.
 
 **Tasks**
-- [ ] Dynamic plan limits via `effective_limit` in `quotaService`.
-- [ ] Global protections: `ai_kill_switch` stops all AI calls; `global_daily_cost_cap_usd` auto-trips the switch.
-- [ ] Merchant-of-Record billing adapter (`BillingProvider`) for checkout and customer portal.
-- [ ] Webhook route (`/api/webhooks/billing`): raw-body signature check, `webhook_events` idempotency table, `syncPlan()`.
-- [ ] Comp plan management and automated downgrade on expiry.
-- [ ] "Little Paywall" modal with usage meters, pricing, and feature comparison.
+- [x] Dynamic plan limits via `effective_limit` in `quotaService`.
+- [x] Global protections: `ai_kill_switch` stops all AI calls; `global_daily_cost_cap_usd` auto-trips the switch.
+- [x] Merchant-of-Record billing adapter (`BillingProvider`) for checkout and customer portal.
+- [x] Webhook route (`/api/webhooks/billing`): raw-body signature check, `webhook_events` idempotency table, `syncPlan()`.
+- [x] Comp plan management and automated downgrade on expiry.
+- [x] "Little Paywall" modal with usage meters, pricing, and feature comparison.
 
 **Files:** `src/services/{billingService,quotaService,planService}.ts`, `src/app/api/webhooks/billing/route.ts`, `src/components/monetization/PaywallModal.tsx`.
 
@@ -500,12 +500,12 @@ create policy "refs_own_prefix" on storage.objects for all
 **Goal:** Studio-grade ad monetization for Free tier with layout stability and full privacy compliance.
 
 **Tasks**
-- [ ] `AdProvider` interface + `<AdSlot>` component (renders only when `showAds=true` and `ads_enabled_global=true`).
-- [ ] Placements: library sidebar, bottom of library grid, generating state. Never on forms, prompt copy, login, or admin.
-- [ ] Fixed slot heights preventing CLS (Cumulative Layout Shift < 0.1).
-- [ ] Consent management: EEA/UK CMP integration + non-EEA banner recorded in `consent_records`.
-- [ ] Strict CSP allowlist for ad domains only on ad-eligible routes.
-- [ ] Public crawlable content pages (guides, landing page) for ad network approval.
+- [x] `AdProvider` interface + `<AdSlot>` component (renders only when `showAds=true` and `ads_enabled_global=true`).
+- [x] Placements: library sidebar, bottom of library grid, generating state. Never on forms, prompt copy, login, or admin.
+- [x] Fixed slot heights preventing CLS (Cumulative Layout Shift < 0.1).
+- [x] Consent management: EEA/UK CMP integration + non-EEA banner recorded in `consent_records`.
+- [x] Strict CSP allowlist for ad domains only on ad-eligible routes.
+- [x] Public crawlable content pages (guides, landing page) for ad network approval.
 
 **Tests:** ad slots absent for Plus and staff; no ad script loads before consent where required; CSP on `/admin` and `/login` contains zero ad domains.
 
@@ -518,11 +518,11 @@ create policy "refs_own_prefix" on storage.objects for all
 **Goal:** Close public SaaS attack surfaces, upload abuse, and prompt extraction.
 
 **Tasks**
-- [ ] Strict public rate limiting (per-user + per-IP; tighter on AI endpoints, upload, auth).
-- [ ] Storage quota enforcement in `assetService`.
-- [ ] Prompt-extraction attack tests against Engine (attempts to leak system prompts via image text or hints).
-- [ ] SSRF review: verify zero outbound calls to user-supplied URLs.
-- [ ] Admin panel penetration checklist and OWASP ZAP baseline scan.
+- [x] Strict public rate limiting (per-user + per-IP; tighter on AI endpoints, upload, auth).
+- [x] Storage quota enforcement in `assetService`.
+- [x] Prompt-extraction attack tests against Engine (attempts to leak system prompts via image text or hints).
+- [x] SSRF review: verify zero outbound calls to user-supplied URLs.
+- [x] Admin panel penetration checklist and OWASP ZAP baseline scan.
 
 **DoD:** no high findings; zero system prompt text in any response, log, or error across tests.
 
@@ -533,11 +533,11 @@ create policy "refs_own_prefix" on storage.objects for all
 **Goal:** Production launch readiness with automated jobs, legal disclosures, and operational runbooks.
 
 **Tasks**
-- [ ] Scheduled background jobs: 14-day account hard-delete, photo TTL cleanup, comp plan expiry.
-- [ ] Legal documents drafted in `docs/legal/`: Terms of Service, Privacy Policy, Cookie Policy, DMCA Takedown.
-- [ ] Logging with user-id hashing and redaction.
-- [ ] Owner runbook: incident response, manual suspension, AI kill switch, restore drill.
-- [ ] Launch readiness checklist and load test (500 concurrent users).
+- [x] Scheduled background jobs: 14-day account hard-delete, photo TTL cleanup, comp plan expiry.
+- [x] Legal documents drafted in `docs/legal/`: Terms of Service, Privacy Policy, Cookie Policy, DMCA Takedown.
+- [x] Logging with user-id hashing and redaction.
+- [x] Owner runbook: incident response, manual suspension, AI kill switch, restore drill.
+- [x] Launch readiness checklist and load test (500 concurrent users).
 
 **DoD:** clean-room user can register, use free tier with ads, upgrade, cancel, and delete account; owner can run all runbook procedures.
 
