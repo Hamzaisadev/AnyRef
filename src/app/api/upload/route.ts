@@ -7,7 +7,7 @@ import { UploadBucketSchema } from '@/domain/apiSchemas';
 
 export async function POST(request: NextRequest) {
   return withErrorHandler(async () => {
-    const user = await requireUser();
+    const user = await requireUser(request);
     const formData = await request.formData();
 
     const file = formData.get('file');

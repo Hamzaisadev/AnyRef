@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   UploadCloud,
@@ -32,11 +32,20 @@ export default function GenerateStudioPage() {
   const [proposal, setProposal] = useState<GenerateOutput | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
   const selectedBrandId = activeBrandId || brands[0]?.id || '';
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files[0]) {
       const selected = e.target.files[0];
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
       setFile(selected);
       setPreviewUrl(URL.createObjectURL(selected));
       setProposal(null);
@@ -62,6 +71,7 @@ export default function GenerateStudioPage() {
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const selected = e.dataTransfer.files[0];
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
       setFile(selected);
       setPreviewUrl(URL.createObjectURL(selected));
       setProposal(null);
@@ -120,16 +130,38 @@ export default function GenerateStudioPage() {
     setError('');
 
     try {
+      let referencePath: string | null = null;
+      if (file) {
+        const uploadForm = new FormData();
+        uploadForm.append('file', file);
+        uploadForm.append('bucket', 'references');
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: uploadForm,
+        });
+
+        if (!uploadRes.ok) {
+          const errData = await uploadRes.json();
+          throw new Error(errData.error?.message || 'Failed to upload reference image');
+        }
+
+        const uploadData = await uploadRes.json();
+        referencePath = `/api/assets/references/${uploadData.path}`;
+      }
+
       const res = await fetch('/api/entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           brand_id: selectedBrandId,
+          reference_path: referencePath,
           prompt_template: proposal.prompt_template,
           slots: proposal.slots,
           poster_type: proposal.poster_type,
           intended_product_shape: proposal.intended_product_shape,
           note: proposal.layout_notes,
+          system_prompt_version: (proposal as any).system_prompt_version || null,
         }),
       });
 
@@ -139,8 +171,8 @@ export default function GenerateStudioPage() {
       } else {
         router.push(`/entries/${data.entry.id}`);
       }
-    } catch {
-      setError('Network error saving entry.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error saving entry.');
     } finally {
       setSaving(false);
     }
