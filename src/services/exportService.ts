@@ -23,7 +23,7 @@ export interface UserExportData {
     logo_path: string | null;
     footer_text: string | null;
     slogan: string | null;
-    never_do_rules: string[];
+    never_do_rules: string | null;
     default_values: Record<string, unknown>;
     created_at: string;
   }>;

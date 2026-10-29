@@ -66,4 +66,25 @@ describe('S1-11: Default sample brand and starter entries seeding', () => {
       .eq('user_id', testUser.user.id);
     expect(entriesAfter).toHaveLength(2);
   });
+
+  it('ensureUserSeeded inserts never_do_rules as plain text matching the seed migration format (not an array literal)', async () => {
+    const testUser = await createTestUser('user');
+
+    // Clear the trigger-seeded brand so ensureUserSeeded runs its insert path
+    await admin.from('brands').delete().eq('user_id', testUser.user.id);
+
+    await ensureUserSeeded(testUser.user.id);
+
+    const { data: brand, error } = await admin
+      .from('brands')
+      .select('never_do_rules')
+      .eq('user_id', testUser.user.id)
+      .single();
+
+    expect(error).toBeNull();
+    expect(brand?.never_do_rules).toBe(
+      'Never show damaged or rusted tumblers; never use low-resolution clipart.'
+    );
+  });
 });
+

@@ -189,7 +189,7 @@ export async function ensureUserSeeded(userId: string): Promise<void> {
       wordmark: 'ACME',
       slogan: 'Built for Every Journey',
       footer_text: 'Designed in California. Lifetime warranty.',
-      never_do_rules: ['Never show damaged or rusted tumblers', 'never use low-resolution clipart'],
+      never_do_rules: 'Never show damaged or rusted tumblers; never use low-resolution clipart.',
       default_values: { cta_text: 'SHOP NOW', urgency: 'NEW ARRIVAL' },
     })
     .select('id')
