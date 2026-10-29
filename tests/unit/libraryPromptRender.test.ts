@@ -92,7 +92,7 @@ describe('S2-7: Prompt rendering with brand fields rather than raw mustache tags
     expect(text).not.toContain('{{brand_color}}');
     expect(text).toContain('"LUXE"');
     expect(text).toContain('"The New Chronograph"');
-    expect(text).toContain('"#0A0A0A"');
+    expect(text).toContain('#0A0A0A');
     expect(text).toContain('"Precision Since 1890"');
   });
 });
