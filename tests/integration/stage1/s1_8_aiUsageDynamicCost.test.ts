@@ -10,17 +10,18 @@ describe('S1-8: Dynamic AI tokens and computed cost persistence', () => {
     await resetDb();
   });
 
-  it('records exact tokens and computed cost to ai_usage in database', async () => {
+  it('records exact tokens (including reasoning/thinking tokens) and config-computed cost to ai_usage in database', async () => {
     const testUser = await createTestUser('user');
     const inputTokens = 1500;
     const outputTokens = 350;
-    const expectedCost = computeAiCost(inputTokens, outputTokens);
+    const reasoningTokens = 210;
+    const expectedCost = computeAiCost(inputTokens, outputTokens, reasoningTokens);
 
     await QuotaService.recordAiUsage({
       userId: testUser.user.id,
       kind: 'generate',
       inputTokens,
-      outputTokens,
+      outputTokens: outputTokens + reasoningTokens,
       costUsd: expectedCost,
     });
 
@@ -35,8 +36,9 @@ describe('S1-8: Dynamic AI tokens and computed cost persistence', () => {
     expect(usageRows![0]).toMatchObject({
       kind: 'generate',
       input_tokens: 1500,
-      output_tokens: 350,
+      output_tokens: 560,
     });
     expect(Number(usageRows![0]?.est_cost_usd)).toBeCloseTo(expectedCost, 5);
   });
 });
+

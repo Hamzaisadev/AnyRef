@@ -69,13 +69,14 @@ export class AutofillService {
     // Record AI telemetry
     const inputTokens = rawOutput.usage?.inputTokens ?? 1200;
     const outputTokens = rawOutput.usage?.outputTokens ?? 400;
-    const costUsd = computeAiCost(inputTokens, outputTokens);
+    const reasoningTokens = rawOutput.usage?.reasoningTokens ?? 0;
+    const costUsd = computeAiCost(inputTokens, outputTokens, reasoningTokens);
 
     await QuotaService.recordAiUsage({
       userId,
       kind: 'autofill',
       inputTokens,
-      outputTokens,
+      outputTokens: outputTokens + reasoningTokens,
       costUsd,
     });
 

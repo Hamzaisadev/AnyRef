@@ -81,3 +81,12 @@ Running status of external audit findings for Anyref stabilization.
 | S5-3 | Dark mode brand `--primary` contrast safe | `src/lib/brandTheme.ts`, `src/app/globals.css` | `CONFIRMED-FIXED` | af61564 | `tests/unit/stage5Quality.test.ts`, `tests/unit/brandTheme.test.ts` | Implemented `ensureDarkContrast` to dynamically compute contrast-safe variant `darkPrimary` (guaranteeing >= 4.5:1 WCAG ratio against dark surface) injected under `@media (prefers-color-scheme: dark)`. |
 | S5-4 | `@media (prefers-reduced-motion: reduce)` | `src/app/globals.css` | `CONFIRMED-FIXED` | af61564 | `tests/unit/stage5Quality.test.ts` | Added `@media (prefers-reduced-motion: reduce)` rules in `globals.css` to eliminate animations, transitions, and smooth scrolling for users with vestibular/motion sensitivities. |
 | S5-5 | Remove confirmed dead code | `src/components/PaywallModal.tsx` | `CONFIRMED-FIXED` | af61564 | `tests/unit/stage5Quality.test.ts` | Deleted orphaned `PaywallModal.tsx` which was completely unreferenced by any route or component following Stage 4 honest billing stabilization. |
+
+---
+
+## Stage 6 — Follow-Up Audit Fixes
+
+| Item | Claim | File(s) | Status | Commit | Test Name | Notes |
+|---|---|---|---|---|---|---|
+| F2-1 | `geminiProvider` silently rewrites `AI_MODEL`; `pricing.ts` hardcodes outdated prices and ignores reasoning tokens | `src/lib/env.ts`, `src/ai/geminiProvider.ts`, `src/ai/pricing.ts`, `src/ai/AiProvider.ts`, `src/services/*`, `docs/architecture.md` | `CONFIRMED-FIXED` | pending | `tests/unit/env.test.ts`, `tests/unit/geminiProvider.test.ts`, `tests/unit/pricing.test.ts`, `tests/integration/stage1/s1_8_aiUsageDynamicCost.test.ts` | Removed silent model rewrite; enforced boot failure if `AI_MODEL` is empty or ends in `-latest`; pinned `gemini-3.5-flash-lite` ($0.30/1M in, $2.50/1M out+thinking per Google docs 2026-10-29); read prices from config and billed `thoughtsTokenCount` (`reasoningTokens`) at output rate; ran 25 live calls (10 generate, 10 autofill, 5 brand_draft) proving Plus at $5/mo loses money at 50% ($5.13–$5.47) and 100% ($10.26–$10.94) quota. |
+

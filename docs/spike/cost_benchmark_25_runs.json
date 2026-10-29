@@ -1,0 +1,329 @@
+{
+  "timestamp": "2026-10-29T20:07:55.137Z",
+  "modelTested": "gemini-3.5-flash-lite",
+  "pricingSources": {
+    "modelsUrl": "https://ai.google.dev/gemini-api/docs/models",
+    "pricingUrl": "https://ai.google.dev/gemini-api/docs/pricing",
+    "verifiedDate": "2026-10-29",
+    "gemini35FlashLite": {
+      "inputPer1M": 0.3,
+      "outputPer1M": 2.5
+    },
+    "gemini38Flash": {
+      "inputPer1M": 0.75,
+      "outputPer1M": 3.75
+    }
+  },
+  "summaries": {
+    "generate": {
+      "calls": 10,
+      "avgInputTokens": 2715.4,
+      "avgOutputTokens": 1071.3,
+      "avgReasoningTokens": 0,
+      "avgCostLiteUsd": 0.003493,
+      "avgCostFlash38Usd": 0.006054,
+      "avgDurationMs": 4399
+    },
+    "autofill": {
+      "calls": 10,
+      "avgInputTokens": 2422.5,
+      "avgOutputTokens": 379.4,
+      "avgReasoningTokens": 0,
+      "avgCostLiteUsd": 0.001675,
+      "avgCostFlash38Usd": 0.00324,
+      "avgDurationMs": 3707
+    },
+    "brand_draft": {
+      "calls": 5,
+      "avgInputTokens": 818.8,
+      "avgOutputTokens": 351.6,
+      "avgReasoningTokens": 0,
+      "avgCostLiteUsd": 0.001125,
+      "avgCostFlash38Usd": 0.001933,
+      "avgDurationMs": 1597
+    }
+  },
+  "plusQuotaMonthlyCost": {
+    "quota30Days": {
+      "generate": 1500,
+      "autofill": 3000,
+      "brand_draft": 600
+    },
+    "gemini35FlashLite": {
+      "genAndAutofillOnly": {
+        "pct25": 2.57,
+        "pct50": 5.13,
+        "pct100": 10.26
+      },
+      "includingBrandDraft": {
+        "pct25": 2.73,
+        "pct50": 5.47,
+        "pct100": 10.94
+      }
+    },
+    "gemini38Flash": {
+      "genAndAutofillOnly": {
+        "pct25": 4.7,
+        "pct50": 9.4,
+        "pct100": 18.8
+      },
+      "includingBrandDraft": {
+        "pct25": 4.99,
+        "pct50": 9.98,
+        "pct100": 19.96
+      }
+    }
+  },
+  "records": [
+    {
+      "kind": "generate",
+      "index": 1,
+      "inputTokens": 2714,
+      "outputTokens": 1161,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.003717,
+      "costFlash38Usd": 0.006389,
+      "durationMs": 5174
+    },
+    {
+      "kind": "generate",
+      "index": 2,
+      "inputTokens": 2720,
+      "outputTokens": 1336,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.004156,
+      "costFlash38Usd": 0.00705,
+      "durationMs": 6411
+    },
+    {
+      "kind": "generate",
+      "index": 3,
+      "inputTokens": 2714,
+      "outputTokens": 976,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.003254,
+      "costFlash38Usd": 0.005696,
+      "durationMs": 4012
+    },
+    {
+      "kind": "generate",
+      "index": 4,
+      "inputTokens": 2720,
+      "outputTokens": 883,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.003024,
+      "costFlash38Usd": 0.005351,
+      "durationMs": 4102
+    },
+    {
+      "kind": "generate",
+      "index": 5,
+      "inputTokens": 2706,
+      "outputTokens": 1167,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.003729,
+      "costFlash38Usd": 0.006406,
+      "durationMs": 5436
+    },
+    {
+      "kind": "generate",
+      "index": 6,
+      "inputTokens": 2720,
+      "outputTokens": 1029,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.003389,
+      "costFlash38Usd": 0.005899,
+      "durationMs": 3866
+    },
+    {
+      "kind": "generate",
+      "index": 7,
+      "inputTokens": 2714,
+      "outputTokens": 1604,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.004824,
+      "costFlash38Usd": 0.008051,
+      "durationMs": 4876
+    },
+    {
+      "kind": "generate",
+      "index": 8,
+      "inputTokens": 2720,
+      "outputTokens": 704,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.002576,
+      "costFlash38Usd": 0.00468,
+      "durationMs": 2951
+    },
+    {
+      "kind": "generate",
+      "index": 9,
+      "inputTokens": 2714,
+      "outputTokens": 728,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.002634,
+      "costFlash38Usd": 0.004766,
+      "durationMs": 2913
+    },
+    {
+      "kind": "generate",
+      "index": 10,
+      "inputTokens": 2712,
+      "outputTokens": 1125,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.003626,
+      "costFlash38Usd": 0.006253,
+      "durationMs": 4253
+    },
+    {
+      "kind": "autofill",
+      "index": 1,
+      "inputTokens": 2468,
+      "outputTokens": 409,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.001763,
+      "costFlash38Usd": 0.003385,
+      "durationMs": 2314
+    },
+    {
+      "kind": "autofill",
+      "index": 2,
+      "inputTokens": 2695,
+      "outputTokens": 504,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.002069,
+      "costFlash38Usd": 0.003911,
+      "durationMs": 16819
+    },
+    {
+      "kind": "autofill",
+      "index": 3,
+      "inputTokens": 2297,
+      "outputTokens": 329,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.001512,
+      "costFlash38Usd": 0.002957,
+      "durationMs": 2015
+    },
+    {
+      "kind": "autofill",
+      "index": 4,
+      "inputTokens": 2246,
+      "outputTokens": 291,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.001401,
+      "costFlash38Usd": 0.002776,
+      "durationMs": 1765
+    },
+    {
+      "kind": "autofill",
+      "index": 5,
+      "inputTokens": 2480,
+      "outputTokens": 411,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.001772,
+      "costFlash38Usd": 0.003401,
+      "durationMs": 3208
+    },
+    {
+      "kind": "autofill",
+      "index": 6,
+      "inputTokens": 2390,
+      "outputTokens": 353,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.0016,
+      "costFlash38Usd": 0.003116,
+      "durationMs": 2161
+    },
+    {
+      "kind": "autofill",
+      "index": 7,
+      "inputTokens": 2874,
+      "outputTokens": 603,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.00237,
+      "costFlash38Usd": 0.004417,
+      "durationMs": 2571
+    },
+    {
+      "kind": "autofill",
+      "index": 8,
+      "inputTokens": 2148,
+      "outputTokens": 250,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.001269,
+      "costFlash38Usd": 0.002549,
+      "durationMs": 2004
+    },
+    {
+      "kind": "autofill",
+      "index": 9,
+      "inputTokens": 2145,
+      "outputTokens": 248,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.001264,
+      "costFlash38Usd": 0.002539,
+      "durationMs": 1757
+    },
+    {
+      "kind": "autofill",
+      "index": 10,
+      "inputTokens": 2482,
+      "outputTokens": 396,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.001735,
+      "costFlash38Usd": 0.003347,
+      "durationMs": 2460
+    },
+    {
+      "kind": "brand_draft",
+      "index": 1,
+      "inputTokens": 846,
+      "outputTokens": 378,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.001199,
+      "costFlash38Usd": 0.002052,
+      "durationMs": 2620
+    },
+    {
+      "kind": "brand_draft",
+      "index": 2,
+      "inputTokens": 818,
+      "outputTokens": 334,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.00108,
+      "costFlash38Usd": 0.001866,
+      "durationMs": 1107
+    },
+    {
+      "kind": "brand_draft",
+      "index": 3,
+      "inputTokens": 818,
+      "outputTokens": 364,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.001155,
+      "costFlash38Usd": 0.001978,
+      "durationMs": 1404
+    },
+    {
+      "kind": "brand_draft",
+      "index": 4,
+      "inputTokens": 816,
+      "outputTokens": 346,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.00111,
+      "costFlash38Usd": 0.00191,
+      "durationMs": 1679
+    },
+    {
+      "kind": "brand_draft",
+      "index": 5,
+      "inputTokens": 796,
+      "outputTokens": 336,
+      "reasoningTokens": 0,
+      "costLiteUsd": 0.001079,
+      "costFlash38Usd": 0.001857,
+      "durationMs": 1175
+    }
+  ]
+}

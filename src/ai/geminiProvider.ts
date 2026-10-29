@@ -518,13 +518,16 @@ export class GeminiProvider implements AiProvider {
   name = 'gemini';
   private model: GenerativeModel;
 
-  constructor(apiKey: string, modelName = process.env.AI_MODEL || 'gemini-3.5-flash') {
-    const effectiveModel = (!modelName || modelName.endsWith('-latest') || modelName === 'gemini-2.5-flash')
-      ? 'gemini-3.5-flash'
-      : modelName;
+  constructor(apiKey: string, modelName: string = process.env.AI_MODEL || '') {
+    const trimmedModel = modelName.trim();
+    if (!trimmedModel || trimmedModel.endsWith('-latest')) {
+      throw new Error(
+        `Invalid AI_MODEL "${modelName}": AI_MODEL is required and must not end in "-latest".`
+      );
+    }
     const genAI = new GoogleGenerativeAI(apiKey);
     this.model = genAI.getGenerativeModel({
-      model: effectiveModel,
+      model: trimmedModel,
       generationConfig: {
         responseMimeType: 'application/json',
       },
@@ -566,10 +569,13 @@ export class GeminiProvider implements AiProvider {
         const normalized = normalizeGenerateOutput(parsedJson);
         const validation = GenerateOutput.safeParse(normalized);
         if (validation.success) {
-          const usageMeta = response.response.usageMetadata;
+          const usageMeta = response.response.usageMetadata as
+            | (typeof response.response.usageMetadata & { thoughtsTokenCount?: number })
+            | undefined;
           const usage: AiUsage = {
             inputTokens: usageMeta?.promptTokenCount ?? 0,
             outputTokens: usageMeta?.candidatesTokenCount ?? 0,
+            reasoningTokens: usageMeta?.thoughtsTokenCount ?? 0,
           };
           return {
             ...validation.data,
@@ -628,10 +634,13 @@ export class GeminiProvider implements AiProvider {
         const normalized = normalizeAutofillOutput(parsedJson);
         const validation = AutofillOutput.safeParse(normalized);
         if (validation.success) {
-          const usageMeta = response.response.usageMetadata;
+          const usageMeta = response.response.usageMetadata as
+            | (typeof response.response.usageMetadata & { thoughtsTokenCount?: number })
+            | undefined;
           const usage: AiUsage = {
             inputTokens: usageMeta?.promptTokenCount ?? 0,
             outputTokens: usageMeta?.candidatesTokenCount ?? 0,
+            reasoningTokens: usageMeta?.thoughtsTokenCount ?? 0,
           };
           return {
             ...validation.data,
@@ -692,10 +701,13 @@ export class GeminiProvider implements AiProvider {
         const normalized = normalizeBrandDraftOutput(parsedJson);
         const validation = BrandDraftOutput.safeParse(normalized);
         if (validation.success) {
-          const usageMeta = response.response.usageMetadata;
+          const usageMeta = response.response.usageMetadata as
+            | (typeof response.response.usageMetadata & { thoughtsTokenCount?: number })
+            | undefined;
           const usage: AiUsage = {
             inputTokens: usageMeta?.promptTokenCount ?? 0,
             outputTokens: usageMeta?.candidatesTokenCount ?? 0,
+            reasoningTokens: usageMeta?.thoughtsTokenCount ?? 0,
           };
           return {
             ...validation.data,

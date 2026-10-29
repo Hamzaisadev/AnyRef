@@ -56,13 +56,14 @@ export class GenerateService {
     // Record AI telemetry
     const inputTokens = result.usage?.inputTokens ?? 1000;
     const outputTokens = result.usage?.outputTokens ?? 500;
-    const costUsd = computeAiCost(inputTokens, outputTokens);
+    const reasoningTokens = result.usage?.reasoningTokens ?? 0;
+    const costUsd = computeAiCost(inputTokens, outputTokens, reasoningTokens);
 
     await QuotaService.recordAiUsage({
       userId,
       kind: 'generate',
       inputTokens,
-      outputTokens,
+      outputTokens: outputTokens + reasoningTokens,
       costUsd,
     });
 

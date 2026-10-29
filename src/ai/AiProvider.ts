@@ -5,6 +5,7 @@ import type { GenerateOutput, AutofillOutput, BrandDraftOutput } from './schemas
 export interface AiUsage {
   inputTokens: number;
   outputTokens: number;
+  reasoningTokens?: number;
 }
 
 export type GenerateResult = GenerateOutput & {

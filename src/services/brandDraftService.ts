@@ -112,13 +112,14 @@ export class BrandDraftService {
     // 6. Cost & usage telemetry recording
     const inputTokens = result.usage?.inputTokens ?? 0;
     const outputTokens = result.usage?.outputTokens ?? 0;
-    const costUsd = computeAiCost(inputTokens, outputTokens);
+    const reasoningTokens = result.usage?.reasoningTokens ?? 0;
+    const costUsd = computeAiCost(inputTokens, outputTokens, reasoningTokens);
 
     await QuotaService.recordAiUsage({
       userId: user.id,
       kind: 'brand_draft',
       inputTokens,
-      outputTokens,
+      outputTokens: outputTokens + reasoningTokens,
       costUsd,
     });
 

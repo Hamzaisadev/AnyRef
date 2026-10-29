@@ -11,7 +11,15 @@ export const envSchema = z
     CRON_SECRET: z.string().optional(),
     BILLING_WEBHOOK_SECRET: z.string().optional(),
     AI_PROVIDER: z.enum(['gemini', 'claude']).default('gemini'),
-    AI_MODEL: z.string().min(1, 'AI_MODEL is required').default('gemini-2.5-flash'),
+    AI_MODEL: z
+      .string({ required_error: 'AI_MODEL is required' })
+      .trim()
+      .min(1, 'AI_MODEL is required and cannot be empty')
+      .refine((val) => !val.endsWith('-latest'), {
+        message: 'AI_MODEL must be a pinned model identifier and cannot end with "-latest"',
+      }),
+    AI_INPUT_PRICE_PER_1M_USD: z.coerce.number().nonnegative().default(0.30),
+    AI_OUTPUT_PRICE_PER_1M_USD: z.coerce.number().nonnegative().default(2.50),
     GEMINI_API_KEY: z.string().optional(),
     ANTHROPIC_API_KEY: z.string().optional(),
     AI_DAILY_CALL_LIMIT: z.coerce.number().int().positive().default(50),

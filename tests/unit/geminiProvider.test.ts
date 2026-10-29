@@ -56,7 +56,20 @@ describe('Slice 3 Seam: GeminiProvider (geminiProvider.ts)', () => {
   };
 
   beforeEach(() => {
-    provider = new GeminiProvider('dummy-key', 'gemini-2.5-flash');
+    provider = new GeminiProvider('dummy-key', 'gemini-3.5-flash-lite');
+  });
+
+  it('uses the exact configured model name and does not silently rewrite gemini-2.5-flash or gemini-3.5-flash-lite', () => {
+    const p1 = new GeminiProvider('dummy-key', 'gemini-2.5-flash');
+    expect((p1 as unknown as { model: { model: string } }).model.model).toContain('gemini-2.5-flash');
+
+    const p2 = new GeminiProvider('dummy-key', 'gemini-3.5-flash-lite');
+    expect((p2 as unknown as { model: { model: string } }).model.model).toContain('gemini-3.5-flash-lite');
+  });
+
+  it('throws if modelName is empty or ends in "-latest"', () => {
+    expect(() => new GeminiProvider('dummy-key', '')).toThrow();
+    expect(() => new GeminiProvider('dummy-key', 'gemini-flash-latest')).toThrow(/-latest/i);
   });
 
   it('successfully parses valid model JSON output', async () => {
@@ -78,10 +91,10 @@ describe('Slice 3 Seam: GeminiProvider (geminiProvider.ts)', () => {
     expect(result.poster_type).toBe('launch');
     expect(result.slots.length).toBe(2);
     // When usageMetadata is absent in response, falls back to 0
-    expect(result.usage).toEqual({ inputTokens: 0, outputTokens: 0 });
+    expect(result.usage).toEqual({ inputTokens: 0, outputTokens: 0, reasoningTokens: 0 });
   });
 
-  it('extracts usageMetadata from API response when available', async () => {
+  it('extracts usageMetadata including thoughtsTokenCount as reasoningTokens from API response', async () => {
     const mockModel = {
       generateContent: vi.fn().mockResolvedValue({
         response: {
@@ -89,7 +102,8 @@ describe('Slice 3 Seam: GeminiProvider (geminiProvider.ts)', () => {
           usageMetadata: {
             promptTokenCount: 1500,
             candidatesTokenCount: 350,
-            totalTokenCount: 1850,
+            thoughtsTokenCount: 210,
+            totalTokenCount: 2060,
           },
         },
       }),
@@ -105,6 +119,7 @@ describe('Slice 3 Seam: GeminiProvider (geminiProvider.ts)', () => {
     expect(result.usage).toEqual({
       inputTokens: 1500,
       outputTokens: 350,
+      reasoningTokens: 210,
     });
   });
 

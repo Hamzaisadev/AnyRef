@@ -49,6 +49,29 @@ describe('validateEnv (Seam 1: Environment Validation)', () => {
     expect(() => validateEnv(invalidEnv)).toThrow();
   });
 
+  it('fails at boot when AI_MODEL is missing or empty', () => {
+    expect(() => validateEnv({ ...validBaseEnv, AI_MODEL: '' })).toThrow(/AI_MODEL/i);
+    expect(() => validateEnv({ ...validBaseEnv, AI_MODEL: '   ' })).toThrow(/AI_MODEL/i);
+    expect(() => validateEnv({ ...validBaseEnv, AI_MODEL: undefined })).toThrow(/AI_MODEL/i);
+  });
+
+  it('fails at boot when AI_MODEL ends in "-latest"', () => {
+    expect(() => validateEnv({ ...validBaseEnv, AI_MODEL: 'gemini-flash-latest' })).toThrow(/-latest/i);
+    expect(() => validateEnv({ ...validBaseEnv, AI_MODEL: 'gemini-3.5-flash-lite-latest' })).toThrow(/-latest/i);
+  });
+
+  it('reads AI_INPUT_PRICE_PER_1M_USD and AI_OUTPUT_PRICE_PER_1M_USD from config', () => {
+    const customPricing = validateEnv({
+      ...validBaseEnv,
+      AI_MODEL: 'gemini-3.5-flash-lite',
+      AI_INPUT_PRICE_PER_1M_USD: '0.30',
+      AI_OUTPUT_PRICE_PER_1M_USD: '2.50',
+    });
+    expect(customPricing.AI_MODEL).toBe('gemini-3.5-flash-lite');
+    expect(customPricing.AI_INPUT_PRICE_PER_1M_USD).toBe(0.30);
+    expect(customPricing.AI_OUTPUT_PRICE_PER_1M_USD).toBe(2.50);
+  });
+
   describe('Production Secret Enforcement (S1-10)', () => {
     const validProdEnv = {
       ...validBaseEnv,
