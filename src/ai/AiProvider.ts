@@ -2,6 +2,19 @@ import type { Brand } from '../domain/brand';
 import type { Slot } from '../domain/slot';
 import type { GenerateOutput, AutofillOutput } from './schemas';
 
+export interface AiUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
+export type GenerateResult = GenerateOutput & {
+  usage?: AiUsage;
+};
+
+export type AutofillResult = AutofillOutput & {
+  usage?: AiUsage;
+};
+
 export interface GenerateInput {
   imageBuffer: Buffer;
   mimeType: string;
@@ -20,6 +33,6 @@ export interface AutofillInput {
 
 export interface AiProvider {
   name: string;
-  generateTemplate(input: GenerateInput): Promise<GenerateOutput>;
-  autofillSlots(input: AutofillInput): Promise<AutofillOutput>;
+  generateTemplate(input: GenerateInput): Promise<GenerateResult>;
+  autofillSlots(input: AutofillInput): Promise<AutofillResult>;
 }

@@ -7,6 +7,8 @@ import { verifyImageMagicBytes } from './assetService';
 import { validatePromptTemplate } from '../domain/validateTemplate';
 import { validateInjectionAndBrandRules } from '../domain/validateInjection';
 
+import { computeAiCost } from '../ai/pricing';
+
 export class GenerateService {
   constructor(
     private brandRepo: BrandRepo = new SupabaseBrandRepo(),
@@ -45,12 +47,16 @@ export class GenerateService {
     });
 
     // Record AI telemetry
+    const inputTokens = result.usage?.inputTokens ?? 1000;
+    const outputTokens = result.usage?.outputTokens ?? 500;
+    const costUsd = computeAiCost(inputTokens, outputTokens);
+
     await QuotaService.recordAiUsage({
       userId,
       kind: 'generate',
-      inputTokens: 1000,
-      outputTokens: 500,
-      costUsd: 0.001,
+      inputTokens,
+      outputTokens,
+      costUsd,
     });
 
     // 2. Post-validate AI output consistency

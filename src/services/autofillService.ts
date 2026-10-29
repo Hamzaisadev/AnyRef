@@ -6,6 +6,7 @@ import { NotFoundError, ValidationError } from '../lib/errors';
 import type { AutofillOutput } from '../ai/schemas';
 import { verifyImageMagicBytes } from './assetService';
 import { sanitizeText } from '../lib/sanitize';
+import { computeAiCost } from '../ai/pricing';
 import { validateInjectionAndBrandRules } from '../domain/validateInjection';
 
 export interface SanitizedAutofillResult extends AutofillOutput {
@@ -63,12 +64,16 @@ export class AutofillService {
     });
 
     // Record AI telemetry
+    const inputTokens = rawOutput.usage?.inputTokens ?? 1200;
+    const outputTokens = rawOutput.usage?.outputTokens ?? 400;
+    const costUsd = computeAiCost(inputTokens, outputTokens);
+
     await QuotaService.recordAiUsage({
       userId,
       kind: 'autofill',
-      inputTokens: 1200,
-      outputTokens: 400,
-      costUsd: 0.001,
+      inputTokens,
+      outputTokens,
+      costUsd,
     });
 
     // Hard Rule 3: Programmatic Post-Filter

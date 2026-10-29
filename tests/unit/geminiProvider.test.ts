@@ -71,6 +71,35 @@ describe('Slice 3 Seam: GeminiProvider (geminiProvider.ts)', () => {
 
     expect(result.poster_type).toBe('launch');
     expect(result.slots.length).toBe(2);
+    // When usageMetadata is absent in response, falls back to 0
+    expect(result.usage).toEqual({ inputTokens: 0, outputTokens: 0 });
+  });
+
+  it('extracts usageMetadata from API response when available', async () => {
+    const mockModel = {
+      generateContent: vi.fn().mockResolvedValue({
+        response: {
+          text: () => JSON.stringify(sampleValidGenerateOutput),
+          usageMetadata: {
+            promptTokenCount: 1500,
+            candidatesTokenCount: 350,
+            totalTokenCount: 1850,
+          },
+        },
+      }),
+    };
+    (provider as unknown as { model: typeof mockModel }).model = mockModel;
+
+    const result = await provider.generateTemplate({
+      imageBuffer: Buffer.from('fake-image'),
+      mimeType: 'image/jpeg',
+      brand: mockBrand,
+    });
+
+    expect(result.usage).toEqual({
+      inputTokens: 1500,
+      outputTokens: 350,
+    });
   });
 
   it('throws AiInvalidOutputError when model output fails Zod validation after retry', async () => {

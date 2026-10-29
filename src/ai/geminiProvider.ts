@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
-import { AiProvider, GenerateInput, AutofillInput } from './AiProvider';
+import { AiProvider, GenerateInput, AutofillInput, GenerateResult, AutofillResult, AiUsage } from './AiProvider';
 import { GenerateOutput, AutofillOutput } from './schemas';
 import { AiInvalidOutputError, AiProviderError } from '../lib/errors';
 
@@ -41,7 +41,7 @@ export class GeminiProvider implements AiProvider {
     });
   }
 
-  async generateTemplate(input: GenerateInput): Promise<GenerateOutput> {
+  async generateTemplate(input: GenerateInput): Promise<GenerateResult> {
     const systemPrompt = input.systemPrompt || DEFAULT_GENERATE_SYSTEM_PROMPT;
     const brandPayload = `BRAND PROFILE:\n${JSON.stringify(input.brand, null, 2)}`;
     const imagePart = {
@@ -70,7 +70,15 @@ export class GeminiProvider implements AiProvider {
 
         const validation = GenerateOutput.safeParse(parsedJson);
         if (validation.success) {
-          return validation.data;
+          const usageMeta = response.response.usageMetadata;
+          const usage: AiUsage = {
+            inputTokens: usageMeta?.promptTokenCount ?? 0,
+            outputTokens: usageMeta?.candidatesTokenCount ?? 0,
+          };
+          return {
+            ...validation.data,
+            usage,
+          };
         }
 
         lastValidationError = validation.error.format();
@@ -89,7 +97,7 @@ export class GeminiProvider implements AiProvider {
     );
   }
 
-  async autofillSlots(input: AutofillInput): Promise<AutofillOutput> {
+  async autofillSlots(input: AutofillInput): Promise<AutofillResult> {
     const systemPrompt = input.systemPrompt || DEFAULT_AUTOFILL_SYSTEM_PROMPT;
     const contextPayload = `BRAND PROFILE:\n${JSON.stringify(input.brand, null, 2)}\nSLOTS:\n${JSON.stringify(input.slots, null, 2)}${input.hint ? `\nHINT: ${input.hint}` : ''}`;
     const imagePart = {
@@ -118,7 +126,15 @@ export class GeminiProvider implements AiProvider {
 
         const validation = AutofillOutput.safeParse(parsedJson);
         if (validation.success) {
-          return validation.data;
+          const usageMeta = response.response.usageMetadata;
+          const usage: AiUsage = {
+            inputTokens: usageMeta?.promptTokenCount ?? 0,
+            outputTokens: usageMeta?.candidatesTokenCount ?? 0,
+          };
+          return {
+            ...validation.data,
+            usage,
+          };
         }
 
         lastValidationError = validation.error.format();
