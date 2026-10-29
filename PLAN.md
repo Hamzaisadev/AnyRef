@@ -295,14 +295,14 @@ anyref/
 **Goal:** Working repo, CI, branding, docs skeleton, and a written verdict on whether Gemini matches Claude for this task.
 
 **Tasks**
-- [ ] Init repo, `pnpm`, Next.js App Router, TS strict, ESLint, Prettier, Vitest, Playwright, Husky + lint-staged, commitlint.
-- [ ] Create `src/lib/env.ts` (Zod schema: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `AI_PROVIDER`, `GEMINI_API_KEY`, `AI_MODEL`, `AI_DAILY_CALL_LIMIT`, `AI_DAILY_COST_CAP_USD`, `MAX_UPLOAD_MB`).
-- [ ] Add `.env.example` with every variable and a comment; add `scripts/check-env.ts`.
-- [ ] Add branding assets from section 1; set metadata (title, OG, favicon).
-- [ ] Write all repo docs from section 3 (real content, no placeholders).
-- [ ] CI workflow (`ci.yml`) + `dependabot.yml`.
-- [ ] **Spike (`scripts/spike-gemini.ts`):** take 5 past Pinterest references and the user's current Claude-project instructions as the system prompt. Run each through Gemini with the `GenerateOutput` schema. Save outputs to `docs/spike/`. The user generates posters from each prompt in Flow and rates them 1–5 against the Claude-made versions.
-- [ ] Write `docs/adr/0001-ai-provider.md` with verdict: **PASS** (average rating within 0.5 of Claude and ≥4 of 5 JSON outputs valid) or **FAIL** (implement `claudeProvider` and set it as default).
+- [x] Init repo, `pnpm`, Next.js App Router, TS strict, ESLint, Prettier, Vitest, Playwright, Husky + lint-staged, commitlint.
+- [x] Create `src/lib/env.ts` (Zod schema: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `AI_PROVIDER`, `GEMINI_API_KEY`, `AI_MODEL`, `AI_DAILY_CALL_LIMIT`, `AI_DAILY_COST_CAP_USD`, `MAX_UPLOAD_MB`).
+- [x] Add `.env.example` with every variable and a comment; add `scripts/check-env.ts`.
+- [x] Add branding assets from section 1; set metadata (title, OG, favicon).
+- [x] Write all repo docs from section 3 (real content, no placeholders).
+- [x] CI workflow (`ci.yml`) + `dependabot.yml`.
+- [x] **Spike (`scripts/spike-gemini.ts`):** take 5 past Pinterest references and the user's current Claude-project instructions as the system prompt. Run each through Gemini with the `GenerateOutput` schema. Save outputs to `docs/spike/`. The user generates posters from each prompt in Flow and rates them 1–5 against the Claude-made versions.
+- [ ] Write `docs/adr/0005-ai-provider-selection.md` with verdict: **PASS** (average rating within 0.5 of Claude and ≥4 of 5 JSON outputs valid) or **FAIL** (implement `claudeProvider` and set it as default).
 
 **Files:** repo root config, `src/lib/env.ts`, `scripts/*`, `docs/*`, `.github/*`, `public/brand/*`.
 
@@ -319,14 +319,14 @@ anyref/
 **Goal:** Secure schema and login. Nothing is readable without ownership.
 
 **Tasks**
-- [ ] Apply `0001_init.sql`; add `updated_at` triggers.
-- [ ] Enable RLS on all tables; write policies (below).
-- [ ] Create private storage buckets `references`, `results`, `logos`, `products` with path-prefix policies on `{user_id}/`.
-- [ ] Supabase Auth: magic link; **disable public sign-ups**; create the single user manually.
-- [ ] `lib/supabaseServer.ts` (cookie-based SSR client) and `supabaseBrowser.ts` (anon key only).
-- [ ] `middleware.ts`: redirect unauthenticated users from `(app)` routes to `/login`; refresh session.
-- [ ] Server-side `requireUser()` helper used by every route handler and server component.
-- [ ] Session: httpOnly, secure, sameSite=lax cookies; 7-day expiry; logout route.
+- [x] Apply `0001_init.sql`; add `updated_at` triggers.
+- [x] Enable RLS on all tables; write policies (below).
+- [x] Create private storage buckets `references`, `results`, `logos` with path-prefix policies on `{user_id}/` (products handled in-memory per ADR 0004).
+- [x] Supabase Auth: magic link; **disable public sign-ups**; create the single user manually.
+- [x] `lib/supabaseServer.ts` (cookie-based SSR client) and `supabaseBrowser.ts` (anon key only).
+- [x] `middleware.ts`: redirect unauthenticated users from `(app)` routes to `/login`; refresh session.
+- [x] Server-side `requireUser()` helper used by every route handler and server component.
+- [x] Session: httpOnly, secure, sameSite=lax cookies; 7-day expiry; logout route.
 
 **RLS example (apply the same pattern to every table):**
 
