@@ -24,6 +24,8 @@ describe('S1-11: Default sample brand and starter entries seeding', () => {
     expect(brandErr).toBeNull();
     expect(brands).toHaveLength(1);
     const sampleBrand = brands![0];
+    expect(sampleBrand).toBeDefined();
+    if (!sampleBrand) throw new Error('sampleBrand missing');
     expect(sampleBrand.name).toBe('Acme Sample Brand');
     expect(sampleBrand.what_you_sell).toContain('drinkware');
     expect(sampleBrand.colors).toContain('#0EA5E9');

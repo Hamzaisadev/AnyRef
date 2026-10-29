@@ -10,6 +10,10 @@ import { validateInjectionAndBrandRules } from '../domain/validateInjection';
 import { computeAiCost } from '../ai/pricing';
 import { getActiveSystemPrompt } from './promptService';
 
+export type GenerateProposal = GenerateOutput & {
+  system_prompt_version?: number | null;
+};
+
 export class GenerateService {
   constructor(
     private brandRepo: BrandRepo = new SupabaseBrandRepo(),
@@ -21,7 +25,7 @@ export class GenerateService {
     brandId: string,
     imageBuffer: Buffer,
     mimeType: string
-  ): Promise<GenerateOutput> {
+  ): Promise<GenerateProposal> {
     // 1. Verify authentic image magic bytes
     const magicCheck = verifyImageMagicBytes(imageBuffer);
     if (!magicCheck.isValid || !magicCheck.mimeType) {

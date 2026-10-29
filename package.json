@@ -20,7 +20,6 @@
     "spike:gemini": "tsx scripts/spike-gemini.ts"
   },
   "dependencies": {
-    "@google/genai": "^2.31.0",
     "@google/generative-ai": "^0.24.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.48.1",

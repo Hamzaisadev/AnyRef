@@ -37,6 +37,6 @@ describe('S1-8: Dynamic AI tokens and computed cost persistence', () => {
       input_tokens: 1500,
       output_tokens: 350,
     });
-    expect(Number(usageRows![0].est_cost_usd)).toBeCloseTo(expectedCost, 5);
+    expect(Number(usageRows![0]?.est_cost_usd)).toBeCloseTo(expectedCost, 5);
   });
 });

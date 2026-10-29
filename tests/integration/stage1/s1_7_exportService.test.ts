@@ -25,7 +25,7 @@ describe('S1-7: Export service matches schema and respects rate limit & user iso
         colors: ['#000000', '#ffffff'],
         wordmark: 'Chrono',
         slogan: 'Timeless luxury',
-        never_do_rules: ['No cheap discounts'],
+        never_do_rules: 'No cheap discounts',
         default_values: { style: 'classic' },
       })
       .select()

@@ -9,11 +9,13 @@ import type { BrandRepo } from '@/data/brandRepo';
 describe('S1-9: Dynamic versioned system prompts from database', () => {
   const admin = adminClient();
 
-  beforeEach(() => {
+  beforeEach(async () => {
     clearPromptCache();
+    await admin.from('system_prompts').delete().eq('version', 99);
   });
 
   afterAll(async () => {
+    await admin.from('system_prompts').delete().eq('version', 99);
     await resetDb();
   });
 

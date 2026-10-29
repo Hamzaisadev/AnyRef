@@ -11,7 +11,7 @@ export const envSchema = z
     CRON_SECRET: z.string().optional(),
     BILLING_WEBHOOK_SECRET: z.string().optional(),
     AI_PROVIDER: z.enum(['gemini', 'claude']).default('gemini'),
-    AI_MODEL: z.string().min(1, 'AI_MODEL is required').default('gemini-flash-latest'),
+    AI_MODEL: z.string().min(1, 'AI_MODEL is required').default('gemini-2.5-flash'),
     GEMINI_API_KEY: z.string().optional(),
     ANTHROPIC_API_KEY: z.string().optional(),
     AI_DAILY_CALL_LIMIT: z.coerce.number().int().positive().default(50),

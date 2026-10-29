@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   return withErrorHandler(async () => {
     const user = await requireUser();
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim();
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
     const userAgent = request.headers.get('user-agent') || undefined;
 
     const data = await exportUserData(user.id, { ip, userAgent });

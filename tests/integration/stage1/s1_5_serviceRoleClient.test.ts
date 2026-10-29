@@ -38,7 +38,7 @@ describe('S1-5: Service role client vs user client permissions boundary', () => 
       .insert({
         action: 'unauthorized_client_tamper',
         actor_id: testUser.user.id,
-      });
+      } as any);
 
     // RLS policy denies insert to public/anon/authenticated
     expect(auditInsertErr).not.toBeNull();

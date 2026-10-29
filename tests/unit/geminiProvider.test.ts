@@ -50,7 +50,7 @@ describe('Slice 3 Seam: GeminiProvider (geminiProvider.ts)', () => {
   };
 
   beforeEach(() => {
-    provider = new GeminiProvider('dummy-key', 'gemini-flash-latest');
+    provider = new GeminiProvider('dummy-key', 'gemini-2.5-flash');
   });
 
   it('successfully parses valid model JSON output', async () => {
