@@ -361,17 +361,17 @@ create policy "refs_own_prefix" on storage.objects for all
 **Goal:** Brands, library with copy, Gemini generation, dynamic form, compare screen, Winner marking.
 
 **Tasks**
-- [ ] **Brands:** CRUD, hex-color validation, logo upload, default values, brand switcher in header (persist active brand in cookie).
-- [ ] **Library (ships first, replaces Keep):** thumbnail grid per brand, status/poster_type filters, entry detail, one-tap copy, manual "add entry" (paste prompt, add reference/result images).
-- [ ] **`domain/renderPrompt.ts`:** pure renderer (section 2.3) with full unit coverage.
-- [ ] **`ai/AiProvider.ts` interface** + `geminiProvider.ts` (multimodal input, JSON schema output, timeout, retry-once).
-- [ ] **Generate flow:** `/api/generate` → `generateService` → provider; validate against `GenerateOutput`; return proposal (not saved).
-- [ ] **Slot form UI:** render by slot type; brand-mapped slots auto-filled; `needs_you` highlighting; live counters; live preview with layer colors; attach checklist.
-- [ ] **Compare screen:** two panels, paste-from-clipboard for result, status buttons, note, **Save** (explicit).
-- [ ] **Manual slot editing:** select-to-slot and collapse-to-text with re-validation.
-- [ ] **Remix:** duplicate entry with `parent_entry_id`.
-- [ ] **Import:** `scripts/import-keep.ts` and simple paste-many UI → `draft` entries.
-- [ ] **Autofill flow:** `/api/autofill` + review screen with source tags, layout-fit warning, batch mode, product-photo TTL cleanup job.
+- [x] **Brands:** CRUD, hex-color validation, logo upload, default values, brand switcher in header (persist active brand in cookie).
+- [x] **Library (ships first, replaces Keep):** thumbnail grid per brand, status/poster_type filters, entry detail, one-tap copy, manual "add entry" (paste prompt, add reference/result images).
+- [x] **`domain/renderPrompt.ts`:** pure renderer (section 2.3) with full unit coverage.
+- [x] **`ai/AiProvider.ts` interface** + `geminiProvider.ts` (multimodal input, JSON schema output, timeout, retry-once).
+- [x] **Generate flow:** `/api/generate` → `generateService` → provider; validate against `GenerateOutput`; return proposal (not saved).
+- [x] **Slot form UI:** render by slot type; brand-mapped slots auto-filled; `needs_you` highlighting; live counters; live preview with layer colors; attach checklist.
+- [x] **Compare screen:** two panels, paste-from-clipboard for result, status buttons, note, **Save** (explicit).
+- [x] **Manual slot editing:** select-to-slot and collapse-to-text with re-validation.
+- [x] **Remix:** duplicate entry with `parent_entry_id`.
+- [x] **Import:** `scripts/import-keep.ts` and simple paste-many UI → `draft` entries.
+- [x] **Autofill flow:** `/api/autofill` + review screen with source tags, layout-fit warning, batch mode, product-photo in-memory lifecycle per ADR 0004.
 
 **Files:** `src/services/*`, `src/data/*`, `src/ai/*`, `src/domain/*`, `src/components/*`, `src/app/(app)/*`, `src/app/api/*`.
 
