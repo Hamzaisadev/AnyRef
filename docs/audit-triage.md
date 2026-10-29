@@ -56,7 +56,7 @@ Running status of external audit findings for Anyref stabilization.
 | ID | Claim | File(s) | Status | Commit | Test Name | Notes |
 |---|---|---|---|---|---|---|
 | S3-1 | `renderPrompt` wraps every value in quotes | `src/domain/renderPrompt.ts` | `CONFIRMED-FIXED` | 0523d38 | `tests/unit/renderPromptQuotes.test.ts` | Updated renderPrompt to inspect slot types and surrounding template quotes: quotes only short_text slots not already enclosed by template quotes, and outputs unquoted values for colors, numbers, dates, and choices. |
-| S3-2 | `validateInjectionAndBrandRules` uses substring matching | `src/domain/validateInjection.ts` | `TODO` | | | |
+| S3-2 | `validateInjectionAndBrandRules` uses substring matching | `src/domain/validateInjection.ts` | `CONFIRMED-FIXED` | 9f9adba | `tests/unit/validateInjectionWholeWord.test.ts` | Implemented Unicode-aware whole-word matching via regex lookarounds for brand negative rules, preventing false-positive rejections for substring words like cardboard or carefully when avoiding cars, while maintaining security blocks for script injection, URLs, and emails. |
 | S3-3 | Limits bypassable via batch autofill | `src/services/entryService.ts`, `src/services/quotaService.ts` | `TODO` | | | |
 
 ---
