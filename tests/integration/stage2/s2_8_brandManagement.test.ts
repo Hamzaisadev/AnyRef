@@ -34,7 +34,7 @@ describe('S2-8: Brand edit, delete, logo upload, and default_values management',
       : `/api/assets/logos/${uploadData.path}`;
     expect(logoAssetPath).toMatch(/^\/api\/assets\/logos\//);
 
-    // 2. Create brand with logo_path and default_values
+    // 2. Create brand with raw storage path (as returned by /api/upload) and verify consistent normalization to /api/assets/logos/...
     const { POST: createBrandHandler } = await import('@/app/api/brands/route');
     const createReq = new Request('http://localhost:3000/api/brands', {
       method: 'POST',
@@ -52,7 +52,7 @@ describe('S2-8: Brand edit, delete, logo upload, and default_values management',
         slogan: 'Precision in Motion',
         footer_text: '© 2026 Nexus Dynamics',
         never_do_rules: 'Never use blurry graphics',
-        logo_path: logoAssetPath,
+        logo_path: uploadData.path,
         default_values: {
           headline: 'Intelligent Robotics',
           cta_button: 'Explore Hardware',

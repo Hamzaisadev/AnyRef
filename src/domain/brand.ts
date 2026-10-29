@@ -35,3 +35,24 @@ export type CreateBrandInput = z.infer<typeof CreateBrandInput>;
 
 export const UpdateBrandInput = CreateBrandInput.partial();
 export type UpdateBrandInput = z.infer<typeof UpdateBrandInput>;
+
+/**
+ * Normalizes any logo storage path or asset URL to the canonical authenticated asset route:
+ * `/api/assets/logos/{userId}/{filename}`
+ */
+export function normalizeLogoAssetPath(rawPath: string | null | undefined): string | null {
+  if (!rawPath) return null;
+  const trimmed = rawPath.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith('/api/assets/logos/')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('/api/assets/')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('logos/')) {
+    return `/api/assets/${trimmed}`;
+  }
+  return `/api/assets/logos/${trimmed.replace(/^\/+/, '')}`;
+}
+

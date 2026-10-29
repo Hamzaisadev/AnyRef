@@ -4,24 +4,31 @@ import path from 'path';
 import { ensureDarkContrast, getLuminance } from '@/lib/brandTheme';
 
 describe('Stage 5: Quality & Accessibility Fixes', () => {
-  it('S5-1: verifies URL.revokeObjectURL cleanup in generate, autofill, and compare pages', () => {
+  it('S5-1 & F2-2: verifies URL.revokeObjectURL cleanup in generate, autofill, compare, and brands/new pages, plus consistent logo asset path resolution', () => {
     const generatePath = path.resolve(process.cwd(), 'src/app/(app)/workspace/generate/page.tsx');
     const autofillPath = path.resolve(process.cwd(), 'src/app/(app)/workspace/autofill/page.tsx');
     const comparePath = path.resolve(process.cwd(), 'src/app/(app)/entries/[id]/compare/page.tsx');
+    const brandsNewPath = path.resolve(process.cwd(), 'src/app/(app)/brands/new/page.tsx');
 
     const generateCode = fs.readFileSync(generatePath, 'utf8');
     const autofillCode = fs.readFileSync(autofillPath, 'utf8');
     const compareCode = fs.readFileSync(comparePath, 'utf8');
+    const brandsNewCode = fs.readFileSync(brandsNewPath, 'utf8');
 
-    // All three pages must revoke object URLs
+    // All four pages must revoke object URLs
     expect(generateCode).toContain('URL.revokeObjectURL(previewUrl)');
     expect(autofillCode).toContain('URL.revokeObjectURL(photoPreview)');
     expect(compareCode).toContain('URL.revokeObjectURL(resultImage)');
+    expect(brandsNewCode).toContain('URL.revokeObjectURL(logoPreview)');
 
-    // All three pages must have unmount cleanup returns
+    // All four pages must have unmount cleanup returns
     expect(generateCode).toMatch(/useEffect\s*\(\s*\(\)\s*=>\s*\{[\s\S]*return\s*\(\)\s*=>\s*\{[\s\S]*revokeObjectURL/);
     expect(autofillCode).toMatch(/useEffect\s*\(\s*\(\)\s*=>\s*\{[\s\S]*return\s*\(\)\s*=>\s*\{[\s\S]*revokeObjectURL/);
     expect(compareCode).toMatch(/useEffect\s*\(\s*\(\)\s*=>\s*\{[\s\S]*return\s*\(\)\s*=>\s*\{[\s\S]*revokeObjectURL/);
+    expect(brandsNewCode).toMatch(/useEffect\s*\(\s*\(\)\s*=>\s*\{[\s\S]*return\s*\(\)\s*=>\s*\{[\s\S]*revokeObjectURL/);
+
+    // /brands/new must resolve uploaded logo through /api/assets/logos/
+    expect(brandsNewCode).toContain('normalizeLogoAssetPath');
   });
 
   it('S5-2: verifies brand switcher is not hidden on mobile navigation', () => {

@@ -791,7 +791,11 @@ export default function BrandsPage() {
                       {brand.logo_path && (
                         <div className="w-8 h-8 rounded-lg border border-border-subtle bg-surface-muted p-1 shrink-0 flex items-center justify-center overflow-hidden">
                           <img
-                            src={brand.logo_path}
+                            src={
+                              brand.logo_path.startsWith('/api/assets/')
+                                ? brand.logo_path
+                                : `/api/assets/logos/${brand.logo_path.replace(/^\/+/, '')}`
+                            }
                             alt={`${brand.name} logo`}
                             className="max-h-full max-w-full object-contain"
                           />

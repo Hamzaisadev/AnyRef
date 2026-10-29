@@ -1,5 +1,5 @@
 import { BrandRepo, SupabaseBrandRepo } from '../data/brandRepo';
-import { CreateBrandInput, UpdateBrandInput, Brand } from '../domain/brand';
+import { CreateBrandInput, UpdateBrandInput, Brand, normalizeLogoAssetPath } from '../domain/brand';
 import { ValidationError, NotFoundError } from '../lib/errors';
 import { sanitizeText } from '../lib/sanitize';
 
@@ -26,6 +26,7 @@ export class BrandService {
       footer_text: sanitizeText(data.footer_text, 500),
       slogan: sanitizeText(data.slogan, 300),
       never_do_rules: sanitizeText(data.never_do_rules, 1000),
+      logo_path: data.logo_path !== undefined ? normalizeLogoAssetPath(data.logo_path) : undefined,
     };
 
     return this.repo.create(userId, sanitizedData);
@@ -63,6 +64,7 @@ export class BrandService {
       footer_text: data.footer_text !== undefined ? sanitizeText(data.footer_text, 500) : undefined,
       slogan: data.slogan !== undefined ? sanitizeText(data.slogan, 300) : undefined,
       never_do_rules: data.never_do_rules !== undefined ? sanitizeText(data.never_do_rules, 1000) : undefined,
+      logo_path: data.logo_path !== undefined ? normalizeLogoAssetPath(data.logo_path) : undefined,
     };
 
     const updated = await this.repo.update(userId, brandId, sanitizedData);

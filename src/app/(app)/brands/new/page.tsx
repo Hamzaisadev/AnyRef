@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -18,6 +18,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import type { BrandDraftOutput, FieldSource } from '@/ai/schemas';
+import { normalizeLogoAssetPath } from '@/domain/brand';
 import { FieldSourceBadge } from '@/components/brands/FieldSourceBadge';
 import { useBrand } from '@/context/BrandContext';
 
@@ -62,10 +63,21 @@ export default function NewBrandPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
+  useEffect(() => {
+    return () => {
+      if (logoPreview && logoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(logoPreview);
+      }
+    };
+  }, [logoPreview]);
+
   // Handle logo file selection and upload
   async function handleLogoSelect(e: React.ChangeEvent<HTMLInputElement>) {
     if (!e.target.files || !e.target.files[0]) return;
     const file = e.target.files[0];
+    if (logoPreview && logoPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(logoPreview);
+    }
     setLogoFile(file);
 
     const objectUrl = URL.createObjectURL(file);
@@ -84,7 +96,7 @@ export default function NewBrandPage() {
 
       if (res.ok) {
         const data = await res.json();
-        setLogoPath(data.path);
+        setLogoPath(normalizeLogoAssetPath(data.path));
       } else {
         const data = await res.json();
         setDraftError(data.error?.message || 'Logo upload failed.');
