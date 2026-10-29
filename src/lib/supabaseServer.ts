@@ -1,14 +1,33 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { AsyncLocalStorage } from 'async_hooks';
 import { env } from './env';
 
+export interface RequestContext {
+  authHeader?: string | null;
+  client?: any;
+}
+
+export const requestContextStorage = new AsyncLocalStorage<RequestContext>();
+
+export function runWithRequestContext<T>(context: RequestContext, fn: () => T): T {
+  return requestContextStorage.run(context, fn);
+}
+
 export async function createClient() {
+  const ctx = requestContextStorage.getStore();
+  if (ctx?.client) {
+    return ctx.client;
+  }
+
   let cookieStore: Awaited<ReturnType<typeof cookies>> | null = null;
   try {
     cookieStore = await cookies();
   } catch {
     // Called outside a request context (e.g. background job, test, or script)
   }
+
+  const authHeader = ctx?.authHeader;
 
   return createServerClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
@@ -30,6 +49,13 @@ export async function createClient() {
           }
         },
       },
+      global: authHeader
+        ? {
+            headers: {
+              Authorization: authHeader,
+            },
+          }
+        : undefined,
     }
   );
 }

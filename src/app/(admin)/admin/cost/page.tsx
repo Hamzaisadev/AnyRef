@@ -12,13 +12,13 @@ export default async function AdminCostPage() {
 
   const { data: usageToday } = await supabase
     .from('ai_usage')
-    .select('user_id, model, input_tokens, output_tokens, cost_usd, created_at')
+    .select('user_id, kind, input_tokens, output_tokens, est_cost_usd, created_at')
     .gte('created_at', todayMidnight.toISOString());
 
-  const todayCost = (usageToday || []).reduce((sum, r) => sum + Number(r.cost_usd || 0), 0);
+  const todayCost = (usageToday || []).reduce((sum: number, r: any) => sum + Number(r.est_cost_usd || 0), 0);
   const totalCalls = usageToday?.length || 0;
   const totalTokens = (usageToday || []).reduce(
-    (sum, r) => sum + Number(r.input_tokens || 0) + Number(r.output_tokens || 0),
+    (sum: number, r: any) => sum + Number(r.input_tokens || 0) + Number(r.output_tokens || 0),
     0
   );
 

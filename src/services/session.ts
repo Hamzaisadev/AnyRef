@@ -55,6 +55,10 @@ export async function getUser(req?: Request): Promise<UserProfile | null> {
       supabaseClient = supabase;
     }
 
+    if (!user) {
+      return null;
+    }
+
     // Fetch corresponding profile from profiles table
     let { data: profile } = await supabaseClient
       .from('profiles')

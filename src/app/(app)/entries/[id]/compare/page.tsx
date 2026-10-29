@@ -27,10 +27,19 @@ export default function ComparePage({ params }: PageProps) {
   const [status, setStatus] = useState<EntryStatus>('draft');
   const [note, setNote] = useState('');
   const [resultImage, setResultImage] = useState<string | null>(null);
+  const [resultFile, setResultFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [error, setError] = useState('');
   const [dragActive, setDragActive] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (resultImage && resultImage.startsWith('blob:')) {
+        URL.revokeObjectURL(resultImage);
+      }
+    };
+  }, [resultImage]);
 
   useEffect(() => {
     fetch(`/api/entries/${id}`)
@@ -54,6 +63,10 @@ export default function ComparePage({ params }: PageProps) {
       if (item && item.type.startsWith('image/')) {
         const file = item.getAsFile();
         if (file) {
+          if (resultImage && resultImage.startsWith('blob:')) {
+            URL.revokeObjectURL(resultImage);
+          }
+          setResultFile(file);
           setResultImage(URL.createObjectURL(file));
         }
       }
@@ -62,7 +75,12 @@ export default function ComparePage({ params }: PageProps) {
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files[0]) {
-      setResultImage(URL.createObjectURL(e.target.files[0]));
+      const file = e.target.files[0];
+      if (resultImage && resultImage.startsWith('blob:')) {
+        URL.revokeObjectURL(resultImage);
+      }
+      setResultFile(file);
+      setResultImage(URL.createObjectURL(file));
     }
   }
 
@@ -83,7 +101,12 @@ export default function ComparePage({ params }: PageProps) {
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setResultImage(URL.createObjectURL(e.dataTransfer.files[0]));
+      const file = e.dataTransfer.files[0];
+      if (resultImage && resultImage.startsWith('blob:')) {
+        URL.revokeObjectURL(resultImage);
+      }
+      setResultFile(file);
+      setResultImage(URL.createObjectURL(file));
     }
   }
 
@@ -93,23 +116,49 @@ export default function ComparePage({ params }: PageProps) {
     setSavedSuccess(false);
 
     try {
+      let finalResultPath = entry?.result_path || null;
+
+      if (resultFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', resultFile);
+        uploadFormData.append('bucket', 'results');
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: uploadFormData,
+        });
+
+        if (!uploadRes.ok) {
+          const errData = await uploadRes.json();
+          throw new Error(errData.error?.message || 'Failed to upload result image');
+        }
+
+        const uploadData = await uploadRes.json();
+        finalResultPath = `/api/assets/results/${uploadData.path}`;
+      }
+
       const res = await fetch(`/api/entries/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status,
           note,
+          result_path: finalResultPath,
         }),
       });
 
       if (!res.ok) {
-        throw new Error('Failed to update entry');
+        const errData = await res.json();
+        throw new Error(errData.error?.message || 'Failed to update entry');
       }
 
+      const data = await res.json();
+      setEntry(data.entry);
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error updating entry');
+      setSavedSuccess(false);
     } finally {
       setSaving(false);
     }
