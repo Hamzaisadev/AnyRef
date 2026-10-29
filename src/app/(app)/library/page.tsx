@@ -20,7 +20,6 @@ import {
 import type { Entry, EntryStatus } from '@/domain/entry';
 import { useBrand } from '@/context/BrandContext';
 import { renderPrompt } from '@/domain/renderPrompt';
-import { AdSlot } from '@/components/ads/AdSlot';
 
 export default function LibraryPage() {
   const { brands, activeBrandId } = useBrand();
@@ -331,11 +330,6 @@ export default function LibraryPage() {
           })}
         </div>
       )}
-
-      {/* Ad placement at bottom of library */}
-      <div className="pt-6">
-        <AdSlot name="library-bottom" />
-      </div>
     </div>
   );
 }

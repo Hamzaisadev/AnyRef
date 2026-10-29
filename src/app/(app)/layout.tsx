@@ -4,7 +4,6 @@ import { Navigation } from '@/components/Navigation';
 import { BrandProvider } from '@/context/BrandContext';
 import { resolveBrandTheme, generateBrandCssVariables } from '@/lib/brandTheme';
 import { cookies } from 'next/headers';
-import { ConsentBanner } from '@/components/ads/ConsentBanner';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +31,6 @@ export default async function AppLayout({
         <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8">
           {children}
         </div>
-        <ConsentBanner />
       </div>
     </BrandProvider>
   );
