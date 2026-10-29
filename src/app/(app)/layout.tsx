@@ -6,6 +6,8 @@ import { resolveBrandTheme, generateBrandCssVariables } from '@/lib/brandTheme';
 import { cookies } from 'next/headers';
 import { ConsentBanner } from '@/components/ads/ConsentBanner';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AppLayout({
   children,
 }: {
