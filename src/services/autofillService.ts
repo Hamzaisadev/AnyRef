@@ -65,7 +65,7 @@ export class AutofillService {
     // Record AI telemetry
     await QuotaService.recordAiUsage({
       userId,
-      model: 'gemini-1.5-flash',
+      kind: 'autofill',
       inputTokens: 1200,
       outputTokens: 400,
       costUsd: 0.001,

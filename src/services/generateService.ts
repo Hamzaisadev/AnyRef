@@ -47,7 +47,7 @@ export class GenerateService {
     // Record AI telemetry
     await QuotaService.recordAiUsage({
       userId,
-      model: 'gemini-1.5-flash',
+      kind: 'generate',
       inputTokens: 1000,
       outputTokens: 500,
       costUsd: 0.001,

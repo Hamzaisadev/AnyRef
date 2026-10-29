@@ -1,4 +1,4 @@
-import { createClient } from '../lib/supabaseServer';
+import { createClient, createAdminClient } from '../lib/supabaseServer';
 import { getEntitlements } from './entitlements';
 import { QuotaExceededError, ForbiddenError } from '../lib/errors';
 import { logAuditEvent } from '../data/auditRepo';
@@ -192,27 +192,29 @@ export class QuotaService {
   /**
    * Records AI usage telemetry in ai_usage.
    * Staff calls are still recorded for complete cost accounting.
+   * Fails explicitly if telemetry cannot be recorded — AI usage must never be treated as free.
    */
   static async recordAiUsage(params: {
     userId: string;
-    model: string;
+    kind: 'generate' | 'autofill';
     inputTokens: number;
     outputTokens: number;
     costUsd: number;
-    planId?: string;
+    requestId?: string;
   }): Promise<void> {
-    try {
-      const supabase = await createClient();
-      await supabase.from('ai_usage').insert({
-        user_id: params.userId,
-        model: params.model,
-        input_tokens: params.inputTokens,
-        output_tokens: params.outputTokens,
-        cost_usd: params.costUsd,
-        plan_id: params.planId || 'free',
-      });
-    } catch (err) {
-      console.error('[QuotaService] Failed to record AI telemetry:', err);
+    const admin = createAdminClient();
+    const { error } = await admin.from('ai_usage').insert({
+      user_id: params.userId,
+      kind: params.kind,
+      input_tokens: params.inputTokens,
+      output_tokens: params.outputTokens,
+      est_cost_usd: params.costUsd,
+    });
+
+    if (error) {
+      const reqId = params.requestId ? ` [request_id=${params.requestId}]` : '';
+      console.error(`[QuotaService] Failed to record AI telemetry${reqId}:`, error);
+      throw new Error(`Failed to record AI telemetry: ${error.message}`);
     }
   }
 }

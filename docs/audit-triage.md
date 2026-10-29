@@ -15,7 +15,7 @@ Running status of external audit findings for Anyref stabilization.
 
 | ID | Claim | File(s) | Status | Commit | Test Name | Notes |
 |---|---|---|---|---|---|---|
-| S1-1 | `quotaService.recordAiUsage` inserts `model`, `cost_usd` (not in schema), omits `kind`, swallows errors | `src/services/quotaService.ts` | `TODO` | | | |
+| S1-1 | `quotaService.recordAiUsage` inserts `model`, `cost_usd` (not in schema), omits `kind`, swallows errors | `src/services/quotaService.ts` | `CONFIRMED-FIXED` | pending | `tests/integration/stage1/s1_1_quotaService.test.ts` | Aligned insert with schema (kind, est_cost_usd). Used admin client and threw explicit error instead of swallowing. Verified against real Supabase. |
 | S1-2 | `checkDailyQuota` does not filter by `kind` | `src/services/quotaService.ts` | `TODO` | | | |
 | S1-3 | `checkCircuitBreaker` queries non-existent `cost_usd` | `src/services/quotaService.ts` | `TODO` | | | |
 | S1-4 | `checkEntryQuota` never called from `entryService` | `src/services/entryService.ts` | `TODO` | | | |
