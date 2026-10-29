@@ -201,6 +201,11 @@ export class QuotaService {
   }
 
   /**
+   * Resolves effective entitlements for a user.
+   */
+  static getEntitlements = getEntitlements;
+
+  /**
    * Checks entry capacity quota before creating a new entry or batch of entries.
    */
   static async checkEntryQuota(userId: string, countToAdd: number = 1): Promise<void> {
@@ -220,6 +225,41 @@ export class QuotaService {
       throw new QuotaExceededError(
         `Entry limit reached (${entryCount}/${limit} saved entries). Adding ${countToAdd} item(s) would exceed your plan limit. Upgrade to Plus to save up to 2,000 reference entries.`,
         { limit, used: entryCount, planId: entitlements.planId }
+      );
+    }
+  }
+
+  /**
+   * Checks cumulative storage usage across references, results, and logos buckets against max_storage_mb.
+   */
+  static async checkStorageQuota(userId: string, additionalBytes: number): Promise<void> {
+    const entitlements = await getEntitlements(userId);
+    const maxStorageMb = entitlements.limits.max_storage_mb;
+
+    if (maxStorageMb === null || maxStorageMb === undefined) return; // Unlimited staff
+
+    const maxBytes = maxStorageMb * 1024 * 1024;
+    const supabase = createAdminClient();
+    const buckets = ['references', 'results', 'logos'] as const;
+
+    let usedBytes = 0;
+    for (const bucket of buckets) {
+      const { data: files } = await supabase.storage.from(bucket).list(userId);
+      if (files) {
+        for (const f of files) {
+          const fileSize = Number((f.metadata as Record<string, unknown> | null)?.size || 0);
+          if (Number.isFinite(fileSize) && fileSize > 0) {
+            usedBytes += fileSize;
+          }
+        }
+      }
+    }
+
+    if (usedBytes + additionalBytes > maxBytes) {
+      const projectedMb = Number(((usedBytes + additionalBytes) / (1024 * 1024)).toFixed(2));
+      throw new QuotaExceededError(
+        `Storage limit reached (${projectedMb} MB / ${maxStorageMb} MB). Delete unused assets or upgrade to Plus for up to 5,000 MB of storage.`,
+        { limit: maxStorageMb, used: usedBytes, planId: entitlements.planId }
       );
     }
   }

@@ -114,4 +114,77 @@ describe('S2-14: Settings & Account Management API', () => {
     const json = await res.json();
     expect(json.user.id).toBe(testUser.user.id);
   });
+
+  it('GET /api/cron/cleanup deletes storage objects and auth.users for expired pending_deletion accounts', async () => {
+    const expiredUser = await createTestUser('user');
+
+    // Upload a file to logos bucket for this user
+    const validPng = Buffer.from([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+      0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+    ]);
+    await admin.storage
+      .from('logos')
+      .upload(`${expiredUser.user.id}/test-logo.png`, validPng, {
+        contentType: 'image/png',
+        upsert: true,
+      });
+
+    // Mark user as pending_deletion requested 15 days ago
+    const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
+    await admin
+      .from('profiles')
+      .update({
+        status: 'pending_deletion',
+        deletion_requested_at: fifteenDaysAgo,
+      })
+      .eq('user_id', expiredUser.user.id);
+
+    const { GET: runCleanup } = await import('@/app/api/cron/cleanup/route');
+    const { env } = await import('@/lib/env');
+    const cronReq = new Request('http://localhost:3000/api/cron/cleanup', {
+      headers: {
+        Authorization: `Bearer ${env.CRON_SECRET}`,
+      },
+    });
+
+    const res = await runCleanup(cronReq);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.summary.purgedAccounts).toBeGreaterThanOrEqual(1);
+
+    // 1. Storage object must be deleted
+    const { data: remainingFiles } = await admin.storage
+      .from('logos')
+      .list(expiredUser.user.id);
+    expect(remainingFiles ?? []).toHaveLength(0);
+
+    // 2. Auth user must be deleted from auth.users
+    const { data: authLookup } = await admin.auth.admin.getUserById(expiredUser.user.id);
+    expect(authLookup?.user ?? null).toBeNull();
+  });
+
+  it('enforces max_storage_mb on upload via assetService.uploadImage', async () => {
+    const testUser = await createTestUser('user');
+    const { QuotaExceededError } = await import('@/lib/errors');
+    const { assetService } = await import('@/services/assetService');
+
+    // Set max_storage_mb override to 0 MB so any upload exceeds storage quota
+    await admin.from('quota_overrides').upsert({
+      user_id: testUser.user.id,
+      limits: { max_storage_mb: 0 },
+      reason: 'Test storage limit enforcement',
+      set_by: testUser.user.id,
+    });
+
+    const validPng = Buffer.from([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+      0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+    ]);
+
+    await expect(
+      assetService.uploadImage(testUser.user.id, 'references', validPng, 'image/png')
+    ).rejects.toThrow(QuotaExceededError);
+  });
 });
+

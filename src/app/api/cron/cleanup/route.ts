@@ -37,8 +37,22 @@ export async function GET(request: Request) {
       .lte('deletion_requested_at', fourteenDaysAgo);
 
     if (expiredAccounts && expiredAccounts.length > 0) {
+      const buckets = ['references', 'results', 'logos'] as const;
       for (const account of expiredAccounts) {
-        // Remove user data rows (brands, entries, profiles)
+        // 1a. Delete storage objects across all user buckets
+        for (const bucket of buckets) {
+          const { data: files } = await supabase.storage.from(bucket).list(account.user_id);
+          if (files && files.length > 0) {
+            const paths = files
+              .filter((f) => Boolean(f.name))
+              .map((f) => `${account.user_id}/${f.name}`);
+            if (paths.length > 0) {
+              await supabase.storage.from(bucket).remove(paths);
+            }
+          }
+        }
+
+        // 1b. Remove user data rows (brands, entries, profiles)
         await supabase.from('brands').delete().eq('user_id', account.user_id);
         await supabase.from('entries').delete().eq('user_id', account.user_id);
         await supabase.from('profiles').delete().eq('user_id', account.user_id);
@@ -48,6 +62,10 @@ export async function GET(request: Request) {
           target_user_id: account.user_id,
           reason: '14-day deletion grace period expired; data permanently erased.',
         });
+
+        // 1c. Delete user from auth.users
+        await supabase.auth.admin.deleteUser(account.user_id);
+
         summary.purgedAccounts++;
       }
     }

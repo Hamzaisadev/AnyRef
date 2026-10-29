@@ -141,6 +141,9 @@ export class AssetService {
     claimedMimeType?: string
   ): Promise<{ path: string; signedUrl: string; mimeType: string }> {
     const validated = this.validateUpload(buffer, claimedMimeType);
+    const { QuotaService } = await import('./quotaService');
+    await QuotaService.checkStorageQuota(userId, validated.sizeBytes);
+
     const filename = `${crypto.randomUUID()}.${validated.extension}`;
     const storagePath = `${userId}/${filename}`;
 
