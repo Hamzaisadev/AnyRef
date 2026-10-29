@@ -4,23 +4,15 @@ export interface BrandTheme {
   primary: string;
   primaryRgb: string;
   primaryFg: string;
+  darkPrimary: string;
+  darkPrimaryRgb: string;
+  darkPrimaryFg: string;
   accent: string;
   accentRgb: string;
   accentFg: string;
   brandLayer: string;
   brandLayerRgb: string;
 }
-
-export const DEFAULT_THEME: BrandTheme = {
-  primary: '#4B2BFF',
-  primaryRgb: '75 43 255',
-  primaryFg: '#FFFFFF',
-  accent: '#FF8A3D',
-  accentRgb: '255 138 61',
-  accentFg: '#0F1020',
-  brandLayer: '#2B7BFF',
-  brandLayerRgb: '43 123 255',
-};
 
 export function hexToRgb(hex: string): { r: number; g: number; b: number; rgbString: string } {
   let clean = hex.replace('#', '').trim();
@@ -60,6 +52,58 @@ export function getContrastForeground(hex: string): string {
 }
 
 /**
+ * Ensures a color has sufficient WCAG AA contrast (>= 4.5:1) against the dark surface (#12131F).
+ * If the color is too dark, lightens it progressively while maintaining hue.
+ */
+export function ensureDarkContrast(hex: string, minContrast: number = 4.5): string {
+  const darkSurfaceLum = getLuminance('#12131F'); // ~0.0055
+  let currentLum = getLuminance(hex);
+  let ratio = (Math.max(currentLum, darkSurfaceLum) + 0.05) / (Math.min(currentLum, darkSurfaceLum) + 0.05);
+
+  if (ratio >= minContrast && currentLum > darkSurfaceLum) {
+    return hex;
+  }
+
+  let { r, g, b } = hexToRgb(hex);
+
+  // If pure/near black, shift toward a readable tint
+  if (r < 20 && g < 20 && b < 20) {
+    r = 75;
+    g = 140;
+    b = 255;
+  }
+
+  for (let i = 0; i < 20; i++) {
+    r = Math.min(255, Math.round(r + (255 - r) * 0.15));
+    g = Math.min(255, Math.round(g + (255 - g) * 0.15));
+    b = Math.min(255, Math.round(b + (255 - b) * 0.15));
+
+    const testHex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+    currentLum = getLuminance(testHex);
+    ratio = (currentLum + 0.05) / (darkSurfaceLum + 0.05);
+    if (ratio >= minContrast) {
+      return testHex;
+    }
+  }
+
+  return '#93C5FD';
+}
+
+export const DEFAULT_THEME: BrandTheme = {
+  primary: '#4B2BFF',
+  primaryRgb: '75 43 255',
+  primaryFg: '#FFFFFF',
+  darkPrimary: ensureDarkContrast('#4B2BFF'),
+  darkPrimaryRgb: hexToRgb(ensureDarkContrast('#4B2BFF')).rgbString,
+  darkPrimaryFg: getContrastForeground(ensureDarkContrast('#4B2BFF')),
+  accent: '#FF8A3D',
+  accentRgb: '255 138 61',
+  accentFg: '#0F1020',
+  brandLayer: '#2B7BFF',
+  brandLayerRgb: '43 123 255',
+};
+
+/**
  * Detects if a hex code is a near-black neutral/ink background color (e.g. #0F1020, #111827, #000000).
  */
 export function isNeutralInk(hex: string): boolean {
@@ -73,6 +117,7 @@ export function isNeutralInk(hex: string): boolean {
  * Resolves dynamic theme colors from a Brand profile.
  * - Intelligently checks if the first color is a dark ink/neutral.
  * - Extracts primary, accent, and brand-layer tokens with proper contrast text.
+ * - Computes a contrast-safe dark mode variant (darkPrimary) for legibility on dark backgrounds.
  */
 export function resolveBrandTheme(brand?: Brand | null): BrandTheme {
   if (!brand || !brand.colors || brand.colors.length === 0) {
@@ -115,10 +160,15 @@ export function resolveBrandTheme(brand?: Brand | null): BrandTheme {
     }
   }
 
+  const darkPrimary = ensureDarkContrast(primary);
+
   return {
     primary,
     primaryRgb: hexToRgb(primary).rgbString,
     primaryFg: getContrastForeground(primary),
+    darkPrimary,
+    darkPrimaryRgb: hexToRgb(darkPrimary).rgbString,
+    darkPrimaryFg: getContrastForeground(darkPrimary),
     accent,
     accentRgb: hexToRgb(accent).rgbString,
     accentFg: getContrastForeground(accent),
@@ -129,6 +179,7 @@ export function resolveBrandTheme(brand?: Brand | null): BrandTheme {
 
 /**
  * Generates dynamic CSS variables string for insertion into a <style> tag.
+ * Injects contrast-safe dark mode variables under @media (prefers-color-scheme: dark).
  */
 export function generateBrandCssVariables(theme: BrandTheme): string {
   return `:root {
@@ -140,6 +191,14 @@ export function generateBrandCssVariables(theme: BrandTheme): string {
   --accent-fg: ${theme.accentFg};
   --brand-layer: ${theme.brandLayer};
   --brand-layer-rgb: ${theme.brandLayerRgb};
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary: ${theme.darkPrimary || theme.primary};
+    --primary-rgb: ${theme.darkPrimaryRgb || theme.primaryRgb};
+    --primary-fg: ${theme.darkPrimaryFg || theme.primaryFg};
+  }
 }`;
 }
 
@@ -149,9 +208,14 @@ export function generateBrandCssVariables(theme: BrandTheme): string {
 export function applyBrandThemeToDocument(theme: BrandTheme): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-  root.style.setProperty('--primary', theme.primary);
-  root.style.setProperty('--primary-rgb', theme.primaryRgb);
-  root.style.setProperty('--primary-fg', theme.primaryFg);
+  const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const activePrimary = isDark && theme.darkPrimary ? theme.darkPrimary : theme.primary;
+  const activePrimaryRgb = isDark && theme.darkPrimaryRgb ? theme.darkPrimaryRgb : theme.primaryRgb;
+  const activePrimaryFg = isDark && theme.darkPrimaryFg ? theme.darkPrimaryFg : theme.primaryFg;
+
+  root.style.setProperty('--primary', activePrimary);
+  root.style.setProperty('--primary-rgb', activePrimaryRgb);
+  root.style.setProperty('--primary-fg', activePrimaryFg);
   root.style.setProperty('--accent', theme.accent);
   root.style.setProperty('--accent-rgb', theme.accentRgb);
   root.style.setProperty('--accent-fg', theme.accentFg);

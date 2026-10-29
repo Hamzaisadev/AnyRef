@@ -70,7 +70,7 @@ export function BrandSwitcher({
           value={currentBrandId}
           onChange={(e) => handleChange(e.target.value)}
           aria-label="Select active brand"
-          className="appearance-none bg-surface text-ink text-xs sm:text-sm font-semibold pr-5 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary cursor-pointer tracking-tight"
+          className="appearance-none bg-surface text-ink text-xs sm:text-sm font-semibold pr-5 max-w-[80px] sm:max-w-[140px] truncate focus:outline-none focus-visible:ring-1 focus-visible:ring-primary cursor-pointer tracking-tight"
         >
           {brands.map((brand) => (
             <option key={brand.id} value={brand.id} className="bg-surface text-ink">

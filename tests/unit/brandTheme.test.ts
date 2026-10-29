@@ -67,11 +67,14 @@ describe('brandTheme', () => {
     expect(getContrastForeground('#4A1521')).toBe('#FFFFFF'); // Dark wine
   });
 
-  it('generates valid CSS variables string for HTML style tag', () => {
+  it('generates valid CSS variables string for HTML style tag including dark mode overrides', () => {
     const theme = {
       primary: '#123456',
       primaryRgb: '18 52 86',
       primaryFg: '#FFFFFF',
+      darkPrimary: '#8BB4E0',
+      darkPrimaryRgb: '139 180 224',
+      darkPrimaryFg: '#0F1020',
       accent: '#FF8800',
       accentRgb: '255 136 0',
       accentFg: '#0F1020',
@@ -84,5 +87,29 @@ describe('brandTheme', () => {
     expect(css).toContain('--accent: #FF8800;');
     expect(css).toContain('--primary-fg: #FFFFFF;');
     expect(css).toContain('--accent-fg: #0F1020;');
+    expect(css).toContain('@media (prefers-color-scheme: dark)');
+    expect(css).toContain('--primary: #8BB4E0;');
+  });
+
+  it('computes contrast-safe darkPrimary for very dark brand colors (S5-3)', () => {
+    const darkBrand = {
+      id: '123e4567-e89b-12d3-a456-426614174099',
+      user_id: '123e4567-e89b-12d3-a456-426614174001',
+      name: 'Dark Ink Studio',
+      colors: ['#0A0B10'],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as unknown as Brand;
+
+    const theme = resolveBrandTheme(darkBrand);
+    expect(theme.primary).toBe('#0A0B10');
+    // darkPrimary must be lightened to achieve at least 4.5:1 contrast against #12131F
+    expect(theme.darkPrimary).not.toBe('#0A0B10');
+
+    const darkSurfaceLum = getLuminance('#12131F');
+    const darkPrimaryLum = getLuminance(theme.darkPrimary);
+    const contrastRatio = (darkPrimaryLum + 0.05) / (darkSurfaceLum + 0.05);
+
+    expect(contrastRatio).toBeGreaterThanOrEqual(4.5);
   });
 });

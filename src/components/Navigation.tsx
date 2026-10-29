@@ -67,7 +67,7 @@ export function Navigation({ brands: propBrands, activeBrandId: propActiveBrandI
             </div>
           </Link>
 
-          <div className="hidden sm:block">
+          <div className="block">
             <BrandSwitcher initialBrands={propBrands} activeBrandId={propActiveBrandId} />
           </div>
         </div>
