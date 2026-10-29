@@ -16,8 +16,8 @@ Running status of external audit findings for Anyref stabilization.
 | ID | Claim | File(s) | Status | Commit | Test Name | Notes |
 |---|---|---|---|---|---|---|
 | S1-1 | `quotaService.recordAiUsage` inserts `model`, `cost_usd` (not in schema), omits `kind`, swallows errors | `src/services/quotaService.ts` | `CONFIRMED-FIXED` | deb124d | `tests/integration/stage1/s1_1_quotaService.test.ts` | Aligned insert with schema (kind, est_cost_usd). Used admin client and threw explicit error instead of swallowing. Verified against real Supabase. |
-| S1-2 | `checkDailyQuota` does not filter by `kind` | `src/services/quotaService.ts`, `src/services/entitlements.ts` | `CONFIRMED-FIXED` | pending | `tests/integration/stage1/s1_2_dailyQuotaKind.test.ts` | Filtered checkDailyQuota by action kind (generate vs autofill). Migrated to admin client. Verified free user blocked on generate is allowed autofill against real Supabase. |
-| S1-3 | `checkCircuitBreaker` queries non-existent `cost_usd` | `src/services/quotaService.ts` | `TODO` | | | |
+| S1-2 | `checkDailyQuota` does not filter by `kind` | `src/services/quotaService.ts`, `src/services/entitlements.ts` | `CONFIRMED-FIXED` | 55f38a3 | `tests/integration/stage1/s1_2_dailyQuotaKind.test.ts` | Filtered checkDailyQuota by action kind (generate vs autofill). Migrated to admin client. Verified free user blocked on generate is allowed autofill against real Supabase. |
+| S1-3 | `checkCircuitBreaker` queries non-existent `cost_usd` | `src/services/quotaService.ts` | `CONFIRMED-FIXED` | pending | `tests/integration/stage1/s1_3_circuitBreaker.test.ts` | Used est_cost_usd instead of cost_usd and migrated to admin client. Verified kill switch trips on real database. |
 | S1-4 | `checkEntryQuota` never called from `entryService` | `src/services/entryService.ts` | `TODO` | | | |
 | S1-5 | `createAdminClient()` unused; services write with anon client | `src/lib/supabaseServer.ts`, `src/services/*` | `TODO` | | | |
 | S1-6 | `adminService.conductAbuseReview` queries non-existent columns | `src/services/adminService.ts` | `TODO` | | | |

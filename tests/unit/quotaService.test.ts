@@ -37,6 +37,7 @@ describe('QuotaService - Limits, Circuit Breakers & Staff Bypass', () => {
         })),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       await expect(QuotaService.checkCircuitBreaker(normalUserActor)).rejects.toThrow(
         /AI generation is temporarily paused/i
@@ -64,6 +65,7 @@ describe('QuotaService - Limits, Circuit Breakers & Staff Bypass', () => {
         }),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       // Does not throw for owner
       await expect(QuotaService.checkCircuitBreaker(ownerActor)).resolves.toBeUndefined();
@@ -89,7 +91,7 @@ describe('QuotaService - Limits, Circuit Breakers & Staff Bypass', () => {
             return {
               select: vi.fn().mockReturnThis(),
               gte: vi.fn().mockResolvedValue({
-                data: [{ cost_usd: 3.5 }, { cost_usd: 2.0 }], // Total $5.50 > $5.00
+                data: [{ est_cost_usd: 3.5 }, { est_cost_usd: 2.0 }], // Total $5.50 > $5.00
               }),
             };
           }
@@ -97,6 +99,7 @@ describe('QuotaService - Limits, Circuit Breakers & Staff Bypass', () => {
         }),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       await expect(QuotaService.checkCircuitBreaker(normalUserActor)).rejects.toThrow(
         /daily system capacity limits/i

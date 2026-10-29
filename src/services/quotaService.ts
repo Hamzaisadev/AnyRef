@@ -24,7 +24,7 @@ export class QuotaService {
    * Owner test runs are permitted even during active kill switch.
    */
   static async checkCircuitBreaker(actor?: ActorProfile | null): Promise<void> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // 1. Fetch circuit breaker settings
     const { data: settings } = await supabase
@@ -51,11 +51,11 @@ export class QuotaService {
 
     const { data: usageToday } = await supabase
       .from('ai_usage')
-      .select('cost_usd')
+      .select('est_cost_usd')
       .gte('created_at', todayMidnight.toISOString());
 
     const totalCostToday = (usageToday || []).reduce(
-      (acc, r) => acc + Number(r.cost_usd || 0),
+      (acc, r) => acc + Number(r.est_cost_usd || 0),
       0
     );
 
