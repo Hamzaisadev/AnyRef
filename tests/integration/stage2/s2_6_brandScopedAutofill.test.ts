@@ -81,10 +81,19 @@ describe('S2-5 & S2-6: Autofill brand scoping and human-in-the-loop slot renderi
     expect(listData.entries).toHaveLength(1);
     expect(listData.entries[0].id).toBe(entryA.id);
 
-    // 4. Simulate human completion of the "needs_you" slot and brand slots
+    // 4. Verify buildInitialAutofillValues pre-seeds brand-mapped slots & brand default_values before AI overlay
+    const { buildInitialAutofillValues } = await import('@/domain/slot');
+    const preSeeded = buildInitialAutofillValues(entryA.slots, brandA as any, {
+      values: {},
+      needs_you: ['discount'],
+    });
+    expect(preSeeded.brand_wordmark).toBe('AURORA');
+    expect(preSeeded.headline).toBe('Winter Collection 2026');
+    expect(preSeeded.discount).toBe('');
+
+    // Simulate human completion of the "needs_you" slot
     const editedValues: Record<string, string> = {
-      brand_wordmark: brandA!.wordmark,
-      headline: 'Winter Collection 2026',
+      ...preSeeded,
       discount: '30%', // Human fills in verified price/discount
     };
 
@@ -96,3 +105,4 @@ describe('S2-5 & S2-6: Autofill brand scoping and human-in-the-loop slot renderi
     expect(rendered.text).toContain('"30%"');
   });
 });
+

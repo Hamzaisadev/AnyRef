@@ -64,4 +64,99 @@ describe('S2-9: Workbench brand color mapping array alignment', () => {
 
     expect(resolveBrandSlotValue(secondarySlot, singleColorBrand)).toBeUndefined();
   });
+
+  it('F2-3: buildInitialAutofillValues pre-seeds brand-mapped slots, brand default_values, and slot defaults before overlaying AI values', async () => {
+    const { buildInitialAutofillValues } = await import('@/domain/slot');
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const brandWithDefaults: Brand = {
+      ...sampleBrand,
+      default_values: {
+        cta_text: 'Shop Spectrum Now',
+      },
+    };
+
+    const slots: Slot[] = [
+      {
+        key: 'wordmark',
+        label: 'Wordmark',
+        type: 'short_text',
+        required: true,
+        optional_block: false,
+        never_invent: false,
+        brand_field: 'wordmark',
+      },
+      {
+        key: 'primary_color',
+        label: 'Primary Color',
+        type: 'color',
+        required: true,
+        optional_block: false,
+        never_invent: false,
+        brand_field: 'colors_primary',
+      },
+      {
+        key: 'cta_text',
+        label: 'CTA',
+        type: 'short_text',
+        required: true,
+        optional_block: false,
+        never_invent: false,
+        brand_field: null,
+        default: 'Generic Fallback CTA',
+      },
+      {
+        key: 'subheadline',
+        label: 'Subheadline',
+        type: 'short_text',
+        required: true,
+        optional_block: false,
+        never_invent: false,
+        brand_field: null,
+        default: 'Default Subheadline',
+      },
+      {
+        key: 'headline',
+        label: 'Headline',
+        type: 'short_text',
+        required: true,
+        optional_block: false,
+        never_invent: false,
+        brand_field: null,
+        default: 'Default Headline',
+      },
+      {
+        key: 'price_tag',
+        label: 'Price',
+        type: 'number',
+        required: false,
+        optional_block: true,
+        never_invent: true,
+        brand_field: null,
+      },
+    ];
+
+    // AI returns only 'headline', omits brand slots and defaults, and marks 'price_tag' needs_you
+    const initial = buildInitialAutofillValues(slots, brandWithDefaults, {
+      values: {
+        headline: { value: 'AI Extracted Headline', source: 'ai', confidence: 'high' },
+      },
+      needs_you: ['price_tag'],
+    });
+
+    expect(initial.wordmark).toBe('SPECTRUM');
+    expect(initial.primary_color).toBe('#3B82F6');
+    expect(initial.cta_text).toBe('Shop Spectrum Now');
+    expect(initial.subheadline).toBe('Default Subheadline');
+    expect(initial.headline).toBe('AI Extracted Headline');
+    expect(initial.price_tag).toBe('');
+
+    const autofillPageCode = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/app/(app)/workspace/autofill/page.tsx'),
+      'utf8'
+    );
+    expect(autofillPageCode).toContain('buildInitialAutofillValues');
+  });
 });
+

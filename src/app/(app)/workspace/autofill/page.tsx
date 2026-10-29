@@ -17,6 +17,7 @@ import {
   Terminal,
 } from 'lucide-react';
 import type { Entry } from '@/domain/entry';
+import { buildInitialAutofillValues } from '@/domain/slot';
 import type { SanitizedAutofillResult } from '@/services/autofillService';
 import { useBrand } from '@/context/BrandContext';
 import { renderPrompt } from '@/domain/renderPrompt';
@@ -57,14 +58,6 @@ export default function AutofillStudioPage() {
         }
       });
   }, [activeBrand?.id]);
-
-  useEffect(() => {
-    return () => {
-      if (photoPreview && photoPreview.startsWith('blob:')) {
-        URL.revokeObjectURL(photoPreview);
-      }
-    };
-  }, [photoPreview]);
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files[0]) {
@@ -139,17 +132,12 @@ export default function AutofillStudioPage() {
         setError(data.error?.message || 'Autofill extraction failed.');
       } else {
         setResult(data.result);
-        const initial: Record<string, string> = {};
-        if (data.result.values) {
-          for (const [k, v] of Object.entries(data.result.values)) {
-            initial[k] = (v as { value: string }).value;
-          }
-        }
-        if (data.result.needs_you) {
-          for (const k of data.result.needs_you) {
-            initial[k] = '';
-          }
-        }
+        const targetEntry = entries.find((e) => e.id === selectedEntryId);
+        const initial = buildInitialAutofillValues(
+          targetEntry?.slots || [],
+          activeBrand,
+          data.result
+        );
         setEditableValues(initial);
       }
     } catch {

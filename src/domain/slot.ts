@@ -52,3 +52,57 @@ export function resolveBrandSlotValue(slot: Slot, brand: Brand): string | undefi
       return undefined;
   }
 }
+
+/**
+ * Pre-seeds slot values from:
+ * 1. Brand-mapped fields (`resolveBrandSlotValue`)
+ * 2. Brand `default_values`
+ * 3. Slot `default`
+ * before overlaying AI autofill values and initializing `needs_you` slots.
+ */
+export function buildInitialAutofillValues(
+  slots: Slot[],
+  brand: Brand | null | undefined,
+  result: {
+    values?: Record<string, { value: string; source?: string; confidence?: string }>;
+    needs_you?: string[];
+  }
+): Record<string, string> {
+  const initial: Record<string, string> = {};
+
+  // 1. Pre-seed from brand-mapped fields, brand default_values, and slot defaults
+  for (const slot of slots) {
+    const brandFieldVal = brand ? resolveBrandSlotValue(slot, brand) : undefined;
+    const brandDefaultVal = brand?.default_values?.[slot.key];
+    const slotDefaultVal = slot.default;
+
+    if (brandFieldVal) {
+      initial[slot.key] = brandFieldVal;
+    } else if (brandDefaultVal) {
+      initial[slot.key] = brandDefaultVal;
+    } else if (slotDefaultVal) {
+      initial[slot.key] = slotDefaultVal;
+    }
+  }
+
+  // 2. Overlay AI extracted values
+  if (result.values) {
+    for (const [k, v] of Object.entries(result.values)) {
+      if (v && typeof v.value === 'string') {
+        initial[k] = v.value;
+      }
+    }
+  }
+
+  // 3. Ensure needs_you keys exist in initial (keeping brand default if one was explicitly configured, else empty)
+  if (result.needs_you) {
+    for (const k of result.needs_you) {
+      if (initial[k] === undefined) {
+        initial[k] = '';
+      }
+    }
+  }
+
+  return initial;
+}
+
