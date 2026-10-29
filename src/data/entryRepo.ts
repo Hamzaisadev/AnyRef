@@ -10,8 +10,10 @@ export interface EntryRepo {
 }
 
 export class SupabaseEntryRepo implements EntryRepo {
+  constructor(private getClient: () => Promise<any> | any = createClient) {}
+
   async create(userId: string, input: CreateEntryInput): Promise<Entry> {
-    const supabase = await createClient();
+    const supabase = await this.getClient();
     const { data, error } = await supabase
       .from('entries')
       .insert({
@@ -29,7 +31,7 @@ export class SupabaseEntryRepo implements EntryRepo {
   }
 
   async findById(userId: string, entryId: string): Promise<Entry | null> {
-    const supabase = await createClient();
+    const supabase = await this.getClient();
     const { data, error } = await supabase
       .from('entries')
       .select('*')
@@ -45,7 +47,7 @@ export class SupabaseEntryRepo implements EntryRepo {
   }
 
   async findAll(userId: string, filters: EntryFilters = {}): Promise<Entry[]> {
-    const supabase = await createClient();
+    const supabase = await this.getClient();
     let query = supabase
       .from('entries')
       .select('*')
@@ -78,7 +80,7 @@ export class SupabaseEntryRepo implements EntryRepo {
   }
 
   async update(userId: string, entryId: string, input: UpdateEntryInput): Promise<Entry | null> {
-    const supabase = await createClient();
+    const supabase = await this.getClient();
     const { data, error } = await supabase
       .from('entries')
       .update(input)
@@ -95,7 +97,7 @@ export class SupabaseEntryRepo implements EntryRepo {
   }
 
   async delete(userId: string, entryId: string): Promise<boolean> {
-    const supabase = await createClient();
+    const supabase = await this.getClient();
     const { error } = await supabase
       .from('entries')
       .delete()

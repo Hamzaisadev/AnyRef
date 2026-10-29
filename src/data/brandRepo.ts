@@ -10,8 +10,10 @@ export interface BrandRepo {
 }
 
 export class SupabaseBrandRepo implements BrandRepo {
+  constructor(private getClient: () => Promise<any> | any = createClient) {}
+
   async create(userId: string, input: CreateBrandInput): Promise<Brand> {
-    const supabase = await createClient();
+    const supabase = await this.getClient();
     const { data, error } = await supabase
       .from('brands')
       .insert({
@@ -29,7 +31,7 @@ export class SupabaseBrandRepo implements BrandRepo {
   }
 
   async findById(userId: string, brandId: string): Promise<Brand | null> {
-    const supabase = await createClient();
+    const supabase = await this.getClient();
     const { data, error } = await supabase
       .from('brands')
       .select('*')
@@ -45,7 +47,7 @@ export class SupabaseBrandRepo implements BrandRepo {
   }
 
   async findAllByUserId(userId: string): Promise<Brand[]> {
-    const supabase = await createClient();
+    const supabase = await this.getClient();
     const { data, error } = await supabase
       .from('brands')
       .select('*')
@@ -60,7 +62,7 @@ export class SupabaseBrandRepo implements BrandRepo {
   }
 
   async update(userId: string, brandId: string, input: UpdateBrandInput): Promise<Brand | null> {
-    const supabase = await createClient();
+    const supabase = await this.getClient();
     const { data, error } = await supabase
       .from('brands')
       .update(input)
@@ -77,7 +79,7 @@ export class SupabaseBrandRepo implements BrandRepo {
   }
 
   async delete(userId: string, brandId: string): Promise<boolean> {
-    const supabase = await createClient();
+    const supabase = await this.getClient();
     const { error } = await supabase
       .from('brands')
       .delete()

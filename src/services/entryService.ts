@@ -27,6 +27,10 @@ export class EntryService {
       throw new ForbiddenError(`Cannot create entry: Brand "${brand_id}" does not belong to you.`);
     }
 
+    // 0. Quota Check
+    const { QuotaService } = await import('./quotaService');
+    await QuotaService.checkEntryQuota(userId);
+
     // 1. Template & Slot Consistency Validation
     const templateValidation = validatePromptTemplate(prompt_template, slots || []);
     if (!templateValidation.valid) {

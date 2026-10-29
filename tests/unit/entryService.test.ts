@@ -4,6 +4,12 @@ import { ValidationError, NotFoundError, ForbiddenError } from '@/lib/errors';
 import type { EntryRepo } from '@/data/entryRepo';
 import type { BrandRepo } from '@/data/brandRepo';
 
+vi.mock('@/services/quotaService', () => ({
+  QuotaService: {
+    checkEntryQuota: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 describe('Slice 2 Seam: EntryService (entryService.ts)', () => {
   let mockEntryRepo: EntryRepo;
   let mockBrandRepo: BrandRepo;

@@ -184,6 +184,7 @@ describe('QuotaService - Limits, Circuit Breakers & Staff Bypass', () => {
         })),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       await expect(QuotaService.checkBrandQuota('user-free')).rejects.toThrow(
         /Brand limit reached/i

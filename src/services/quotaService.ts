@@ -152,7 +152,7 @@ export class QuotaService {
 
     if (limit === null) return; // Unlimited staff
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { count } = await supabase
       .from('brands')
       .select('*', { count: 'exact', head: true })
@@ -176,7 +176,7 @@ export class QuotaService {
 
     if (limit === null) return; // Unlimited staff
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { count } = await supabase
       .from('entries')
       .select('*', { count: 'exact', head: true })
