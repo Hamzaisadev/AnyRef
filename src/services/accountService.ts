@@ -1,4 +1,4 @@
-import { createClient } from '../lib/supabaseServer';
+import { createClient, createAdminClient } from '../lib/supabaseServer';
 import { logAuditEvent } from '../data/auditRepo';
 import { NotFoundError, BadRequestError } from '../lib/errors';
 
@@ -19,7 +19,7 @@ export async function requestAccountDeletion(
   userId: string,
   context?: { ip?: string; userAgent?: string }
 ): Promise<DeletionStatus> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: profile, error: fetchErr } = await supabase
     .from('profiles')
@@ -76,7 +76,7 @@ export async function cancelAccountDeletion(
   userId: string,
   context?: { ip?: string; userAgent?: string }
 ): Promise<DeletionStatus> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: profile, error: fetchErr } = await supabase
     .from('profiles')
@@ -131,7 +131,7 @@ export async function cancelAccountDeletion(
  * Gets the current account deletion status and days remaining in grace period.
  */
 export async function getAccountDeletionStatus(userId: string): Promise<DeletionStatus> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: profile } = await supabase
     .from('profiles')

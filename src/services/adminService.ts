@@ -1,4 +1,4 @@
-import { createClient } from '../lib/supabaseServer';
+import { createAdminClient } from '../lib/supabaseServer';
 import { can, type ActorProfile, type TargetProfile, type Action } from './authz';
 import { logAuditEvent } from '../data/auditRepo';
 import { ForbiddenError, NotFoundError, BadRequestError } from '../lib/errors';
@@ -56,7 +56,7 @@ export class AdminService {
    */
   static async getOverviewMetrics(actor: ActorProfile): Promise<OverviewMetrics> {
     assertCan(actor, 'open_admin_panel');
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // 1. User counts
     const { count: totalUsers } = await supabase
@@ -90,23 +90,23 @@ export class AdminService {
 
     const { data: usageToday } = await supabase
       .from('ai_usage')
-      .select('cost_usd')
+      .select('est_cost_usd')
       .gte('created_at', todayMidnight.toISOString());
 
     const { data: usage7d } = await supabase
       .from('ai_usage')
-      .select('cost_usd')
+      .select('est_cost_usd')
       .gte('created_at', sevenDaysAgo.toISOString());
 
     const aiCallsToday = usageToday?.length || 0;
     const estimatedCostTodayUsd = (usageToday || []).reduce(
-      (acc, row) => acc + Number(row.cost_usd || 0),
+      (acc, row) => acc + Number((row as { est_cost_usd: number | null }).est_cost_usd || 0),
       0
     );
 
     const aiCalls7d = usage7d?.length || 0;
     const estimatedCost7dUsd = (usage7d || []).reduce(
-      (acc, row) => acc + Number(row.cost_usd || 0),
+      (acc, row) => acc + Number((row as { est_cost_usd: number | null }).est_cost_usd || 0),
       0
     );
 
@@ -139,7 +139,7 @@ export class AdminService {
     }
   ): Promise<{ users: AdminUserListItem[]; total: number }> {
     assertCan(actor, 'list_search_users');
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     let query = supabase.from('profiles').select('*', { count: 'exact' });
 
@@ -176,7 +176,7 @@ export class AdminService {
       throw new BadRequestError('A specific reason is required to suspend a user.');
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { data: targetProfile } = await supabase
       .from('profiles')
       .select('id:user_id, role, status')
@@ -232,7 +232,7 @@ export class AdminService {
       throw new BadRequestError('A specific reason is required to unsuspend a user.');
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { data: targetProfile } = await supabase
       .from('profiles')
       .select('id:user_id, role, status')
@@ -287,7 +287,7 @@ export class AdminService {
       throw new BadRequestError('A reason must be recorded when granting a complimentary plan.');
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { data: targetProfile } = await supabase
       .from('profiles')
       .select('id:user_id, role, status, plan_id, plan_source')
@@ -342,7 +342,7 @@ export class AdminService {
       throw new BadRequestError('A reason must be recorded when setting a quota override.');
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { data: targetProfile } = await supabase
       .from('profiles')
       .select('id:user_id, role, status')
@@ -396,7 +396,7 @@ export class AdminService {
       throw new BadRequestError('Reason is required when changing staff privileges.');
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { data: targetProfile } = await supabase
       .from('profiles')
       .select('role')
@@ -442,7 +442,7 @@ export class AdminService {
   ): Promise<void> {
     assertCan(actor, 'toggle_ai_kill_switch');
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { error } = await supabase.from('app_settings').upsert({
       key,
       value,
@@ -492,7 +492,7 @@ export class AdminService {
       user_agent: context?.userAgent,
     });
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { data: brands } = await supabase
       .from('brands')
       .select('id, name, description, created_at')
@@ -522,7 +522,7 @@ export class AdminService {
     }
   ): Promise<{ logs: unknown[]; total: number }> {
     assertCan(actor, 'view_audit_log');
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     let query = supabase.from('audit_log').select('*', { count: 'exact' });
 

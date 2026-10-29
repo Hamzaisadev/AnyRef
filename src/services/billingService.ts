@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { createClient } from '../lib/supabaseServer';
+import { createClient, createAdminClient } from '../lib/supabaseServer';
 import { logAuditEvent } from '../data/auditRepo';
 import { BadRequestError } from '../lib/errors';
 
@@ -111,7 +111,7 @@ export async function syncPlan(
   planId: string,
   planSource: 'default' | 'subscription' | 'comp'
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -176,7 +176,7 @@ export async function processWebhookEvent(params: {
   }
 
   const event = billingProvider.parseWebhookEvent(payload);
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // 3. Database Idempotency Check via webhook_events
   const { error: insertErr } = await supabase.from('webhook_events').insert({

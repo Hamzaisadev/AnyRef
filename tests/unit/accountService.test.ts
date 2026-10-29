@@ -5,10 +5,11 @@ import {
   getAccountDeletionStatus,
 } from '../../src/services/accountService';
 import { isDisposableEmail } from '../../src/lib/disposableEmail';
-import { createClient } from '../../src/lib/supabaseServer';
+import { createClient, createAdminClient } from '../../src/lib/supabaseServer';
 
 vi.mock('../../src/lib/supabaseServer', () => ({
   createClient: vi.fn(),
+  createAdminClient: vi.fn(),
 }));
 
 vi.mock('../../src/data/auditRepo', () => ({
@@ -67,6 +68,7 @@ describe('Account Service & Signup Security', () => {
         }),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       const res = await requestAccountDeletion('user-del-1');
       expect(res.isPendingDeletion).toBe(true);
@@ -86,6 +88,7 @@ describe('Account Service & Signup Security', () => {
         })),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       await expect(requestAccountDeletion('owner-id')).rejects.toThrow(
         /platform owner cannot delete their account directly/i
@@ -109,6 +112,7 @@ describe('Account Service & Signup Security', () => {
         })),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       const res = await cancelAccountDeletion('user-del-1');
       expect(res.isPendingDeletion).toBe(false);
@@ -130,6 +134,7 @@ describe('Account Service & Signup Security', () => {
         })),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       const res = await getAccountDeletionStatus('user-del-2');
       expect(res.isPendingDeletion).toBe(true);

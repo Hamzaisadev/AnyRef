@@ -5,11 +5,12 @@ import {
   syncPlan,
   StandardMoRBillingProvider,
 } from '../../src/services/billingService';
-import { createClient } from '../../src/lib/supabaseServer';
+import { createClient, createAdminClient } from '../../src/lib/supabaseServer';
 import { logAuditEvent } from '../../src/data/auditRepo';
 
 vi.mock('../../src/lib/supabaseServer', () => ({
   createClient: vi.fn(),
+  createAdminClient: vi.fn(),
 }));
 
 vi.mock('../../src/data/auditRepo', () => ({
@@ -68,6 +69,7 @@ describe('Billing Service - Webhook Ingestion, Idempotency & Ordering', () => {
         }),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       const payload = {
         event_id: 'evt_duplicate_100',
@@ -121,6 +123,7 @@ describe('Billing Service - Webhook Ingestion, Idempotency & Ordering', () => {
         }),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       const stalePayload = {
         event_id: 'evt_stale_1',
@@ -169,6 +172,7 @@ describe('Billing Service - Webhook Ingestion, Idempotency & Ordering', () => {
         }),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       await syncPlan('usr_upgrade_1', 'plus', 'subscription');
 

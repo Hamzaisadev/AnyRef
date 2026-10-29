@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AdminService } from '../../src/services/adminService';
-import { createClient } from '../../src/lib/supabaseServer';
+import { createClient, createAdminClient } from '../../src/lib/supabaseServer';
 import { logAuditEvent } from '../../src/data/auditRepo';
 import type { ActorProfile } from '../../src/services/authz';
 
 vi.mock('../../src/lib/supabaseServer', () => ({
   createClient: vi.fn(),
+  createAdminClient: vi.fn(),
 }));
 
 vi.mock('../../src/data/auditRepo', () => ({
@@ -55,6 +56,7 @@ describe('AdminService - Authorization & Audit Guarantees', () => {
         })),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       await expect(
         AdminService.suspendUser(adminActor, 'owner-id', 'testing violation')
@@ -75,6 +77,7 @@ describe('AdminService - Authorization & Audit Guarantees', () => {
         })),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       await expect(
         AdminService.suspendUser(adminActor, 'admin-2', 'testing violation')
@@ -99,6 +102,7 @@ describe('AdminService - Authorization & Audit Guarantees', () => {
         })),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       await AdminService.suspendUser(adminActor, 'user-bad', 'Abusive content generation');
 
@@ -138,6 +142,7 @@ describe('AdminService - Authorization & Audit Guarantees', () => {
         })),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       await AdminService.suspendUser(ownerActor, 'admin-compromised', 'Compromised credentials');
 
@@ -169,6 +174,7 @@ describe('AdminService - Authorization & Audit Guarantees', () => {
         })),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       await AdminService.promoteDemoteAdmin(ownerActor, 'trusted-user', 'admin', 'New moderator');
 
@@ -211,6 +217,7 @@ describe('AdminService - Authorization & Audit Guarantees', () => {
         }),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       const result = await AdminService.conductAbuseReview(
         adminActor,
