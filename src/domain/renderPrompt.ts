@@ -44,15 +44,56 @@ export function renderPrompt(
     }
   );
 
-  // 3. Replace {{key}} placeholders
-  // User values are quoted in the rendered output
-  rendered = rendered.replace(/\{\{([a-z0-9_]+)\}\}/g, (_match, key: string) => {
-    const val = values[key];
-    if (val !== undefined && val !== null && val.trim() !== '') {
-      return `"${val.trim()}"`;
+  const slotByKey = new Map<string, Slot>(slots.map((s) => [s.key, s]));
+
+  // Helper to determine if a placeholder position is already enclosed in quotes
+  function isAlreadyInQuotes(fullText: string, matchIndex: number, matchLength: number): boolean {
+    const charBefore = matchIndex > 0 ? fullText[matchIndex - 1] : '';
+    const charAfter = matchIndex + matchLength < fullText.length ? fullText[matchIndex + matchLength] : '';
+    if ((charBefore === '"' && charAfter === '"') || (charBefore === '\'' && charAfter === '\'')) {
+      return true;
     }
-    return '';
-  });
+
+    const lineStart = fullText.lastIndexOf('\n', matchIndex) + 1;
+    const lineEnd = fullText.indexOf('\n', matchIndex + matchLength);
+    const effectiveLineEnd = lineEnd === -1 ? fullText.length : lineEnd;
+    const beforeText = fullText.slice(lineStart, matchIndex);
+    const afterText = fullText.slice(matchIndex + matchLength, effectiveLineEnd);
+
+    const dblBefore = (beforeText.match(/"/g) || []).length;
+    const dblAfter = (afterText.match(/"/g) || []).length;
+    if (dblBefore % 2 === 1 && dblAfter % 2 === 1) {
+      return true;
+    }
+
+    const sglBefore = (beforeText.match(/'/g) || []).length;
+    const sglAfter = (afterText.match(/'/g) || []).length;
+    if (sglBefore % 2 === 1 && sglAfter % 2 === 1) {
+      return true;
+    }
+
+    return false;
+  }
+
+  // 3. Replace {{key}} placeholders
+  // Quote only short_text slots whose template position is not already inside quotes
+  rendered = rendered.replace(
+    /\{\{([a-z0-9_]+)\}\}/g,
+    (match: string, key: string, offset: number, fullString: string) => {
+      const val = values[key];
+      if (val === undefined || val === null || val.trim() === '') {
+        return '';
+      }
+      const trimmed = val.trim();
+      const slot = slotByKey.get(key);
+      const isShortText = slot ? slot.type === 'short_text' : true;
+
+      if (isShortText && !isAlreadyInQuotes(fullString, offset, match.length)) {
+        return `"${trimmed}"`;
+      }
+      return trimmed;
+    }
+  );
 
   // 4. Normalize whitespaces and line endings
   rendered = rendered
