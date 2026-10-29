@@ -493,15 +493,19 @@ export class AdminService {
     });
 
     const supabase = createAdminClient();
-    const { data: brands } = await supabase
+    const { data: brands, error: brandsError } = await supabase
       .from('brands')
-      .select('id, name, description, created_at')
+      .select('id, name, what_you_sell, why, tone, slogan, created_at')
       .eq('user_id', targetUserId);
 
-    const { data: entries } = await supabase
+    if (brandsError) throw new Error(`Failed to fetch abuse review brands: ${brandsError.message}`);
+
+    const { data: entries, error: entriesError } = await supabase
       .from('entries')
-      .select('id, brand_id, title, prompt_template, category, created_at')
+      .select('id, brand_id, prompt_template, poster_type, note, status, created_at')
       .eq('user_id', targetUserId);
+
+    if (entriesError) throw new Error(`Failed to fetch abuse review entries: ${entriesError.message}`);
 
     return {
       brands: brands || [],
