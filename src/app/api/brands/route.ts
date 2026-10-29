@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { requireUser } from '@/services/session';
 import { brandService } from '@/services/brandService';
 import { withErrorHandler } from '@/lib/apiHandler';
+import { CreateBrandBodySchema } from '@/domain/apiSchemas';
 
 export async function GET() {
   return withErrorHandler(async () => {
@@ -14,8 +15,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   return withErrorHandler(async () => {
     const user = await requireUser();
-    const body = await request.json();
-    const brand = await brandService.createBrand(user.id, body);
+    const rawBody = await request.json();
+    const validatedBody = CreateBrandBodySchema.parse(rawBody);
+    const brand = await brandService.createBrand(user.id, validatedBody);
     return NextResponse.json({ brand }, { status: 201 });
   });
 }

@@ -2,29 +2,29 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { requireUser } from '@/services/session';
 import { entryService } from '@/services/entryService';
 import { withErrorHandler } from '@/lib/apiHandler';
-import { EntryStatus } from '@/domain/entry';
-import { PosterType } from '@/ai/schemas';
+import { ListEntriesQuerySchema, CreateEntryBodySchema } from '@/domain/apiSchemas';
 
 export async function GET(request: NextRequest) {
   return withErrorHandler(async () => {
     const user = await requireUser();
     const { searchParams } = new URL(request.url);
 
-    const brand_id = searchParams.get('brand_id') || undefined;
-    const rawStatus = searchParams.get('status');
-    const rawType = searchParams.get('poster_type');
-    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : undefined;
-    const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!, 10) : undefined;
+    const queryData = {
+      brand_id: searchParams.get('brand_id') || undefined,
+      status: searchParams.get('status') || undefined,
+      poster_type: searchParams.get('poster_type') || undefined,
+      limit: searchParams.get('limit') || undefined,
+      offset: searchParams.get('offset') || undefined,
+    };
 
-    const status = rawStatus ? EntryStatus.parse(rawStatus) : undefined;
-    const poster_type = rawType ? PosterType.parse(rawType) : undefined;
+    const validatedQuery = ListEntriesQuerySchema.parse(queryData);
 
     const entries = await entryService.listEntries(user.id, {
-      brand_id,
-      status,
-      poster_type,
-      limit,
-      offset,
+      brand_id: validatedQuery.brand_id,
+      status: validatedQuery.status,
+      poster_type: validatedQuery.poster_type,
+      limit: validatedQuery.limit,
+      offset: validatedQuery.offset,
     });
 
     return NextResponse.json({ entries });
@@ -34,8 +34,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return withErrorHandler(async () => {
     const user = await requireUser();
-    const body = await request.json();
-    const entry = await entryService.createEntry(user.id, body);
+    const rawBody = await request.json();
+    const validatedBody = CreateEntryBodySchema.parse(rawBody);
+    const entry = await entryService.createEntry(user.id, validatedBody);
     return NextResponse.json({ entry }, { status: 201 });
   });
 }

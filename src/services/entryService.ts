@@ -2,6 +2,9 @@ import { EntryRepo, SupabaseEntryRepo } from '../data/entryRepo';
 import { BrandRepo, SupabaseBrandRepo } from '../data/brandRepo';
 import { CreateEntryInput, UpdateEntryInput, Entry, EntryFilters, EntryStatus } from '../domain/entry';
 import { ValidationError, NotFoundError, ForbiddenError } from '../lib/errors';
+import { validatePromptTemplate } from '../domain/validateTemplate';
+import { validateInjectionAndBrandRules } from '../domain/validateInjection';
+import { sanitizeText } from '../lib/sanitize';
 
 export class EntryService {
   constructor(
@@ -18,13 +21,37 @@ export class EntryService {
       throw new ValidationError(`Invalid entry payload: ${details}`, parseResult.error.format());
     }
 
-    const { brand_id } = parseResult.data;
+    const { brand_id, prompt_template, slots } = parseResult.data;
     const brand = await this.brandRepo.findById(userId, brand_id);
     if (!brand) {
       throw new ForbiddenError(`Cannot create entry: Brand "${brand_id}" does not belong to you.`);
     }
 
-    return this.entryRepo.create(userId, parseResult.data);
+    // 1. Template & Slot Consistency Validation
+    const templateValidation = validatePromptTemplate(prompt_template, slots || []);
+    if (!templateValidation.valid) {
+      throw new ValidationError(
+        `Template validation failed:\n${templateValidation.errors.join('\n')}`,
+        templateValidation.errors
+      );
+    }
+
+    // 2. Injection & Brand Negative Rule Validation
+    const injectionValidation = validateInjectionAndBrandRules(prompt_template, brand);
+    if (!injectionValidation.valid) {
+      throw new ValidationError(
+        `Prompt security validation failed:\n${injectionValidation.errors.join('\n')}`,
+        injectionValidation.errors
+      );
+    }
+
+    // 3. Note Sanitization
+    const sanitizedData: CreateEntryInput = {
+      ...parseResult.data,
+      note: parseResult.data.note ? sanitizeText(parseResult.data.note, 2000) : '',
+    };
+
+    return this.entryRepo.create(userId, sanitizedData);
   }
 
   async getEntry(userId: string, entryId: string): Promise<Entry> {
@@ -49,9 +76,35 @@ export class EntryService {
     }
 
     // Verify existence
-    await this.getEntry(userId, entryId);
+    const existing = await this.getEntry(userId, entryId);
+    const updatedTemplate = parseResult.data.prompt_template ?? existing.prompt_template;
+    const updatedSlots = parseResult.data.slots ?? existing.slots;
 
-    const updated = await this.entryRepo.update(userId, entryId, parseResult.data);
+    if (parseResult.data.prompt_template !== undefined || parseResult.data.slots !== undefined) {
+      const templateValidation = validatePromptTemplate(updatedTemplate, updatedSlots);
+      if (!templateValidation.valid) {
+        throw new ValidationError(
+          `Template validation failed:\n${templateValidation.errors.join('\n')}`,
+          templateValidation.errors
+        );
+      }
+
+      const brand = await this.brandRepo.findById(userId, existing.brand_id);
+      const injectionValidation = validateInjectionAndBrandRules(updatedTemplate, brand);
+      if (!injectionValidation.valid) {
+        throw new ValidationError(
+          `Prompt security validation failed:\n${injectionValidation.errors.join('\n')}`,
+          injectionValidation.errors
+        );
+      }
+    }
+
+    const sanitizedData: UpdateEntryInput = {
+      ...parseResult.data,
+      note: parseResult.data.note !== undefined ? sanitizeText(parseResult.data.note, 2000) : undefined,
+    };
+
+    const updated = await this.entryRepo.update(userId, entryId, sanitizedData);
     if (!updated) {
       throw new NotFoundError(`Entry with ID "${entryId}" not found.`);
     }

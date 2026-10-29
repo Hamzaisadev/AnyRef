@@ -4,6 +4,9 @@ import { AiProvider } from '../ai/AiProvider';
 import { getAiProvider } from '../ai/getAiProvider';
 import { NotFoundError, ValidationError } from '../lib/errors';
 import type { AutofillOutput } from '../ai/schemas';
+import { verifyImageMagicBytes } from './assetService';
+import { sanitizeText } from '../lib/sanitize';
+import { validateInjectionAndBrandRules } from '../domain/validateInjection';
 
 export interface SanitizedAutofillResult extends AutofillOutput {
   layoutFitWarning: boolean;
@@ -25,8 +28,12 @@ export class AutofillService {
     mimeType: string,
     hint?: string
   ): Promise<SanitizedAutofillResult> {
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
-      throw new ValidationError(`Unsupported image type "${mimeType}". Allowed: jpeg, png, webp.`);
+    // 1. Verify authentic image magic bytes
+    const magicCheck = verifyImageMagicBytes(imageBuffer);
+    if (!magicCheck.isValid || !magicCheck.mimeType) {
+      throw new ValidationError(
+        magicCheck.error || `Invalid image bytes: unsupported image type "${mimeType}". Allowed: jpeg, png, webp.`
+      );
     }
 
     const entry = await this.entryRepo.findById(userId, entryId);
@@ -39,24 +46,49 @@ export class AutofillService {
       throw new NotFoundError(`Brand "${entry.brand_id}" not found.`);
     }
 
+    const cleanHint = hint ? sanitizeText(hint, 300) : undefined;
+
     const provider = this.getProvider();
     const rawOutput = await provider.autofillSlots({
       imageBuffer,
-      mimeType,
+      mimeType: magicCheck.mimeType,
       brand,
       slots: entry.slots,
-      hint,
+      hint: cleanHint,
     });
 
     // Hard Rule 3: Programmatic Post-Filter
     // The app never invents prices, discounts or dates. Slots of those types stay empty
     // and flagged needs_you unless the user typed them or a brand default exists.
-    const sanitizedValues = { ...rawOutput.values };
+    const sanitizedValues: Record<string, { value: string; source: 'ai' | 'brand_default'; confidence: 'high' | 'medium' | 'low' }> = {};
     const needsYouSet = new Set(rawOutput.needs_you);
+    const slotMap = new Map(entry.slots.map((s) => [s.key, s]));
+
+    for (const [key, item] of Object.entries(rawOutput.values)) {
+      const slot = slotMap.get(key);
+      if (!slot || slot.never_invent) {
+        needsYouSet.add(key);
+        continue;
+      }
+
+      // Sanitize text and cap at slot.max_length
+      const cleanVal = sanitizeText(item.value, slot.max_length ?? 500);
+
+      // Verify safety
+      const safety = validateInjectionAndBrandRules(cleanVal, brand);
+      if (!safety.valid) {
+        needsYouSet.add(key);
+        continue;
+      }
+
+      sanitizedValues[key] = {
+        ...item,
+        value: cleanVal,
+      };
+    }
 
     for (const slot of entry.slots) {
       if (slot.never_invent) {
-        // AI is strictly forbidden from populating this slot
         delete sanitizedValues[slot.key];
         needsYouSet.add(slot.key);
       }

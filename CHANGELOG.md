@@ -16,6 +16,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Refactored `Navigation`, `BrandSwitcher`, `library/page.tsx`, `workspace/generate/page.tsx`, `workspace/autofill/page.tsx`, `entries/[id]/page.tsx`, `entries/[id]/compare/page.tsx`, `brands/page.tsx`, `login/page.tsx`, and `page.tsx` to use the semantic surface token architecture with guaranteed $\ge 4.5:1$ WCAG contrast.
 
 ### Added
+- **Phase 3 Input Handling and Data Integrity**:
+  - Text and slot sanitization engine (`src/lib/sanitize.ts`): strips ASCII control characters (0x00-0x1F except \t, \n, \r), zero-width characters (ZWSP, ZWNJ, ZWJ, BOM), bidirectional overrides, and normalizes Unicode (NFKC).
+  - Slot constraint enforcement (`sanitizeSlotValues`): enforces length limits server-side to prevent memory bloat and model context truncation.
+  - Template consistency validator (`src/domain/validateTemplate.ts`): enforces that every `{{key}}` placeholder has a corresponding slot, all defined slots are referenced, slot keys are unique, and optional blocks (`[[?key: ... ]]`) are well-formed and balanced.
+  - Prompt security and brand negative rule validator (`src/domain/validateInjection.ts`): rejects `<script>`, `javascript:`, `data:text/html`, external URLs, email addresses, and enforces brand `never_do_rules` compliance across models and inputs.
+  - Image magic bytes verifier and AssetService (`src/services/assetService.ts`): verifies authentic PNG (`89 50 4E 47...`), JPEG (`FF D8 FF`), and WebP (`RIFF...WEBP`) file headers, strictly rejecting SVG XSS vectors, HTML polyglots, and oversized files.
+  - Authenticated upload endpoint (`/api/upload`) generating user-scoped paths (`{user_id}/{filename}`) and short-lived signed URLs (60s).
+  - Shared Zod API schemas (`src/domain/apiSchemas.ts`) for all route bodies, queries, and params.
+  - Static security audit test suite (`tests/unit/securitySql.test.ts`) guaranteeing zero raw SQL concatenations and zero `dangerouslySetInnerHTML`.
+  - Comprehensive fuzz testing suite (`tests/fuzz/inputFuzz.test.ts`) with 17 tests verifying 1MB payloads, SQL/XSS injections, unicode fuzzing, polyglots, and corrupt headers.
+  - Expanded test suite from 37 to 88 passing tests across 14 test files.
+
 - **Dynamic Brand Color & Theming Engine**:
   - Pure brand theme resolver (`src/lib/brandTheme.ts`) mapping brand color palettes to CSS variables (`--primary`, `--primary-rgb`, `--accent`, `--accent-rgb`, `--brand-layer`, etc.) with WCAG contrast foreground calculation and neutral-ink detection.
   - Server-side dynamic CSS `<style>` injection in `AppLayout` (`src/app/(app)/layout.tsx`) preventing flash-of-unstyled-content (FOUC).

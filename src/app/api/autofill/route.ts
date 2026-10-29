@@ -3,19 +3,20 @@ import { requireUser } from '@/services/session';
 import { autofillService } from '@/services/autofillService';
 import { withErrorHandler } from '@/lib/apiHandler';
 import { ValidationError } from '@/lib/errors';
+import { z } from 'zod';
+
+const EntryIdSchema = z.string().uuid('Valid entry_id UUID is required');
 
 export async function POST(request: NextRequest) {
   return withErrorHandler(async () => {
     const user = await requireUser();
 
     const formData = await request.formData();
-    const entryId = formData.get('entry_id');
+    const rawEntryId = formData.get('entry_id');
     const photoFile = formData.get('product_photo');
     const hint = formData.get('hint');
 
-    if (!entryId || typeof entryId !== 'string') {
-      throw new ValidationError('Missing required field: entry_id');
-    }
+    const entryId = EntryIdSchema.parse(rawEntryId);
 
     if (!photoFile || !(photoFile instanceof Blob)) {
       throw new ValidationError('Missing required file: product_photo image');

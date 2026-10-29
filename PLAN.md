@@ -388,13 +388,13 @@ create policy "refs_own_prefix" on storage.objects for all
 **Goal:** Nothing untrusted reaches the DB, renderer, or AI unchecked.
 
 **Tasks**
-- [ ] Zod schemas for every route body, query and param; shared between client and server.
-- [ ] Parameterized access only (Supabase client / prepared statements); no string-built SQL anywhere. Add an ESLint rule/CI grep forbidding raw `.rpc` with concatenation.
-- [ ] Output sanitization: render prompt and notes as text (React escapes by default); forbid `dangerouslySetInnerHTML` via lint; strip control characters and zero-width characters from user text slots; enforce max lengths from slot definitions server-side.
-- [ ] Template validation on save: every `{{key}}` has a slot; every slot is used; keys unique; optional-block markers balanced.
-- [ ] File upload restrictions: allow `image/png|jpeg|webp` only; verify magic bytes (not just MIME); max size from `MAX_UPLOAD_MB` (default 8); max dimensions; re-encode/strip EXIF; random filenames under `{user_id}/`; reject SVG for user uploads.
-- [ ] Prompt-injection handling: system prompt rule (2.5); post-validate AI output (reject templates containing URLs, emails, or text that contradicts brand `never_do_rules`); never pass user text as system instructions.
-- [ ] Fuzz/garbage tests (`tests/fuzz/`): random strings, 1 MB text, emoji/RTL/zero-width, SQL/HTML/script payloads, malformed JSON, truncated/corrupt images, polyglot files, wrong MIME.
+- [x] Zod schemas for every route body, query and param; shared between client and server.
+- [x] Parameterized access only (Supabase client / prepared statements); no string-built SQL anywhere. Add an ESLint rule/CI grep forbidding raw `.rpc` with concatenation.
+- [x] Output sanitization: render prompt and notes as text (React escapes by default); forbid `dangerouslySetInnerHTML` via lint; strip control characters and zero-width characters from user text slots; enforce max lengths from slot definitions server-side.
+- [x] Template validation on save: every `{{key}}` has a slot; every slot is used; keys unique; optional-block markers balanced.
+- [x] File upload restrictions: allow `image/png|jpeg|webp` only; verify magic bytes (not just MIME); max size from `MAX_UPLOAD_MB` (default 8); max dimensions; re-encode/strip EXIF; random filenames under `{user_id}/`; reject SVG for user uploads.
+- [x] Prompt-injection handling: system prompt rule (2.5); post-validate AI output (reject templates containing URLs, emails, or text that contradicts brand `never_do_rules`); never pass user text as system instructions.
+- [x] Fuzz/garbage tests (`tests/fuzz/`): random strings, 1 MB text, emoji/RTL/zero-width, SQL/HTML/script payloads, malformed JSON, truncated/corrupt images, polyglot files, wrong MIME.
 
 **Files:** `src/domain/validate*.ts`, `src/lib/sanitize.ts`, `src/services/assetService.ts`, `tests/fuzz/*`.
 

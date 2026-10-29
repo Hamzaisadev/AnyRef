@@ -2,7 +2,10 @@ import { BrandRepo, SupabaseBrandRepo } from '../data/brandRepo';
 import { AiProvider } from '../ai/AiProvider';
 import { getAiProvider } from '../ai/getAiProvider';
 import { GenerateOutput } from '../ai/schemas';
-import { ForbiddenError, ValidationError } from '../lib/errors';
+import { ForbiddenError, ValidationError, AiInvalidOutputError } from '../lib/errors';
+import { verifyImageMagicBytes } from './assetService';
+import { validatePromptTemplate } from '../domain/validateTemplate';
+import { validateInjectionAndBrandRules } from '../domain/validateInjection';
 
 export class GenerateService {
   constructor(
@@ -16,8 +19,12 @@ export class GenerateService {
     imageBuffer: Buffer,
     mimeType: string
   ): Promise<GenerateOutput> {
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
-      throw new ValidationError(`Unsupported image type "${mimeType}". Allowed: jpeg, png, webp.`);
+    // 1. Verify authentic image magic bytes
+    const magicCheck = verifyImageMagicBytes(imageBuffer);
+    if (!magicCheck.isValid || !magicCheck.mimeType) {
+      throw new ValidationError(
+        magicCheck.error || `Invalid image bytes: unsupported image type "${mimeType}". Allowed: jpeg, png, webp.`
+      );
     }
 
     const brand = await this.brandRepo.findById(userId, brandId);
@@ -26,11 +33,31 @@ export class GenerateService {
     }
 
     const provider = this.getProvider();
-    return provider.generateTemplate({
+    const result = await provider.generateTemplate({
       imageBuffer,
-      mimeType,
+      mimeType: magicCheck.mimeType,
       brand,
     });
+
+    // 2. Post-validate AI output consistency
+    const templateValidation = validatePromptTemplate(result.prompt_template, result.slots);
+    if (!templateValidation.valid) {
+      throw new AiInvalidOutputError(
+        `AI generated inconsistent template:\n${templateValidation.errors.join('\n')}`,
+        templateValidation.errors
+      );
+    }
+
+    // 3. Post-validate against injections and brand rules
+    const injectionValidation = validateInjectionAndBrandRules(result.prompt_template, brand);
+    if (!injectionValidation.valid) {
+      throw new AiInvalidOutputError(
+        `AI generated output violating safety rules:\n${injectionValidation.errors.join('\n')}`,
+        injectionValidation.errors
+      );
+    }
+
+    return result;
   }
 }
 

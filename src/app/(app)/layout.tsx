@@ -23,10 +23,7 @@ export default async function AppLayout({
   return (
     <BrandProvider initialBrands={brands} initialActiveBrandId={activeBrandId}>
       {/* Dynamic Server-Side Brand CSS Variables (prevents FOUC) */}
-      <style
-        id="anyref-dynamic-brand-theme"
-        dangerouslySetInnerHTML={{ __html: themeCss }}
-      />
+      <style id="anyref-dynamic-brand-theme">{themeCss}</style>
       <div className="min-h-screen flex flex-col bg-paper transition-colors duration-300">
         <Navigation userEmail={user?.email} />
         <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8">

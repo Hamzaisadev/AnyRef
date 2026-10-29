@@ -58,6 +58,10 @@ describe('Slice 4 Seam: AutofillService (autofillService.ts)', () => {
     service = new AutofillService(mockEntryRepo, mockBrandRepo, () => mockAiProvider);
   });
 
+  const validJpegBuffer = Buffer.from([
+    0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+  ]);
+
   it('programmatically clears unauthorized AI guesses for never_invent slots', async () => {
     // Model hallucinates a discount rate despite prompt instructions
     vi.mocked(mockAiProvider.autofillSlots).mockResolvedValue({
@@ -73,7 +77,7 @@ describe('Slice 4 Seam: AutofillService (autofillService.ts)', () => {
     const result = await service.autofill(
       'u-1',
       validEntry.id,
-      Buffer.from('fake-product-image'),
+      validJpegBuffer,
       'image/jpeg'
     );
 
@@ -98,7 +102,7 @@ describe('Slice 4 Seam: AutofillService (autofillService.ts)', () => {
     const result = await service.autofill(
       'u-1',
       validEntry.id,
-      Buffer.from('fake-product-image'),
+      validJpegBuffer,
       'image/jpeg'
     );
 
