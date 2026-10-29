@@ -101,6 +101,18 @@ pnpm dev
 ```
 Visit [http://localhost:3000](http://localhost:3000).
 
+### 4. Running Tests
+```bash
+# Run unit & fuzz test suite
+pnpm test:unit
+
+# Run live database integration & schema contract tests
+pnpm test:integration
+
+# Run all test suites
+pnpm test
+```
+
 ---
 
 ## Documentation Index

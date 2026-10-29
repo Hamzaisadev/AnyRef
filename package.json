@@ -10,8 +10,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "gen:types": "tsx scripts/generate-types.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
     "test:watch": "vitest",
     "check-env": "tsx scripts/check-env.ts",
     "spike:gemini": "tsx scripts/spike-gemini.ts"
