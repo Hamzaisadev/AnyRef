@@ -10,6 +10,10 @@ export interface UserProfile {
   role: AppRole;
   status: AccountStatus;
   plan_id: string;
+  tos_version?: string | null;
+  tos_accepted_at?: string | null;
+  age_confirmed_at?: string | null;
+  hasConsented?: boolean;
   rawUser: User;
 }
 
@@ -28,7 +32,7 @@ export async function getUser(): Promise<UserProfile | null> {
     // Fetch corresponding profile from profiles table
     let { data: profile } = await supabase
       .from('profiles')
-      .select('role, status, plan_id')
+      .select('role, status, plan_id, tos_version, tos_accepted_at, age_confirmed_at')
       .eq('user_id', user.id)
       .maybeSingle();
 
@@ -47,7 +51,7 @@ export async function getUser(): Promise<UserProfile | null> {
           plan_id: 'free',
           plan_source: 'default',
         })
-        .select('role, status, plan_id')
+        .select('role, status, plan_id, tos_version, tos_accepted_at, age_confirmed_at')
         .single();
 
       profile = newProfile;
@@ -56,6 +60,10 @@ export async function getUser(): Promise<UserProfile | null> {
     const role = (profile?.role as AppRole) || 'user';
     const status = (profile?.status as AccountStatus) || 'active';
     const plan_id = (profile?.plan_id as string) || 'free';
+    const tos_version = profile?.tos_version ?? null;
+    const tos_accepted_at = profile?.tos_accepted_at ?? null;
+    const age_confirmed_at = profile?.age_confirmed_at ?? null;
+    const hasConsented = Boolean(tos_accepted_at && age_confirmed_at);
 
     return {
       id: user.id,
@@ -63,6 +71,10 @@ export async function getUser(): Promise<UserProfile | null> {
       role,
       status,
       plan_id,
+      tos_version,
+      tos_accepted_at,
+      age_confirmed_at,
+      hasConsented,
       rawUser: user,
     };
   } catch {

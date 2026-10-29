@@ -72,6 +72,11 @@ export default function LoginPage() {
         email,
         options: {
           emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          data: {
+            tos_accepted: agreedTerms,
+            age_confirmed: ageConfirmed,
+            tos_version: '2026-01',
+          },
         },
       });
 
