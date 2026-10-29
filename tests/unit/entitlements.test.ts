@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getEntitlements } from '../../src/services/entitlements';
-import { createClient } from '../../src/lib/supabaseServer';
+import { createClient, createAdminClient } from '../../src/lib/supabaseServer';
 
 vi.mock('../../src/lib/supabaseServer', () => ({
   createClient: vi.fn(),
+  createAdminClient: vi.fn(),
 }));
 
 describe('Entitlements Engine (getEntitlements)', () => {
@@ -28,6 +29,7 @@ describe('Entitlements Engine (getEntitlements)', () => {
       }),
     };
     (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+    (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
     const entitlements = await getEntitlements('owner-uuid-1');
 
@@ -60,6 +62,7 @@ describe('Entitlements Engine (getEntitlements)', () => {
       }),
     };
     (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+    (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
     const entitlements = await getEntitlements('admin-uuid-1');
 
@@ -116,6 +119,7 @@ describe('Entitlements Engine (getEntitlements)', () => {
       }),
     };
     (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+    (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
     const entitlements = await getEntitlements('user-uuid-free');
 
@@ -177,6 +181,7 @@ describe('Entitlements Engine (getEntitlements)', () => {
       }),
     };
     (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+    (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
     const entitlements = await getEntitlements('user-uuid-plus');
 
@@ -240,6 +245,7 @@ describe('Entitlements Engine (getEntitlements)', () => {
       }),
     };
     (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+    (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
     const entitlements = await getEntitlements('user-with-override');
 

@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QuotaService } from '../../src/services/quotaService';
-import { createClient } from '../../src/lib/supabaseServer';
+import { createClient, createAdminClient } from '../../src/lib/supabaseServer';
 import { getEntitlements } from '../../src/services/entitlements';
 import { QuotaExceededError, ForbiddenError } from '../../src/lib/errors';
 import type { ActorProfile } from '../../src/services/authz';
 
 vi.mock('../../src/lib/supabaseServer', () => ({
   createClient: vi.fn(),
+  createAdminClient: vi.fn(),
 }));
 
 vi.mock('../../src/services/entitlements', () => ({
@@ -134,6 +135,7 @@ describe('QuotaService - Limits, Circuit Breakers & Staff Bypass', () => {
         })),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       const res = await QuotaService.checkDailyQuota('user-free', 'generate_per_day');
       expect(res.allowed).toBe(true);
@@ -156,6 +158,7 @@ describe('QuotaService - Limits, Circuit Breakers & Staff Bypass', () => {
         })),
       };
       (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+      (createAdminClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
 
       await expect(
         QuotaService.checkDailyQuota('user-free', 'generate_per_day')

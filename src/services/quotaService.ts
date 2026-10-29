@@ -110,7 +110,8 @@ export class QuotaService {
       };
     }
 
-    const supabase = await createClient();
+    const kind = actionType === 'generate_per_day' ? 'generate' : 'autofill';
+    const supabase = createAdminClient();
     const todayMidnight = new Date();
     todayMidnight.setUTCHours(0, 0, 0, 0);
 
@@ -118,6 +119,7 @@ export class QuotaService {
       .from('ai_usage')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
+      .eq('kind', kind)
       .gte('created_at', todayMidnight.toISOString());
 
     const used = count || 0;

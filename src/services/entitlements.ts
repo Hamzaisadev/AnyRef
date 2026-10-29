@@ -1,4 +1,4 @@
-import { createClient } from '../lib/supabaseServer';
+import { createClient, createAdminClient } from '../lib/supabaseServer';
 import type { AppRole } from './authz';
 
 export interface PlanLimits {
@@ -41,7 +41,7 @@ const UNLIMITED_STAFF_LIMITS: PlanLimits = {
 };
 
 export async function getEntitlements(userId: string): Promise<Entitlements> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // 1. Fetch user profile
   const { data: profile, error: profileErr } = await supabase
