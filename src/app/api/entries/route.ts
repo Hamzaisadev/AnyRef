@@ -6,7 +6,7 @@ import { ListEntriesQuerySchema, CreateEntryBodySchema } from '@/domain/apiSchem
 
 export async function GET(request: NextRequest) {
   return withErrorHandler(async () => {
-    const user = await requireUser();
+    const user = await requireUser(request);
     const { searchParams } = new URL(request.url);
 
     const queryData = {
@@ -28,15 +28,15 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ entries });
-  });
+  }, request);
 }
 
 export async function POST(request: NextRequest) {
   return withErrorHandler(async () => {
-    const user = await requireUser();
+    const user = await requireUser(request);
     const rawBody = await request.json();
     const validatedBody = CreateEntryBodySchema.parse(rawBody);
     const entry = await entryService.createEntry(user.id, validatedBody);
     return NextResponse.json({ entry }, { status: 201 });
-  });
+  }, request);
 }

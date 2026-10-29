@@ -14,11 +14,16 @@ import {
   ArrowRight,
   Eye,
   Sparkles,
+  UploadCloud,
+  ImageIcon,
 } from 'lucide-react';
 import type { Entry, EntryStatus } from '@/domain/entry';
+import { useBrand } from '@/context/BrandContext';
+import { renderPrompt } from '@/domain/renderPrompt';
 import { AdSlot } from '@/components/ads/AdSlot';
 
 export default function LibraryPage() {
+  const { brands, activeBrandId } = useBrand();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -27,12 +32,13 @@ export default function LibraryPage() {
 
   useEffect(() => {
     fetchEntries();
-  }, [statusFilter, typeFilter]);
+  }, [activeBrandId, statusFilter, typeFilter]);
 
   async function fetchEntries() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
+      if (activeBrandId) params.set('brand_id', activeBrandId);
       if (statusFilter !== 'all') params.set('status', statusFilter);
       if (typeFilter !== 'all') params.set('poster_type', typeFilter);
 
@@ -49,7 +55,31 @@ export default function LibraryPage() {
   }
 
   async function copyPrompt(entry: Entry) {
-    await navigator.clipboard.writeText(entry.prompt_template);
+    const brand = brands.find((b) => b.id === entry.brand_id) || brands.find((b) => b.id === activeBrandId);
+    const initialValues: Record<string, string> = { ...(brand?.default_values || {}) };
+
+    if (brand) {
+      for (const slot of entry.slots) {
+        if (!initialValues[slot.key] && slot.brand_field) {
+          if (slot.brand_field === 'wordmark' && brand.wordmark) {
+            initialValues[slot.key] = brand.wordmark;
+          } else if (slot.brand_field === 'colors_primary' && brand.colors?.[0]) {
+            initialValues[slot.key] = brand.colors[0];
+          } else if (slot.brand_field === 'colors_secondary' && brand.colors?.[1]) {
+            initialValues[slot.key] = brand.colors[1];
+          } else if (slot.brand_field === 'name' && brand.name) {
+            initialValues[slot.key] = brand.name;
+          } else if (slot.brand_field === 'footer_text' && brand.footer_text) {
+            initialValues[slot.key] = brand.footer_text;
+          } else if (slot.brand_field === 'slogan' && brand.slogan) {
+            initialValues[slot.key] = brand.slogan;
+          }
+        }
+      }
+    }
+
+    const { text } = renderPrompt(entry.prompt_template, entry.slots, initialValues);
+    await navigator.clipboard.writeText(text || entry.prompt_template);
     setCopiedId(entry.id);
     setTimeout(() => setCopiedId(null), 2000);
   }
@@ -194,6 +224,51 @@ export default function LibraryPage() {
                     )}
                   </div>
 
+                  {/* Thumbnails: Reference & Result (S2-4) */}
+                  {(entry.reference_path || entry.result_path) ? (
+                    <div className="grid grid-cols-2 gap-2 h-36 rounded-xl overflow-hidden bg-surface-muted border border-border-subtle p-1.5">
+                      {entry.reference_path ? (
+                        <div className="relative h-full rounded-lg overflow-hidden bg-surface flex items-center justify-center">
+                          <img
+                            src={entry.reference_path}
+                            alt="Reference poster"
+                            loading="lazy"
+                            className="h-full w-full object-contain"
+                          />
+                          <span className="absolute bottom-1 left-1 px-1.5 py-0.5 text-[10px] font-mono bg-ink/75 text-white rounded">
+                            Ref
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="h-full rounded-lg bg-surface flex items-center justify-center text-xs text-layout-layer">
+                          No ref
+                        </div>
+                      )}
+
+                      {entry.result_path ? (
+                        <div className="relative h-full rounded-lg overflow-hidden bg-surface flex items-center justify-center">
+                          <img
+                            src={entry.result_path}
+                            alt="Result render"
+                            loading="lazy"
+                            className="h-full w-full object-contain"
+                          />
+                          <span className="absolute bottom-1 right-1 px-1.5 py-0.5 text-[10px] font-mono bg-success/80 text-white rounded">
+                            Result
+                          </span>
+                        </div>
+                      ) : (
+                        <Link
+                          href={`/entries/${entry.id}/compare`}
+                          className="h-full rounded-lg border border-dashed border-border-subtle flex flex-col items-center justify-center text-[11px] text-layout-layer hover:text-ink hover:bg-surface transition-colors p-2 text-center"
+                        >
+                          <UploadCloud className="w-4 h-4 mb-1 text-primary/70" />
+                          <span>Add result</span>
+                        </Link>
+                      )}
+                    </div>
+                  ) : null}
+
                   {/* Template snippet */}
                   <div className="p-3.5 bg-surface-muted rounded-xl border border-border-subtle font-mono text-xs text-ink/90 line-clamp-4 leading-relaxed">
                     {entry.prompt_template}
@@ -219,7 +294,7 @@ export default function LibraryPage() {
                   <button
                     onClick={() => copyPrompt(entry)}
                     className="flex-1 inline-flex items-center justify-center space-x-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-border-subtle hover:bg-surface-hover transition-all text-ink active:scale-[0.98] min-h-[36px]"
-                    title="Copy prompt template"
+                    title="Copy prompt with brand values rendered (S2-7)"
                   >
                     {copiedId === entry.id ? (
                       <>
@@ -229,7 +304,7 @@ export default function LibraryPage() {
                     ) : (
                       <>
                         <Copy className="w-3.5 h-3.5 text-layout-layer" />
-                        <span>Copy</span>
+                        <span>Copy Rendered</span>
                       </>
                     )}
                   </button>
