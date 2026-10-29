@@ -5,6 +5,21 @@ export interface InjectionValidationResult {
   errors: string[];
 }
 
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Checks if a search term matches as a whole word in text using Unicode-aware boundaries.
+ */
+export function matchesWholeWord(text: string, term: string): boolean {
+  if (!term || term.trim() === '') return false;
+  const escaped = escapeRegex(term.trim());
+  // Unicode-aware boundary: not preceded or followed by Unicode letters or numbers
+  const regex = new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'iu');
+  return regex.test(text);
+}
+
 /**
  * Validates prompt templates and user inputs against script injection,
  * malicious URLs/emails, and brand "never_do_rules".
@@ -68,10 +83,10 @@ export function validateInjectionAndBrandRules(
 
       const singularTerm = cleanedTerm.endsWith('s') ? cleanedTerm.slice(0, -1) : cleanedTerm;
 
-      if (
-        (cleanedTerm.length >= 3 && lowerContent.includes(cleanedTerm)) ||
-        (singularTerm.length >= 3 && lowerContent.includes(singularTerm))
-      ) {
+      const matchesCleaned = cleanedTerm.length >= 3 && matchesWholeWord(content, cleanedTerm);
+      const matchesSingular = singularTerm.length >= 3 && matchesWholeWord(content, singularTerm);
+
+      if (matchesCleaned || matchesSingular) {
         errors.push(
           `Prompt violates brand negative rule: "${rule}" (matched forbidden term "${cleanedTerm}")`
         );
