@@ -33,6 +33,17 @@ describe('validateEnv (Seam 1: Environment Validation)', () => {
     expect(() => validateEnv(invalidEnv)).toThrow();
   });
 
+  it('accepts NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in place of ANON_KEY', () => {
+    const envWithPublishableKey = {
+      ...validBaseEnv,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: undefined,
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test_key',
+    };
+    const result = validateEnv(envWithPublishableKey);
+    expect(result.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY).toBe('sb_publishable_test_key');
+    expect(result.NEXT_PUBLIC_SUPABASE_ANON_KEY).toBe('sb_publishable_test_key');
+  });
+
   it('rejects unsupported AI_PROVIDER values', () => {
     const invalidEnv = { ...validBaseEnv, AI_PROVIDER: 'unsupported-ai' };
     expect(() => validateEnv(invalidEnv)).toThrow();

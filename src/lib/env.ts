@@ -3,15 +3,25 @@ import { z } from 'zod';
 export const envSchema = z
   .object({
     NEXT_PUBLIC_SUPABASE_URL: z.string().url('NEXT_PUBLIC_SUPABASE_URL must be a valid URL'),
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'NEXT_PUBLIC_SUPABASE_ANON_KEY is required'),
-    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
     AI_PROVIDER: z.enum(['gemini', 'claude']).default('gemini'),
-    AI_MODEL: z.string().min(1, 'AI_MODEL is required').default('gemini-1.5-pro'),
+    AI_MODEL: z.string().min(1, 'AI_MODEL is required').default('gemini-flash-latest'),
     GEMINI_API_KEY: z.string().optional(),
     ANTHROPIC_API_KEY: z.string().optional(),
     AI_DAILY_CALL_LIMIT: z.coerce.number().int().positive().default(50),
     AI_DAILY_COST_CAP_USD: z.coerce.number().positive().default(2.0),
     MAX_UPLOAD_MB: z.coerce.number().int().positive().default(10),
+  })
+  .transform((data) => {
+    const key = data.NEXT_PUBLIC_SUPABASE_ANON_KEY || data.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
+    return {
+      ...data,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: key,
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: key,
+      SUPABASE_SERVICE_ROLE_KEY: data.SUPABASE_SERVICE_ROLE_KEY || key,
+    };
   })
   .superRefine((data, ctx) => {
     if (data.AI_PROVIDER === 'gemini' && (!data.GEMINI_API_KEY || data.GEMINI_API_KEY.trim() === '')) {

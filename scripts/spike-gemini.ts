@@ -16,7 +16,7 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({
-  model: process.env.AI_MODEL || 'gemini-1.5-pro',
+  model: process.env.AI_MODEL || 'gemini-flash-latest',
   generationConfig: {
     responseMimeType: 'application/json',
   },
