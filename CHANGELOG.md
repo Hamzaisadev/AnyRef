@@ -16,6 +16,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Refactored `Navigation`, `BrandSwitcher`, `library/page.tsx`, `workspace/generate/page.tsx`, `workspace/autofill/page.tsx`, `entries/[id]/page.tsx`, `entries/[id]/compare/page.tsx`, `brands/page.tsx`, `login/page.tsx`, and `page.tsx` to use the semantic surface token architecture with guaranteed $\ge 4.5:1$ WCAG contrast.
 
 ### Added
+- **Phase 7 — Ad Monetization, Consent Framework & Public Editorial Showcase**:
+  - Architecture Decision Record `docs/adr/0006-ads.md` evaluating display ad network policies (Google AdSense/Prebid), Walled Garden crawlability constraints, UGC privacy boundaries, and EEA/UK GDPR TCF 2.2 consent.
+  - Pluggable `<AdSlot />` display component (`src/components/ads/AdSlot.tsx`):
+    - Absolute staff and Plus exemption (`showAds = false` returns null with zero layout footprint).
+    - Global emergency kill-switch integration (`adsEnabledGlobal`).
+    - Fixed container heights (`min-h-[250px]` for sidebar, `min-h-[90px]` for bottom banner) preventing Cumulative Layout Shift (CLS < 0.1).
+    - Subtle "Sponsored" transparency disclosure with one-click Plus upgrade shortcut.
+  - GDPR/CCPA Consent Manager:
+    - Interactive `<ConsentBanner />` (`src/components/ads/ConsentBanner.tsx`) with affirmative "Accept All" and "Essential Only" options.
+    - Database-backed consent tracking (`src/services/consentService.ts`) recording choices in `consent_records`.
+  - Public Editorial & Compliance Pages (enabling search engine crawlability and ad network approval without exposing private user content):
+    - Public in-depth guide: "Mastering Visual Poster Prompt Engineering" (`/guides/poster-prompts`).
+    - Terms of Service template (`/terms` and `docs/legal/terms-of-service.md`).
+    - Privacy Policy template (`/privacy` and `docs/legal/privacy-policy.md`).
+  - Unit test suite `tests/unit/adSlot.test.ts` (4 tests) verifying staff exemption, global disable, CLS height protection, and disclosures.
+  - Expanded project test suite to 165 passing tests across 22 test files.
+
 - **Phase 6 — Plans, Quotas & Merchant-of-Record Billing Engine**:
   - Architecture Decision Record `docs/adr/0005-billing.md` establishing Merchant-of-Record (MoR) architecture handling global VAT/sales tax and international creator payouts.
   - Quota and safety circuit breaker service (`src/services/quotaService.ts`):

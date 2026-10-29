@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import type { Entry, EntryStatus } from '@/domain/entry';
+import { AdSlot } from '@/components/ads/AdSlot';
 
 export default function LibraryPage() {
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -255,6 +256,11 @@ export default function LibraryPage() {
           })}
         </div>
       )}
+
+      {/* Ad placement at bottom of library */}
+      <div className="pt-6">
+        <AdSlot name="library-bottom" />
+      </div>
     </div>
   );
 }

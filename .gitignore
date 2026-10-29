@@ -37,3 +37,8 @@ pnpm-debug.log*
 # TypeScript cache
 *.tsbuildinfo
 next-env.d.ts
+
+# Media artifacts & temporary render outputs
+/videos/
+/brag-output/
+frame.md
