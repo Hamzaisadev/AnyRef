@@ -19,11 +19,11 @@ import {
 } from 'lucide-react';
 import type { Brand } from '@/domain/brand';
 import type { GenerateOutput } from '@/ai/schemas';
+import { useBrand } from '@/context/BrandContext';
 
 export default function GenerateStudioPage() {
   const router = useRouter();
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [selectedBrandId, setSelectedBrandId] = useState('');
+  const { brands, activeBrandId, switchBrand } = useBrand();
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -33,17 +33,7 @@ export default function GenerateStudioPage() {
   const [proposal, setProposal] = useState<GenerateOutput | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/brands')
-      .then((res) => res.json())
-      .then((data) => {
-        const brandList: Brand[] = data.brands || [];
-        setBrands(brandList);
-        if (brandList.length > 0 && !selectedBrandId) {
-          setSelectedBrandId(brandList[0]!.id);
-        }
-      });
-  }, [selectedBrandId]);
+  const selectedBrandId = activeBrandId || brands[0]?.id || '';
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files[0]) {
@@ -203,7 +193,7 @@ export default function GenerateStudioPage() {
             </label>
             <select
               value={selectedBrandId}
-              onChange={(e) => setSelectedBrandId(e.target.value)}
+              onChange={(e) => switchBrand(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-paper/30 font-medium text-ink cursor-pointer"
             >
               {brands.map((b) => (

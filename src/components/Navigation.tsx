@@ -4,16 +4,26 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Layers, Wand2, Sparkles, Palette, LogOut } from 'lucide-react';
 import { BrandSwitcher } from './BrandSwitcher';
+import { useBrand } from '@/context/BrandContext';
 import type { Brand } from '@/domain/brand';
 
 interface NavigationProps {
-  brands: Brand[];
+  brands?: Brand[];
   activeBrandId?: string;
   userEmail?: string;
 }
 
-export function Navigation({ brands, activeBrandId, userEmail }: NavigationProps) {
+export function Navigation({ brands: propBrands, activeBrandId: propActiveBrandId, userEmail }: NavigationProps) {
   const pathname = usePathname();
+
+  let context: ReturnType<typeof useBrand> | null = null;
+  try {
+    context = useBrand();
+  } catch {
+    context = null;
+  }
+
+  const activeBrand = context?.activeBrand;
 
   const navLinks = [
     { href: '/library', label: 'Library', icon: Layers },
@@ -26,13 +36,13 @@ export function Navigation({ brands, activeBrandId, userEmail }: NavigationProps
     <header className="border-b border-ink/10 bg-white/80 backdrop-blur-md sticky top-0 z-40 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Left: Logo & Brand Switcher */}
-        <div className="flex items-center space-x-4 sm:space-x-6">
+        <div className="flex items-center space-x-3 sm:space-x-5">
           <Link
             href="/library"
-            className="flex items-center space-x-2.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg p-1 -m-1"
+            className="flex items-center space-x-2.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl p-1 -m-1"
             aria-label="Anyref home"
           >
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20 text-primary group-hover:scale-105 transition-transform duration-150">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20 text-primary group-hover:scale-105 transition-all duration-150 shadow-2xs">
               <svg className="w-5 h-5" viewBox="0 0 64 64" fill="none" aria-hidden="true">
                 <rect x="6" y="6" width="52" height="52" rx="12" stroke="currentColor" strokeWidth="4" />
                 <path
@@ -42,16 +52,23 @@ export function Navigation({ brands, activeBrandId, userEmail }: NavigationProps
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
-                <circle cx="32" cy="32" r="4" fill="#FF8A3D" />
+                <circle cx="32" cy="32" r="4" fill="var(--accent)" />
               </svg>
             </div>
-            <span className="font-tight font-bold text-xl text-ink tracking-tight group-hover:text-primary transition-colors">
-              anyref
-            </span>
+            <div className="flex items-center space-x-2">
+              <span className="font-tight font-bold text-xl text-ink tracking-tight group-hover:text-primary transition-colors">
+                anyref
+              </span>
+              {activeBrand?.wordmark && (
+                <span className="hidden sm:inline-block text-[10px] font-mono font-bold tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 uppercase transition-colors">
+                  {activeBrand.wordmark}
+                </span>
+              )}
+            </div>
           </Link>
 
           <div className="hidden sm:block">
-            <BrandSwitcher initialBrands={brands} activeBrandId={activeBrandId} />
+            <BrandSwitcher initialBrands={propBrands} activeBrandId={propActiveBrandId} />
           </div>
         </div>
 

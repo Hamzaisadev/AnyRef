@@ -23,7 +23,7 @@ export default function HomePage() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-              <circle cx="32" cy="32" r="4" fill="#FF8A3D" />
+              <circle cx="32" cy="32" r="4" fill="var(--accent)" />
             </svg>
           </div>
           <span className="font-tight font-bold text-3xl sm:text-4xl tracking-tight text-ink">

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Dynamic Brand Color & Theming Engine**:
+  - Pure brand theme resolver (`src/lib/brandTheme.ts`) mapping brand color palettes to CSS variables (`--primary`, `--primary-rgb`, `--accent`, `--accent-rgb`, `--brand-layer`, etc.) with WCAG contrast foreground calculation and neutral-ink detection.
+  - Server-side dynamic CSS `<style>` injection in `AppLayout` (`src/app/(app)/layout.tsx`) preventing flash-of-unstyled-content (FOUC).
+  - Client-side `BrandContext` and `BrandProvider` (`src/context/BrandContext.tsx`) managing active brand state, cookie sync (`anyref_active_brand`), and real-time DOM CSS variable updates without page reload.
+  - Reactive Anyref logo and wordmark badge in `Navigation` adopting active brand's primary border/stroke, accent dot (`fill="var(--accent)"`), and active wordmark pill.
+  - Live brand theme switching in `BrandsPage` with one-tap "Use [Brand] Colors" button and active theme indicators.
+  - Brand theme unit test suite (`tests/unit/brandTheme.test.ts`), expanding passing test coverage to 37 tests.
+
 ### Changed
 - **UI/UX Craft & Tone Overhaul**:
   - Eliminated all emoji icons across all views; replaced with dedicated, sharp `lucide-react` SVG icons (`Trophy`, `Sliders`, `XCircle`, `FileText`, `Sparkles`, `UploadCloud`, `Package`, `ShieldCheck`, `CheckCircle2`, `Copy`, `Plus`, `Eye`, `ArrowRight`, `ChevronDown`, `LogOut`).

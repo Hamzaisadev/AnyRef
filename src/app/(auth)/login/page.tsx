@@ -65,7 +65,7 @@ export default function LoginPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
-                <circle cx="32" cy="32" r="4" fill="#FF8A3D" />
+                <circle cx="32" cy="32" r="4" fill="var(--accent)" />
               </svg>
             </div>
           </Link>
