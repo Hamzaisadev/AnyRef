@@ -15,8 +15,10 @@ import {
 } from 'lucide-react';
 import type { Entry } from '@/domain/entry';
 import type { SanitizedAutofillResult } from '@/services/autofillService';
+import { useBrand } from '@/context/BrandContext';
 
 export default function AutofillStudioPage() {
+  const { activeBrand } = useBrand();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [selectedEntryId, setSelectedEntryId] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
@@ -114,8 +116,6 @@ export default function AutofillStudioPage() {
     }
   }
 
-  const selectedEntry = entries.find((e) => e.id === selectedEntryId);
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -147,10 +147,10 @@ export default function AutofillStudioPage() {
         {/* Left: Input Form (5 cols) */}
         <form
           onSubmit={handleAutofill}
-          className="lg:col-span-5 bg-white p-6 sm:p-7 rounded-2xl border border-ink/10 shadow-sm space-y-6"
+          className="lg:col-span-5 bg-surface p-6 sm:p-7 rounded-2xl border border-border-subtle shadow-xs space-y-6"
         >
           <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
-            <span className="w-6 h-6 rounded-lg bg-ink/5 flex items-center justify-center text-xs font-mono font-bold text-ink">
+            <span className="w-6 h-6 rounded-lg bg-surface-muted flex items-center justify-center text-xs font-mono font-bold text-ink border border-border-subtle">
               1
             </span>
             <span>Product &amp; Template</span>
@@ -164,10 +164,10 @@ export default function AutofillStudioPage() {
             <select
               value={selectedEntryId}
               onChange={(e) => setSelectedEntryId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-paper/30 font-medium text-ink cursor-pointer"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-surface-muted font-medium text-ink cursor-pointer"
             >
               {entries.map((e) => (
-                <option key={e.id} value={e.id}>
+                <option key={e.id} value={e.id} className="bg-surface text-ink">
                   {e.poster_type ? `[${e.poster_type.toUpperCase()}] ` : ''}
                   {e.prompt_template.slice(0, 48)}...
                 </option>
@@ -183,7 +183,7 @@ export default function AutofillStudioPage() {
             className={`border-2 border-dashed rounded-2xl p-6 text-center space-y-3 relative transition-all duration-150 cursor-pointer ${
               dragActive
                 ? 'border-primary bg-primary/5 ring-4 ring-primary/10'
-                : 'border-ink/20 hover:border-primary/50 bg-paper/40'
+                : 'border-border-strong hover:border-primary/50 bg-surface-muted'
             }`}
           >
             <input
@@ -198,7 +198,7 @@ export default function AutofillStudioPage() {
                 <img
                   src={photoPreview}
                   alt="Product preview"
-                  className="max-h-56 mx-auto rounded-xl object-contain shadow-2xs border border-ink/10"
+                  className="max-h-56 mx-auto rounded-xl object-contain shadow-2xs border border-border-subtle"
                 />
                 <p className="text-xs text-layout-layer font-medium">Click or drag another photo to replace</p>
               </div>
@@ -227,14 +227,14 @@ export default function AutofillStudioPage() {
               value={hint}
               onChange={(e) => setHint(e.target.value)}
               placeholder="e.g. Festive launch, emphasize midnight black finish"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-paper/30 font-medium text-ink placeholder:text-layout-layer/70"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-surface-muted font-medium text-ink placeholder:text-layout-layer/70"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading || !photo || !selectedEntryId}
-            className="w-full py-3.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary/95 shadow-xs transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 text-sm flex items-center justify-center space-x-2 active:scale-[0.98] min-h-[48px]"
+            className="w-full py-3.5 bg-primary text-primary-fg font-semibold rounded-xl hover:opacity-90 shadow-xs transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 text-sm flex items-center justify-center space-x-2 active:scale-[0.98] min-h-[48px]"
           >
             {loading ? (
               <>
@@ -251,9 +251,9 @@ export default function AutofillStudioPage() {
         </form>
 
         {/* Right: Review & Layout-Fit Warnings (7 cols) */}
-        <div className="lg:col-span-7 bg-white p-6 sm:p-7 rounded-2xl border border-ink/10 shadow-sm space-y-6">
+        <div className="lg:col-span-7 bg-surface p-6 sm:p-7 rounded-2xl border border-border-subtle shadow-xs space-y-6">
           <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
-            <span className="w-6 h-6 rounded-lg bg-ink/5 flex items-center justify-center text-xs font-mono font-bold text-ink">
+            <span className="w-6 h-6 rounded-lg bg-surface-muted flex items-center justify-center text-xs font-mono font-bold text-ink border border-border-subtle">
               2
             </span>
             <span>Provenance Review</span>
@@ -290,7 +290,7 @@ export default function AutofillStudioPage() {
               )}
 
               {/* Product Guess Tag */}
-              <div className="flex items-center justify-between p-3.5 rounded-xl bg-paper/60 border border-ink/10 text-xs">
+              <div className="flex items-center justify-between p-3.5 rounded-xl bg-surface-muted border border-border-subtle text-xs">
                 <span className="text-layout-layer font-medium">Product Identified:</span>
                 <span className="font-mono font-bold text-ink text-sm">{result.product_guess}</span>
               </div>
@@ -304,7 +304,7 @@ export default function AutofillStudioPage() {
                   {Object.entries(result.values).map(([key, item]) => (
                     <div
                       key={key}
-                      className="flex items-center justify-between p-3.5 rounded-xl border border-ink/10 bg-paper/40 text-xs hover:border-ink/20 transition-colors"
+                      className="flex items-center justify-between p-3.5 rounded-xl border border-border-subtle bg-surface-muted text-xs hover:border-border-strong transition-colors"
                     >
                       <div className="space-y-0.5">
                         <span className="font-mono font-bold text-ink block">{key}</span>
@@ -314,7 +314,7 @@ export default function AutofillStudioPage() {
                         className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold uppercase shrink-0 ${
                           item.source === 'brand_default'
                             ? 'bg-brand-layer/15 text-brand-layer'
-                            : 'bg-primary/10 text-primary'
+                            : 'bg-primary/15 text-primary'
                         }`}
                       >
                         {item.source === 'brand_default' ? 'Brand Default' : 'AI Inferred'}
@@ -342,7 +342,7 @@ export default function AutofillStudioPage() {
             </div>
           ) : (
             <div className="py-24 text-center text-layout-layer space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-ink/5 mx-auto flex items-center justify-center text-layout-layer">
+              <div className="w-12 h-12 rounded-2xl bg-surface-muted mx-auto flex items-center justify-center text-layout-layer border border-border-subtle">
                 <Package className="w-6 h-6" />
               </div>
               <div className="space-y-1">

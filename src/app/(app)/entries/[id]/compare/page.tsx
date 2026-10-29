@@ -162,7 +162,7 @@ export default function ComparePage({ params }: PageProps) {
   return (
     <div className="space-y-8" onPaste={handlePaste}>
       {/* Top Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-ink/10 pb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border-subtle pb-6">
         <div>
           <div className="flex items-center space-x-2 text-xs text-layout-layer mb-1.5">
             <Link
@@ -191,7 +191,7 @@ export default function ComparePage({ params }: PageProps) {
           className={`inline-flex items-center space-x-2 px-6 py-2.5 text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-[0.98] disabled:opacity-50 min-h-[40px] ${
             savedSuccess
               ? 'bg-success text-white'
-              : 'bg-primary text-white hover:bg-primary/95'
+              : 'bg-primary text-primary-fg hover:bg-primary/95'
           }`}
         >
           {saving ? (
@@ -224,18 +224,18 @@ export default function ComparePage({ params }: PageProps) {
       {/* Dual Panel Comparison */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         {/* Left Panel: Reference Poster */}
-        <div className="bg-white p-6 sm:p-7 rounded-2xl border border-ink/10 shadow-sm space-y-4">
+        <div className="bg-surface p-6 sm:p-7 rounded-2xl border border-border-subtle shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
               <ImageIcon className="w-4 h-4 text-brand-layer" />
               <span>Original Reference</span>
             </h2>
-            <span className="text-xs font-mono uppercase bg-ink/5 text-layout-layer px-2 py-0.5 rounded">
+            <span className="text-xs font-mono uppercase bg-surface-muted border border-border-subtle text-layout-layer px-2 py-0.5 rounded">
               Target Style
             </span>
           </div>
 
-          <div className="h-96 rounded-xl bg-paper/60 border border-ink/10 flex items-center justify-center p-4 overflow-hidden">
+          <div className="h-96 rounded-xl bg-surface-muted border border-border-subtle flex items-center justify-center p-4 overflow-hidden">
             {entry.reference_path ? (
               <img
                 src={entry.reference_path}
@@ -252,7 +252,7 @@ export default function ComparePage({ params }: PageProps) {
         </div>
 
         {/* Right Panel: Result Poster & Paste Dropzone */}
-        <div className="bg-white p-6 sm:p-7 rounded-2xl border border-ink/10 shadow-sm space-y-4">
+        <div className="bg-surface p-6 sm:p-7 rounded-2xl border border-border-subtle shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
               <UploadCloud className="w-4 h-4 text-primary" />
@@ -268,7 +268,7 @@ export default function ComparePage({ params }: PageProps) {
             className={`h-96 rounded-xl border-2 border-dashed flex items-center justify-center p-4 relative group transition-all duration-150 cursor-pointer overflow-hidden ${
               dragActive
                 ? 'border-primary bg-primary/5 ring-4 ring-primary/10'
-                : 'border-ink/20 hover:border-primary/50 bg-paper/60'
+                : 'border-border-subtle hover:border-primary/50 bg-surface-muted'
             }`}
           >
             <input
@@ -291,7 +291,7 @@ export default function ComparePage({ params }: PageProps) {
                 </div>
                 <div className="space-y-1">
                   <p className="font-semibold text-ink text-sm">
-                    Drop render here or press <kbd className="px-1.5 py-0.5 bg-ink/10 rounded font-mono text-xs">Ctrl+V</kbd>
+                    Drop render here or press <kbd className="px-1.5 py-0.5 bg-surface border border-border-subtle rounded font-mono text-xs">Ctrl+V</kbd>
                   </p>
                   <p className="text-xs text-layout-layer">
                     Supports Midjourney, Flux, and Ideogram renders
@@ -304,7 +304,7 @@ export default function ComparePage({ params }: PageProps) {
       </div>
 
       {/* Status Switcher & Engineering Notes */}
-      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-ink/10 shadow-sm space-y-6">
+      <div className="bg-surface p-6 sm:p-7 rounded-2xl border border-border-subtle shadow-sm space-y-6">
         <div>
           <label className="block text-xs font-semibold uppercase text-ink tracking-wider mb-3">
             Evaluation Verdict
@@ -322,7 +322,7 @@ export default function ComparePage({ params }: PageProps) {
                   className={`p-4 rounded-xl border text-left transition-all duration-150 active:scale-[0.98] ${
                     isSelected
                       ? s.activeBorder
-                      : 'border-ink/15 hover:border-ink/30 hover:bg-ink/5'
+                      : 'border-border-subtle hover:border-border-strong hover:bg-surface-muted'
                   }`}
                 >
                   <div className="flex items-center space-x-2">
@@ -348,7 +348,7 @@ export default function ComparePage({ params }: PageProps) {
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="e.g. Generated with Flux 1.1 Pro (4 steps, cfg 3.5). Perfect typography spacing on portrait layout."
-            className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-paper/30 text-ink leading-relaxed placeholder:text-layout-layer/70"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-surface-muted text-ink leading-relaxed placeholder:text-layout-layer/70"
           />
         </div>
       </div>

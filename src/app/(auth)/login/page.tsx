@@ -45,7 +45,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-paper px-4 py-12">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 sm:p-10 rounded-2xl border border-ink/10 shadow-sm">
+      <div className="max-w-md w-full space-y-8 bg-surface p-8 sm:p-10 rounded-2xl border border-border-subtle shadow-sm">
         {/* Logo and Header */}
         <div className="text-center space-y-3">
           <Link href="/" className="inline-block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl">
@@ -124,7 +124,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@company.com"
                   disabled={status === 'loading'}
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-ink/20 bg-paper/50 text-ink placeholder:text-layout-layer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm transition-all"
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-muted text-ink placeholder:text-layout-layer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm transition-all"
                 />
               </div>
             </div>
@@ -132,7 +132,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={status === 'loading'}
-              className="w-full py-3 px-4 bg-primary text-white font-semibold rounded-xl hover:bg-primary/95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 disabled:opacity-50 text-sm shadow-sm flex items-center justify-center space-x-2 active:scale-[0.98] min-h-[44px]"
+              className="w-full py-3 px-4 bg-primary text-primary-fg font-semibold rounded-xl hover:bg-primary/95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 disabled:opacity-50 text-sm shadow-sm flex items-center justify-center space-x-2 active:scale-[0.98] min-h-[44px]"
             >
               {status === 'loading' ? (
                 <>
@@ -149,7 +149,7 @@ export default function LoginPage() {
           </form>
         )}
 
-        <div className="text-center text-xs text-layout-layer pt-2 border-t border-ink/10">
+        <div className="text-center text-xs text-layout-layer pt-2 border-t border-border-subtle">
           Invite-only workspace. Single sign-on with verified team email.
         </div>
       </div>

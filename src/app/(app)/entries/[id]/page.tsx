@@ -112,10 +112,10 @@ export default function WorkbenchPage({ params }: PageProps) {
   return (
     <div className="space-y-8">
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-ink/10 pb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border-subtle pb-6">
         <div>
           <div className="flex items-center space-x-2.5 mb-1.5">
-            <span className="text-xs font-mono uppercase bg-ink/5 text-layout-layer px-2 py-0.5 rounded-md font-semibold">
+            <span className="text-xs font-mono uppercase bg-surface-muted text-layout-layer px-2.5 py-0.5 rounded-md font-semibold border border-border-subtle">
               {entry.poster_type || 'POSTER'}
             </span>
             <span className="text-xs font-semibold text-primary flex items-center space-x-1">
@@ -131,7 +131,7 @@ export default function WorkbenchPage({ params }: PageProps) {
         <div className="flex items-center space-x-3 w-full sm:w-auto">
           <Link
             href={`/entries/${entry.id}/compare`}
-            className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 border border-ink/15 rounded-xl text-xs sm:text-sm font-semibold hover:bg-ink/5 transition-all text-ink active:scale-[0.98] min-h-[40px]"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 border border-border-subtle rounded-xl text-xs sm:text-sm font-semibold hover:bg-surface-hover transition-all text-ink active:scale-[0.98] min-h-[40px]"
           >
             <Eye className="w-4 h-4 text-layout-layer" />
             <span>Visual Compare</span>
@@ -141,7 +141,7 @@ export default function WorkbenchPage({ params }: PageProps) {
             className={`flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-5 py-2.5 text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-[0.98] min-h-[40px] ${
               copied
                 ? 'bg-success text-white'
-                : 'bg-primary text-white hover:bg-primary/95'
+                : 'bg-primary text-primary-fg hover:opacity-90'
             }`}
           >
             {copied ? (
@@ -161,7 +161,7 @@ export default function WorkbenchPage({ params }: PageProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left: Slot Input Form (7 cols) */}
-        <div className="lg:col-span-7 bg-white p-6 sm:p-7 rounded-2xl border border-ink/10 shadow-sm space-y-6">
+        <div className="lg:col-span-7 bg-surface p-6 sm:p-7 rounded-2xl border border-border-subtle shadow-xs space-y-6">
           <div>
             <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
               <Sliders className="w-4 h-4 text-accent" />
@@ -184,7 +184,7 @@ export default function WorkbenchPage({ params }: PageProps) {
                 return (
                   <div
                     key={slot.key}
-                    className="space-y-2 p-4 rounded-xl border border-ink/10 bg-paper/40 transition-colors hover:border-ink/20"
+                    className="space-y-2 p-4 rounded-xl border border-border-subtle bg-surface-muted transition-colors hover:border-border-strong"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
@@ -226,11 +226,11 @@ export default function WorkbenchPage({ params }: PageProps) {
                         id={`slot-${slot.key}`}
                         value={val}
                         onChange={(e) => handleSlotChange(slot.key, e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-white text-ink font-medium"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-surface text-ink font-medium"
                       >
                         <option value="">Select option...</option>
                         {slot.options.map((opt) => (
-                          <option key={opt} value={opt}>
+                          <option key={opt} value={opt} className="bg-surface text-ink">
                             {opt}
                           </option>
                         ))}
@@ -243,7 +243,7 @@ export default function WorkbenchPage({ params }: PageProps) {
                         maxLength={slot.max_length}
                         onChange={(e) => handleSlotChange(slot.key, e.target.value)}
                         placeholder={slot.hint || `Enter ${slot.label.toLowerCase()}...`}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-white text-ink font-medium placeholder:text-layout-layer/70"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-surface text-ink font-medium placeholder:text-layout-layer/70"
                       />
                     )}
 
@@ -260,7 +260,7 @@ export default function WorkbenchPage({ params }: PageProps) {
         <div className="lg:col-span-5 space-y-6">
           {/* Attach in Flow Checklist */}
           {renderResult.attachChecklist.length > 0 && (
-            <div className="bg-white p-6 rounded-2xl border border-ink/10 shadow-sm space-y-3.5">
+            <div className="bg-surface p-6 rounded-2xl border border-border-subtle shadow-xs space-y-3.5">
               <div className="flex items-center space-x-2">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                   <Paperclip className="w-4 h-4" />
@@ -276,9 +276,9 @@ export default function WorkbenchPage({ params }: PageProps) {
                 {renderResult.attachChecklist.map((item) => (
                   <li
                     key={item.order}
-                    className="flex items-center space-x-2.5 p-2.5 rounded-xl bg-paper/80 border border-ink/10"
+                    className="flex items-center space-x-2.5 p-2.5 rounded-xl bg-surface-muted border border-border-subtle"
                   >
-                    <span className="w-5 h-5 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                    <span className="w-5 h-5 rounded-full bg-primary text-primary-fg text-[11px] font-bold flex items-center justify-center shrink-0">
                       {item.order}
                     </span>
                     <span className="text-ink font-semibold">{item.label}</span>
@@ -289,7 +289,7 @@ export default function WorkbenchPage({ params }: PageProps) {
           )}
 
           {/* Rendered Prompt Preview */}
-          <div className="bg-white p-6 rounded-2xl border border-ink/10 shadow-sm space-y-3.5">
+          <div className="bg-surface p-6 rounded-2xl border border-border-subtle shadow-xs space-y-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Terminal className="w-4 h-4 text-primary" />
@@ -297,13 +297,13 @@ export default function WorkbenchPage({ params }: PageProps) {
                   Live Prompt Output
                 </h3>
               </div>
-              <span className="text-xs font-mono text-layout-layer bg-ink/5 px-2 py-0.5 rounded">
+              <span className="text-xs font-mono text-layout-layer bg-surface-muted px-2 py-0.5 rounded border border-border-subtle">
                 {renderResult.text.length} chars
               </span>
             </div>
 
             <div className="relative group">
-              <div className="p-4 bg-paper rounded-xl border border-ink/15 font-mono text-xs text-ink/90 leading-relaxed whitespace-pre-wrap select-all max-h-96 overflow-y-auto">
+              <div className="p-4 bg-surface-muted rounded-xl border border-border-subtle font-mono text-xs text-ink/90 leading-relaxed whitespace-pre-wrap select-all max-h-96 overflow-y-auto">
                 {renderResult.text}
               </div>
             </div>

@@ -33,7 +33,7 @@ export function Navigation({ brands: propBrands, activeBrandId: propActiveBrandI
   ];
 
   return (
-    <header className="border-b border-ink/10 bg-white/80 backdrop-blur-md sticky top-0 z-40 transition-colors">
+    <header className="border-b border-border-subtle bg-surface/85 backdrop-blur-md sticky top-0 z-40 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Left: Logo & Brand Switcher */}
         <div className="flex items-center space-x-3 sm:space-x-5">
@@ -60,7 +60,7 @@ export function Navigation({ brands: propBrands, activeBrandId: propActiveBrandI
                 anyref
               </span>
               {activeBrand?.wordmark && (
-                <span className="hidden sm:inline-block text-[10px] font-mono font-bold tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 uppercase transition-colors">
+                <span className="hidden sm:inline-block text-[10px] font-mono font-bold tracking-wider px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/25 uppercase transition-colors">
                   {activeBrand.wordmark}
                 </span>
               )}
@@ -81,13 +81,13 @@ export function Navigation({ brands: propBrands, activeBrandId: propActiveBrandI
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary active:scale-[0.98] ${
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary active:scale-[0.98] ${
                   isActive
-                    ? 'bg-ink text-paper font-semibold shadow-xs'
-                    : 'text-layout-layer hover:text-ink hover:bg-ink/5'
+                    ? 'bg-primary/15 text-primary font-semibold border border-primary/25 shadow-2xs'
+                    : 'text-layout-layer hover:text-ink hover:bg-surface-hover'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isActive ? 'text-accent' : 'text-layout-layer'}`} />
+                <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isActive ? 'text-primary' : 'text-layout-layer'}`} />
                 <span>{link.label}</span>
               </Link>
             );
@@ -98,7 +98,7 @@ export function Navigation({ brands: propBrands, activeBrandId: propActiveBrandI
         <div className="flex items-center space-x-2.5 sm:space-x-3">
           {userEmail && (
             <span
-              className="hidden lg:inline text-xs text-layout-layer max-w-[150px] truncate font-mono bg-paper px-2 py-1 rounded border border-ink/10"
+              className="hidden lg:inline text-xs text-layout-layer max-w-[160px] truncate font-mono bg-surface-muted px-2.5 py-1 rounded-lg border border-border-subtle"
               title={userEmail}
             >
               {userEmail}
@@ -108,7 +108,7 @@ export function Navigation({ brands: propBrands, activeBrandId: propActiveBrandI
           <form action="/api/auth/logout" method="POST">
             <button
               type="submit"
-              className="flex items-center space-x-1.5 text-xs text-layout-layer hover:text-danger px-2.5 py-1.5 rounded-lg border border-ink/10 hover:border-danger/30 hover:bg-danger/5 transition-all duration-150 font-medium active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+              className="flex items-center space-x-1.5 text-xs text-layout-layer hover:text-danger px-2.5 py-1.5 rounded-lg border border-border-subtle hover:border-danger/30 hover:bg-danger/10 transition-all duration-150 font-medium active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-danger"
               title="Sign out of Anyref"
             >
               <LogOut className="w-3.5 h-3.5" />

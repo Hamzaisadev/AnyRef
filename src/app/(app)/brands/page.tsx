@@ -132,7 +132,7 @@ export default function BrandsPage() {
 
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
-          className="inline-flex items-center space-x-2 px-5 py-2.5 bg-primary text-white text-xs sm:text-sm font-semibold rounded-xl hover:bg-primary/95 transition-all shadow-xs active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary min-h-[40px]"
+          className="inline-flex items-center space-x-2 px-5 py-2.5 bg-primary text-primary-fg text-xs sm:text-sm font-semibold rounded-xl hover:bg-primary/95 transition-all shadow-xs active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary min-h-[40px]"
         >
           {showCreateForm ? (
             <>
@@ -152,7 +152,7 @@ export default function BrandsPage() {
       {showCreateForm && (
         <form
           onSubmit={handleCreateBrand}
-          className="p-6 sm:p-7 bg-white rounded-2xl border border-ink/10 shadow-sm space-y-6"
+          className="p-6 sm:p-7 bg-surface rounded-2xl border border-border-subtle shadow-sm space-y-6"
         >
           <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
             <Building2 className="w-4 h-4 text-primary" />
@@ -176,7 +176,7 @@ export default function BrandsPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Rewired"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-paper/30 font-medium text-ink"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-surface-muted font-medium text-ink"
               />
             </div>
 
@@ -189,7 +189,7 @@ export default function BrandsPage() {
                 value={wordmark}
                 onChange={(e) => setWordmark(e.target.value)}
                 placeholder="e.g. REWIRED"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-paper/30 font-medium text-ink"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-surface-muted font-medium text-ink"
               />
             </div>
 
@@ -202,7 +202,7 @@ export default function BrandsPage() {
                 value={whatYouSell}
                 onChange={(e) => setWhatYouSell(e.target.value)}
                 placeholder="e.g. High-performance wireless audio"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-paper/30 font-medium text-ink"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-surface-muted font-medium text-ink"
               />
             </div>
 
@@ -215,7 +215,7 @@ export default function BrandsPage() {
                 value={tone}
                 onChange={(e) => setTone(e.target.value)}
                 placeholder="e.g. Direct, technical, energetic"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-paper/30 font-medium text-ink"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-surface-muted font-medium text-ink"
               />
             </div>
 
@@ -228,7 +228,7 @@ export default function BrandsPage() {
                 value={slogan}
                 onChange={(e) => setSlogan(e.target.value)}
                 placeholder="e.g. Engineered for pure focus"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-paper/30 font-medium text-ink"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-surface-muted font-medium text-ink"
               />
             </div>
 
@@ -241,7 +241,7 @@ export default function BrandsPage() {
                 value={footerText}
                 onChange={(e) => setFooterText(e.target.value)}
                 placeholder="e.g. Free shipping on orders over $50."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-paper/30 font-medium text-ink"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-surface-muted font-medium text-ink"
               />
             </div>
           </div>
@@ -255,7 +255,7 @@ export default function BrandsPage() {
               value={neverDoRules}
               onChange={(e) => setNeverDoRules(e.target.value)}
               placeholder="e.g. Never use vintage filters; never show tangled cables; never use neon text."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-paper/30 font-medium text-ink leading-relaxed"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-surface-muted font-medium text-ink leading-relaxed"
             />
           </div>
 
@@ -268,7 +268,7 @@ export default function BrandsPage() {
               {colors.map((hex) => (
                 <div
                   key={hex}
-                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-ink/15 bg-paper/60 text-xs font-mono font-medium"
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-border-subtle bg-surface-muted text-xs font-mono font-medium text-ink"
                 >
                   <span
                     className="w-3.5 h-3.5 rounded-full border border-black/10 shadow-2xs"
@@ -292,19 +292,19 @@ export default function BrandsPage() {
                 type="color"
                 value={newColor}
                 onChange={(e) => setNewColor(e.target.value)}
-                className="w-9 h-9 rounded-xl border border-ink/20 cursor-pointer p-0.5 bg-paper"
+                className="w-9 h-9 rounded-xl border border-border-subtle cursor-pointer p-0.5 bg-surface"
               />
               <input
                 type="text"
                 value={newColor}
                 onChange={(e) => setNewColor(e.target.value)}
                 placeholder="#HEX"
-                className="w-28 px-3 py-2 border border-ink/20 rounded-xl text-xs font-mono uppercase bg-paper/30 font-medium"
+                className="w-28 px-3 py-2 border border-border-subtle rounded-xl text-xs font-mono uppercase bg-surface-muted font-medium text-ink"
               />
               <button
                 type="button"
                 onClick={addColor}
-                className="px-4 py-2 bg-ink/10 text-ink text-xs rounded-xl hover:bg-ink/20 font-semibold transition-all active:scale-[0.98]"
+                className="px-4 py-2 bg-surface-muted border border-border-subtle text-ink text-xs rounded-xl hover:border-border-strong font-semibold transition-all active:scale-[0.98]"
               >
                 Add Color
               </button>
@@ -315,14 +315,14 @@ export default function BrandsPage() {
             <button
               type="button"
               onClick={() => setShowCreateForm(false)}
-              className="px-4 py-2.5 border border-ink/20 rounded-xl text-sm font-semibold hover:bg-ink/5 transition-all text-layout-layer hover:text-ink active:scale-[0.98]"
+              className="px-4 py-2.5 border border-border-subtle rounded-xl text-sm font-semibold hover:bg-surface-muted transition-all text-layout-layer hover:text-ink active:scale-[0.98]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex items-center space-x-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/95 transition-all shadow-xs active:scale-[0.98] disabled:opacity-50"
+              className="inline-flex items-center space-x-2 px-5 py-2.5 bg-primary text-primary-fg rounded-xl text-sm font-semibold hover:bg-primary/95 transition-all shadow-xs active:scale-[0.98] disabled:opacity-50"
             >
               {submitting ? (
                 <>
@@ -344,8 +344,8 @@ export default function BrandsPage() {
           <p className="text-layout-layer text-sm font-medium">Loading brands...</p>
         </div>
       ) : brands.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-ink/20 p-8 space-y-4">
-          <div className="w-12 h-12 rounded-2xl bg-ink/5 mx-auto flex items-center justify-center text-layout-layer">
+        <div className="text-center py-20 bg-surface rounded-2xl border border-dashed border-border-strong p-8 space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-surface-muted border border-border-subtle mx-auto flex items-center justify-center text-layout-layer">
             <Building2 className="w-6 h-6" />
           </div>
           <div className="space-y-1">
@@ -363,10 +363,10 @@ export default function BrandsPage() {
             return (
               <div
                 key={brand.id}
-                className={`p-6 bg-white rounded-2xl border shadow-xs space-y-4 transition-all duration-150 flex flex-col justify-between ${
+                className={`p-6 bg-surface rounded-2xl border shadow-xs space-y-4 transition-all duration-150 flex flex-col justify-between ${
                   isActive
                     ? 'border-primary ring-2 ring-primary/20 shadow-sm'
-                    : 'border-ink/10 hover:border-primary/40 hover:shadow-xs'
+                    : 'border-border-subtle hover:border-primary/40 hover:shadow-xs'
                 }`}
               >
                 <div className="space-y-3.5">
@@ -376,7 +376,7 @@ export default function BrandsPage() {
                     </h3>
                     <div className="flex items-center space-x-1.5">
                       {isActive && (
-                        <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary text-white shadow-2xs">
+                        <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary text-primary-fg shadow-2xs">
                           <Check className="w-3 h-3" />
                           <span>Active Theme</span>
                         </span>
@@ -421,9 +421,9 @@ export default function BrandsPage() {
                   )}
                 </div>
 
-                <div className="space-y-3 pt-3 border-t border-ink/10">
+                <div className="space-y-3 pt-3 border-t border-border-subtle">
                   {brand.never_do_rules && (
-                    <div className="text-xs bg-ink/5 p-3 rounded-xl text-ink/80 flex items-start space-x-2 border border-ink/5">
+                    <div className="text-xs bg-surface-muted p-3 rounded-xl text-ink/90 flex items-start space-x-2 border border-border-subtle">
                       <ShieldAlert className="w-3.5 h-3.5 text-danger shrink-0 mt-0.5" />
                       <span className="leading-relaxed">
                         <strong className="text-danger font-semibold">Never:</strong> {brand.never_do_rules}
@@ -435,7 +435,7 @@ export default function BrandsPage() {
                     <button
                       type="button"
                       onClick={() => switchBrand(brand.id)}
-                      className="w-full inline-flex items-center justify-center space-x-1.5 py-2 px-3 rounded-xl border border-ink/15 hover:border-primary hover:bg-primary/5 text-xs font-semibold text-ink hover:text-primary transition-all active:scale-[0.98]"
+                      className="w-full inline-flex items-center justify-center space-x-1.5 py-2 px-3 rounded-xl border border-border-subtle hover:border-primary hover:bg-primary/10 text-xs font-semibold text-ink hover:text-primary transition-all active:scale-[0.98]"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                       <span>Use {brand.name} Colors</span>

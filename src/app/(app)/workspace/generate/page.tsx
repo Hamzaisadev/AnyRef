@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   UploadCloud,
@@ -17,7 +17,6 @@ import {
   Loader2,
   ArrowRight,
 } from 'lucide-react';
-import type { Brand } from '@/domain/brand';
 import type { GenerateOutput } from '@/ai/schemas';
 import { useBrand } from '@/context/BrandContext';
 
@@ -177,10 +176,10 @@ export default function GenerateStudioPage() {
       {/* Main Studio View */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         {/* Left: Input & Dropzone */}
-        <div className="bg-white p-6 sm:p-7 rounded-2xl border border-ink/10 shadow-sm space-y-6">
+        <div className="bg-surface p-6 sm:p-7 rounded-2xl border border-border-subtle shadow-xs space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
-              <span className="w-6 h-6 rounded-lg bg-ink/5 flex items-center justify-center text-xs font-mono font-bold text-ink">
+              <span className="w-6 h-6 rounded-lg bg-surface-muted flex items-center justify-center text-xs font-mono font-bold text-ink border border-border-subtle">
                 1
               </span>
               <span>Upload Poster Reference</span>
@@ -194,10 +193,10 @@ export default function GenerateStudioPage() {
             <select
               value={selectedBrandId}
               onChange={(e) => switchBrand(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-paper/30 font-medium text-ink cursor-pointer"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-surface-muted font-medium text-ink cursor-pointer"
             >
               {brands.map((b) => (
-                <option key={b.id} value={b.id}>
+                <option key={b.id} value={b.id} className="bg-surface text-ink">
                   {b.name} {b.wordmark ? `(${b.wordmark})` : ''}
                 </option>
               ))}
@@ -211,7 +210,7 @@ export default function GenerateStudioPage() {
             className={`border-2 border-dashed rounded-2xl p-8 text-center space-y-4 transition-all duration-150 cursor-pointer relative ${
               dragActive
                 ? 'border-primary bg-primary/5 ring-4 ring-primary/10'
-                : 'border-ink/20 hover:border-primary/50 bg-paper/40'
+                : 'border-border-strong hover:border-primary/50 bg-surface-muted'
             }`}
           >
             <input
@@ -226,7 +225,7 @@ export default function GenerateStudioPage() {
                 <img
                   src={previewUrl}
                   alt="Reference Preview"
-                  className="max-h-72 mx-auto rounded-xl shadow-xs border border-ink/10 object-contain"
+                  className="max-h-72 mx-auto rounded-xl shadow-xs border border-border-subtle object-contain"
                 />
                 <p className="text-xs text-layout-layer font-medium">
                   Click or drag another image to replace
@@ -252,7 +251,7 @@ export default function GenerateStudioPage() {
           <button
             onClick={handleGenerate}
             disabled={generating || !file}
-            className="w-full py-3.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary/95 transition-all duration-150 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 text-sm flex items-center justify-center space-x-2 active:scale-[0.98] min-h-[48px]"
+            className="w-full py-3.5 bg-primary text-primary-fg font-semibold rounded-xl hover:opacity-90 transition-all duration-150 shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 text-sm flex items-center justify-center space-x-2 active:scale-[0.98] min-h-[48px]"
           >
             {generating ? (
               <>
@@ -269,10 +268,10 @@ export default function GenerateStudioPage() {
         </div>
 
         {/* Right: Deconstructed Template & Slot Syntax */}
-        <div className="bg-white p-6 sm:p-7 rounded-2xl border border-ink/10 shadow-sm space-y-6">
+        <div className="bg-surface p-6 sm:p-7 rounded-2xl border border-border-subtle shadow-xs space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
-              <span className="w-6 h-6 rounded-lg bg-ink/5 flex items-center justify-center text-xs font-mono font-bold text-ink">
+              <span className="w-6 h-6 rounded-lg bg-surface-muted flex items-center justify-center text-xs font-mono font-bold text-ink border border-border-subtle">
                 2
               </span>
               <span>Deconstruction Output</span>
@@ -282,7 +281,7 @@ export default function GenerateStudioPage() {
               <button
                 onClick={handleSaveEntry}
                 disabled={saving}
-                className="inline-flex items-center space-x-1.5 px-4 py-2 bg-success text-white text-xs font-semibold rounded-xl hover:bg-success/95 transition-all shadow-xs active:scale-[0.98] disabled:opacity-50 min-h-[36px]"
+                className="inline-flex items-center space-x-1.5 px-4 py-2 bg-success text-white text-xs font-semibold rounded-xl hover:opacity-90 transition-all shadow-xs active:scale-[0.98] disabled:opacity-50 min-h-[36px]"
               >
                 {saving ? (
                   <>
@@ -314,7 +313,7 @@ export default function GenerateStudioPage() {
           ) : proposal ? (
             <div className="space-y-5">
               {/* Syntax Token Guide */}
-              <div className="flex flex-wrap items-center gap-3 text-xs bg-paper/80 p-3 rounded-xl border border-ink/10">
+              <div className="flex flex-wrap items-center gap-3 text-xs bg-surface-muted p-3 rounded-xl border border-border-subtle">
                 <span className="flex items-center space-x-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-brand-layer" />
                   <span className="text-brand-layer font-semibold">Brand Slot</span>
@@ -331,12 +330,12 @@ export default function GenerateStudioPage() {
 
               {/* Template Display */}
               <div className="relative group">
-                <div className="p-4 bg-paper rounded-xl border border-ink/15 font-mono text-xs text-ink/90 leading-relaxed whitespace-pre-wrap select-all max-h-60 overflow-y-auto">
+                <div className="p-4 bg-surface-muted rounded-xl border border-border-subtle font-mono text-xs text-ink/90 leading-relaxed whitespace-pre-wrap select-all max-h-60 overflow-y-auto">
                   {proposal.prompt_template}
                 </div>
                 <button
                   onClick={handleCopyTemplate}
-                  className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-white/90 border border-ink/10 text-layout-layer hover:text-ink shadow-2xs transition-all opacity-80 hover:opacity-100"
+                  className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-surface border border-border-subtle text-layout-layer hover:text-ink shadow-2xs transition-all opacity-80 hover:opacity-100"
                   title="Copy template"
                 >
                   {copiedTemplate ? (
@@ -354,7 +353,7 @@ export default function GenerateStudioPage() {
                     Configured Slots ({proposal.slots.length})
                   </h3>
                   {proposal.poster_type && (
-                    <span className="text-[11px] font-mono uppercase bg-ink/5 px-2 py-0.5 rounded text-layout-layer">
+                    <span className="text-[11px] font-mono uppercase bg-surface-muted px-2 py-0.5 rounded text-layout-layer border border-border-subtle font-medium">
                       {proposal.poster_type}
                     </span>
                   )}
@@ -368,7 +367,7 @@ export default function GenerateStudioPage() {
                     return (
                       <div
                         key={slot.key}
-                        className="flex items-center justify-between p-3 rounded-xl bg-paper/60 border border-ink/10 text-xs hover:border-ink/20 transition-colors"
+                        className="flex items-center justify-between p-3 rounded-xl bg-surface-muted border border-border-subtle text-xs hover:border-border-strong transition-colors"
                       >
                         <div className="flex items-center space-x-2.5 min-w-0">
                           <span
@@ -400,7 +399,7 @@ export default function GenerateStudioPage() {
             </div>
           ) : (
             <div className="py-24 text-center text-layout-layer space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-ink/5 mx-auto flex items-center justify-center text-layout-layer">
+              <div className="w-12 h-12 rounded-2xl bg-surface-muted mx-auto flex items-center justify-center text-layout-layer border border-border-subtle">
                 <Sparkles className="w-6 h-6" />
               </div>
               <div className="space-y-1">

@@ -52,14 +52,14 @@ export default function HomePage() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
           <Link
             href="/workspace/generate"
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-7 py-3.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary/95 transition-all duration-150 shadow-sm active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 text-sm sm:text-base min-h-[48px]"
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-7 py-3.5 bg-primary text-primary-fg font-semibold rounded-xl hover:bg-primary/95 transition-all duration-150 shadow-sm active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 text-sm sm:text-base min-h-[48px]"
           >
             <span>Deconstruct a Poster</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
             href="/library"
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-7 py-3.5 bg-paper border border-ink/15 text-ink font-semibold rounded-xl hover:bg-ink/5 transition-all duration-150 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 text-sm sm:text-base min-h-[48px]"
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-7 py-3.5 bg-surface border border-border-subtle text-ink font-semibold rounded-xl hover:bg-surface-muted transition-all duration-150 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 text-sm sm:text-base min-h-[48px]"
           >
             <span>Browse Winners Library</span>
           </Link>
@@ -67,7 +67,7 @@ export default function HomePage() {
 
         {/* Feature Highlights */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-8 text-left">
-          <div className="p-6 rounded-2xl border border-ink/10 bg-white/70 shadow-2xs space-y-3 hover:border-brand-layer/30 transition-colors">
+          <div className="p-6 rounded-2xl border border-border-subtle bg-surface shadow-2xs space-y-3 hover:border-brand-layer/30 transition-colors">
             <div className="w-10 h-10 rounded-xl bg-brand-layer/10 flex items-center justify-center text-brand-layer">
               <Sparkles className="w-5 h-5" />
             </div>
@@ -77,7 +77,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl border border-ink/10 bg-white/70 shadow-2xs space-y-3 hover:border-accent/30 transition-colors">
+          <div className="p-6 rounded-2xl border border-border-subtle bg-surface shadow-2xs space-y-3 hover:border-accent/30 transition-colors">
             <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
               <ShieldCheck className="w-5 h-5" />
             </div>
@@ -87,7 +87,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl border border-ink/10 bg-white/70 shadow-2xs space-y-3 hover:border-success/30 transition-colors">
+          <div className="p-6 rounded-2xl border border-border-subtle bg-surface shadow-2xs space-y-3 hover:border-success/30 transition-colors">
             <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success">
               <Repeat className="w-5 h-5" />
             </div>

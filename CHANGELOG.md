@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Dark Mode Surface & Contrast Overhaul**:
+  - Eliminated all hardcoded `bg-white` card surfaces across all pages and components that caused white-on-white unreadable text and blinding white boxes on dark mode canvas.
+  - Implemented unified semantic surface tokens (`--surface`, `--surface-hover`, `--surface-muted`, `--border-subtle`, `--border-strong`, `--primary-fg`, `--accent-fg`) in `tailwind.config.ts` and `src/app/globals.css`.
+  - Upgraded dark mode palette: rich slate studio canvas (`#090A10`), elevated surface cards (`#12131F`), subtle muted surfaces (`#1A1C2E`), and crisp translucent borders (`rgba(255,255,255,0.08)`).
+  - Replaced high-contrast stark active nav pill with brand-harmonized tint `bg-primary/15 text-primary border border-primary/25`.
+  - Refactored `Navigation`, `BrandSwitcher`, `library/page.tsx`, `workspace/generate/page.tsx`, `workspace/autofill/page.tsx`, `entries/[id]/page.tsx`, `entries/[id]/compare/page.tsx`, `brands/page.tsx`, `login/page.tsx`, and `page.tsx` to use the semantic surface token architecture with guaranteed $\ge 4.5:1$ WCAG contrast.
+
 ### Added
 - **Dynamic Brand Color & Theming Engine**:
   - Pure brand theme resolver (`src/lib/brandTheme.ts`) mapping brand color palettes to CSS variables (`--primary`, `--primary-rgb`, `--accent`, `--accent-rgb`, `--brand-layer`, etc.) with WCAG contrast foreground calculation and neutral-ink detection.
