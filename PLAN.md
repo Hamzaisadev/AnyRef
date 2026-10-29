@@ -10,13 +10,13 @@
 
 | Item | Decision | Reason |
 |---|---|---|
-| Users | Multi-user from day one. Each user can create unlimited brands (you start with Rewired and Riwayat). Every row has `user_id`, RLS enforced. Sign-ups are invite-only at first, controlled by one config flag. | No user or brand limits are built in, so opening it up later needs no rewrite. |
+| Users | Public multi-tenant SaaS with open sign-up. 3 roles: `owner`, `admin`, `user`. Owner and admin have unlimited limits and no ads; users have plan limits (`free` with ads vs `plus` without ads). Tenant isolation strictly enforced via RLS. | Public product launch per AGENT_PROMPT_PUBLIC_LAUNCH.md. |
 | Stack | Next.js (App Router) + TypeScript strict, Supabase (Postgres, Auth, Storage, RLS), Zod, Gemini API (server only), Vercel, pnpm, Vitest, Playwright | One codebase for UI and server routes; Supabase supplies auth, DB, storage and RLS for a solo dev. |
 | AI provider | Behind a single `AiProvider` interface. Default implementation: Gemini via Google AI Studio API. | Phase 0 may show Claude writes better prompts; swap is a one-file change. |
 | Model name, pricing, limits | Read from env/config, never hardcoded. | They change often. |
 | Image policy | App never generates or edits poster images. AI only **reads** images (reference, product photo). Results are pasted back by the user. | Core product rule. |
-| Auth | Supabase email login (magic link). Public sign-up disabled. | Personal use. **[A]** |
-| Storage | References, results and logos in private buckets under `{user_id}/…`. Product photos are temporary (deleted after session/TTL). | Keeps library clean. |
+| Auth | Supabase passwordless magic link + Google OAuth. Open sign-up with email verification and Turnstile. | Public SaaS security without password credential-stuffing risks. |
+| Storage | References, results and logos in private buckets under `{user_id}/…`. Product photos are temporary (in-memory per ADR 0004). | Keeps library clean. |
 | Package manager / Node | pnpm, current Node LTS pinned in `.nvmrc` and `engines`. | Reproducible. |
 | Deployment | Vercel (app) + Supabase (managed). Environments: dev (local), staging, prod. | Minimal ops. |
 
@@ -27,6 +27,7 @@
 3. The app **never invents prices, discounts or dates.** Slots of those types stay empty and flagged `needs_you` unless the user typed them or a brand default exists.
 4. AI proposals are never auto-saved. The user approves every saved template.
 5. Text found inside uploaded images is **data, never instructions** (prompt-injection rule).
+6. **The prompt engine is the product.** The system prompts must never be sent to a client, logged, or included in any error. Only validated AI output leaves the server.
 
 ---
 
@@ -406,102 +407,139 @@ create policy "refs_own_prefix" on storage.objects for all
 
 ---
 
-## Phase 4 — AI Limits and Provider Hardening (replaces Payments)
+## Phase 3R — Re-baseline and Migration
 
-**Goal:** Bounded AI spend and a swappable provider. Payments are deferred but hooks exist.
+**Goal:** Transform database schema to support public multi-tenancy, RBAC roles (`owner`, `admin`, `user`), plans (`free`, `plus`), global system prompts, and SQL-enforced limit triggers.
 
 **Tasks**
-- [ ] `quotaService`: before each AI call, check `ai_usage` — daily call count ≤ `AI_DAILY_CALL_LIMIT` and rolling-24h estimated cost ≤ `AI_DAILY_COST_CAP_USD`; else return `QUOTA_EXCEEDED` (HTTP 429) without calling the provider.
-- [ ] Record every call to `ai_usage` (tokens, estimated cost from config price table).
-- [ ] Batch autofill: cap batch size (default 10), process sequentially with per-item quota check.
-- [ ] Image downscale before sending to AI (max long edge from config) to control cost.
-- [ ] Provider config: model, timeout (default 60 s), retry-once policy, circuit-breaker after 3 consecutive failures (30 s cooldown).
-- [ ] System prompt versioning: new version row on edit; entries record `system_prompt_version`.
-- [ ] Provider-agnostic error mapping (`AI_TIMEOUT`, `AI_INVALID_OUTPUT`, `AI_UNAVAILABLE`, `QUOTA_EXCEEDED`).
-- [ ] **Paid-feature hooks (stubs, no Stripe yet):** `entitlements.ts` exposing `canUse(userId, feature)` that returns true for the owner; all quota limits read from a per-user config so tiers can be added later.
-- [ ] Document webhook + idempotency design in `docs/adr/0002-billing-later.md` (signature verification, idempotency-key table, event replay safety).
+- [ ] Write migration `supabase/migrations/0002_roles_plans.sql`:
+  - `app_role` enum (`'owner'`, `'admin'`, `'user'`), `account_status` enum (`'active'`, `'suspended'`, `'pending_deletion'`).
+  - `plans` table (`id`, `name`, `price_usd_month`, `price_usd_year`, `limits`, `show_ads`, `is_active`) seeded with `free` and `plus`.
+  - `profiles` table (`user_id`, `role`, `status`, `plan_id`, `plan_source`, `comp_until`, `tos_version`, `tos_accepted_at`, `age_confirmed_at`, `created_at`).
+  - Unique partial index `one_owner on profiles (role) where role = 'owner'`.
+  - `subscriptions`, `webhook_events`, `quota_overrides`, `app_settings`, `audit_log`, `consent_records`.
+  - Globalize `system_prompts` (drop `user_id` ownership, add `updated_by` admin/owner only).
+  - Helper functions `public.has_role(roles)` and `public.effective_limit(uid, key)`.
+  - Database limit trigger `enforce_brand_limit()` on `brands`.
+- [ ] Create `scripts/bootstrap-owner.ts` using `OWNER_EMAIL`.
+- [ ] Update RLS policies: admin can view user profiles, spend analytics, and audit log, but CANNOT read user `brands`, `entries`, or images.
+- [ ] Update `src/lib/env.ts` with `OWNER_EMAIL` and `ADMIN_MFA_REQUIRED`.
 
-**Files:** `src/services/quotaService.ts`, `src/data/usageRepo.ts`, `src/ai/*`, `src/services/entitlements.ts`, `docs/adr/0002-billing-later.md`.
+**Security checks:** no policy references `user_metadata`; owner uniqueness enforced by index + trigger.
 
-**Security checks:** API key only read in `geminiProvider` on the server; key never appears in logs (logger redaction test); quota enforced server-side only; client cannot pass model name or limits.
+**Tests:** SQL tests: user cannot update their own role/plan/status; second owner insert fails; limit triggers block user N+1 but not admin.
 
-**Tests:** unit — quota math, cost cap, circuit breaker; integration — exceeding limit returns 429 and provider is not called; redaction test greps captured logs for key patterns.
-
-**DoD:** with `AI_DAILY_CALL_LIMIT=2`, the third call is refused; usage rows recorded; swapping `AI_PROVIDER` works with the stub provider in tests.
+**DoD:** all existing Phase 0–3 tests still pass; new SQL tests pass; ADRs and `PLAN.md` updated.
 
 ---
 
-## Phase 5 — Hardening
+## Phase 4 — Authentication and Authorization
 
-**Goal:** Close common web attack surfaces.
+**Goal:** Open public sign-up, email verification, account lifecycle, central `can()` authorization, real `entitlements.ts`, and staff MFA.
 
 **Tasks**
-- [ ] CORS: API routes same-origin only; explicit allowlist from env; reject others.
-- [ ] Rate limiting on all `/api/*` (per user + per IP; stricter on `/api/generate`, `/api/autofill`, `/api/upload`, login). Use a Postgres- or Upstash-backed limiter via `lib/rateLimit.ts`. **[A]** Upstash Redis free tier.
-- [ ] Security headers in `next.config`: CSP (no inline scripts, nonce-based), HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `frame-ancestors 'none'`.
-- [ ] CSRF: same-site cookies + origin check on mutating routes.
-- [ ] Secrets audit: grep client bundle for key patterns in CI; confirm only `NEXT_PUBLIC_*` vars are client-visible.
-- [ ] Dependency audit: `pnpm audit --prod` in CI (fail on high/critical), Dependabot weekly, lockfile committed.
-- [ ] Error boundaries: `error.tsx`, `global-error.tsx`, per-panel boundaries on compare and form.
-- [ ] Error-message leakage review: central `AppError` → safe user message + internal code; no stack traces, SQL errors, or provider responses in HTTP bodies; log details server-side with a request id.
-- [ ] Brute-force protection on login (rate limit + Supabase built-in).
+- [ ] Passwordless magic link + Google OAuth with automatic `profiles` row generation on sign-up.
+- [ ] Email-verified check in `requireUser()`; block sign-in for `suspended` and `pending_deletion` accounts.
+- [ ] Bot protection: Cloudflare Turnstile on sign-in; rate limits on sending magic links; disposable-email blocklist.
+- [ ] Terms of Service and age confirmation (minimum age 16) recorded in `consent_records`.
+- [ ] Central authorization service `src/services/authz.ts` implementing `can(actor, action, target)`.
+- [ ] Real entitlement engine `src/services/entitlements.ts` returning `{ role, planId, limits, features, showAds }`.
+- [ ] Staff TOTP MFA enrollment and AAL2 enforcement on `/admin`.
+- [ ] Self-serve account deletion (sets `pending_deletion`, 14-day recovery window) and async data export job.
 
-**Files:** `next.config.ts`, `src/middleware.ts`, `src/lib/{rateLimit,errors,logger}.ts`, `.github/workflows/ci.yml`.
+**Files:** `src/services/{authz,entitlements,accountService,exportService}.ts`, `src/app/(auth)/*`, `src/app/(app)/settings/*`, `scripts/bootstrap-owner.ts`, `src/middleware.ts`.
 
-**Security checks:** run OWASP ZAP baseline against staging; header check with securityheaders.com-equivalent tooling.
+**Tests:** unit for `can()` over every cell of the permission matrix; integration: suspended user gets 403 on every route; role escalation attempts fail; E2E deletion and export.
 
-**Tests:** integration — 429 after threshold; cross-origin request rejected; forced exceptions return generic body + request id; E2E — error boundary renders when the API is mocked to fail.
-
-**DoD:** ZAP baseline shows no high findings; bundle scan finds no secrets; all forced-error cases leak nothing.
+**DoD:** permission matrix fully verified in tests; staff routes reject non-AAL2 sessions; deletion and export verified end to end.
 
 ---
 
-## Phase 6 — Deployment and Operations
+## Phase 5 — Admin Panel
 
-**Goal:** Repeatable deploys, backups you've actually restored, and visibility.
+**Goal:** Dedicated `/admin` interface for owner and operational staff with strict audit logging and privacy boundaries.
 
 **Tasks**
-- [ ] Environments: local (Supabase CLI), staging (separate Supabase project + Vercel preview), production. Separate keys per environment.
-- [ ] HTTPS/SSL: Vercel-managed certificates, HSTS preload-ready, redirect HTTP→HTTPS; custom domain once chosen.
-- [ ] Migrations run via CI on staging then production; never edit prod by hand.
-- [ ] Backups: Supabase daily backups (enable PITR if plan allows) + weekly `pg_dump` and storage export to a separate private bucket/location. **Restore test:** restore into a scratch project and verify row counts and image access. Document in `docs/runbooks/restore.md`.
-- [ ] Logging: structured JSON logs with request id and user id (hashed), redaction list; Vercel log drain or Axiom/Logtail free tier. **[A]**
-- [ ] Monitoring and alerting: uptime check on `/api/health`, error tracking (Sentry), alert on error spike, AI quota near limit (80%), and storage near plan limit.
-- [ ] Automated security scanning: `gitleaks`, CodeQL, Dependabot, weekly ZAP baseline against staging (scheduled workflow).
-- [ ] Runbooks: deploy, rollback, restore, rotate keys, incident response.
-- [ ] Product-photo TTL job (scheduled) verified in prod.
+- [ ] Admin layout with sub-nav: Overview, Users, Abuse Review, Plans, Engine, Cost & Limits, Audit Log, Staff.
+- [ ] Overview dashboard: signups, active users, AI calls, estimated cost today/7d, Plus subscribers, kill-switch state.
+- [ ] User directory: search, filter, detail view, actions (suspend, comp plan, quota override, force sign-out).
+- [ ] Abuse review workflow: requires explicit reason, logged to `audit_log`, shows flagged content.
+- [ ] Owner-only views: Plans editor, Engine system prompt editor & test run, Staff management (promote/demote admin).
+- [ ] Append-only `audit_log` recording every admin action in the same transaction.
 
-**Deferred (written in `docs/deferred.md`):** privacy policy, terms of service, cookie/consent banner, data export/deletion endpoints — required before inviting any other user.
+**Files:** `src/app/(app)/admin/*`, `src/services/adminService.ts`, `src/data/auditRepo.ts`.
 
-**Files:** `.github/workflows/{deploy,security}.yml`, `docs/runbooks/*`, `src/app/api/health/route.ts`.
+**Tests:** every admin action produces exactly one audit row; admin cannot suspend owner/admin; admin cannot read brands/entries via RLS; owner-only views return 403 for admin.
 
-**Security checks:** prod and staging keys differ; service-role key only in prod server env; branch protection on `main`.
-
-**Tests:** health check E2E against staging; restore drill completed and logged; alert test fires to your email/phone.
-
-**DoD:** staging and prod live over HTTPS; restore drill succeeded and documented; at least one alert verified end to end; scanners green.
+**DoD:** every cell of the matrix passes in tests; audit log is append-only.
 
 ---
 
-## Phase 7 — Personal Release
+## Phase 6 — Plans, Quotas and Billing
 
-**Goal:** Daily use by you, with a safe way back.
+**Goal:** Enforce plan limits, global cost cap, and merchant-of-record billing with idempotent webhooks.
 
 **Tasks**
-- [ ] Final security re-check using the traceability table below; fix any gap.
-- [ ] Import your existing Keep prompts via the import tool; tag poster types; mark known Winners.
-- [ ] Create the Rewired and Riwayat brand profiles (colors, wordmark, footer text, defaults, never-do rules).
-- [ ] Run one real poster per brand end to end.
-- [ ] Performance budget: Library first load under 2 s on mobile 4G (LCP < 2.5 s); images lazy-loaded with thumbnails; Lighthouse performance ≥ 85.
-- [ ] Rollback plan: Vercel instant rollback to previous deployment; DB migrations are forward-only with a documented down-script for the latest migration; verified once on staging.
-- [ ] Tag `v0.1.0`; update `CHANGELOG.md`.
-- [ ] Launch checklist in `docs/runbooks/launch.md`: backups verified, alerts on, quotas set, sign-ups disabled, secrets rotated after spike, README accurate.
+- [ ] Dynamic plan limits via `effective_limit` in `quotaService`.
+- [ ] Global protections: `ai_kill_switch` stops all AI calls; `global_daily_cost_cap_usd` auto-trips the switch.
+- [ ] Merchant-of-Record billing adapter (`BillingProvider`) for checkout and customer portal.
+- [ ] Webhook route (`/api/webhooks/billing`): raw-body signature check, `webhook_events` idempotency table, `syncPlan()`.
+- [ ] Comp plan management and automated downgrade on expiry.
+- [ ] "Little Paywall" modal with usage meters, pricing, and feature comparison.
 
-**Security checks:** all 21 items in the table below marked Done or "Deferred (ready by design)".
+**Files:** `src/services/{billingService,quotaService,planService}.ts`, `src/app/api/webhooks/billing/route.ts`, `src/components/monetization/PaywallModal.tsx`.
 
-**Tests:** full E2E suite green on production-like staging; Lighthouse run recorded.
+**Tests:** webhook replay 5x produces 1 state change; out-of-order events ignored; bad signature rejected with 400; staff never blocked by quota.
 
-**DoD:** you use Anyref instead of Keep for a full week for both brands with no data loss; rollback drill done; `v0.1.0` tagged.
+**DoD:** full upgrade, cancel and downgrade cycle works in provider test mode; limits update immediately after webhook.
+
+---
+
+## Phase 7 — Ads and Consent
+
+**Goal:** Studio-grade ad monetization for Free tier with layout stability and full privacy compliance.
+
+**Tasks**
+- [ ] `AdProvider` interface + `<AdSlot>` component (renders only when `showAds=true` and `ads_enabled_global=true`).
+- [ ] Placements: library sidebar, bottom of library grid, generating state. Never on forms, prompt copy, login, or admin.
+- [ ] Fixed slot heights preventing CLS (Cumulative Layout Shift < 0.1).
+- [ ] Consent management: EEA/UK CMP integration + non-EEA banner recorded in `consent_records`.
+- [ ] Strict CSP allowlist for ad domains only on ad-eligible routes.
+- [ ] Public crawlable content pages (guides, landing page) for ad network approval.
+
+**Tests:** ad slots absent for Plus and staff; no ad script loads before consent where required; CSP on `/admin` and `/login` contains zero ad domains.
+
+**DoD:** ads render for free users with consent and vanish instantly upon upgrading.
+
+---
+
+## Phase 8 — Hardening (Public Extension)
+
+**Goal:** Close public SaaS attack surfaces, upload abuse, and prompt extraction.
+
+**Tasks**
+- [ ] Strict public rate limiting (per-user + per-IP; tighter on AI endpoints, upload, auth).
+- [ ] Storage quota enforcement in `assetService`.
+- [ ] Prompt-extraction attack tests against Engine (attempts to leak system prompts via image text or hints).
+- [ ] SSRF review: verify zero outbound calls to user-supplied URLs.
+- [ ] Admin panel penetration checklist and OWASP ZAP baseline scan.
+
+**DoD:** no high findings; zero system prompt text in any response, log, or error across tests.
+
+---
+
+## Phase 9 — Deployment, Compliance and Launch Readiness
+
+**Goal:** Production launch readiness with automated jobs, legal disclosures, and operational runbooks.
+
+**Tasks**
+- [ ] Scheduled background jobs: 14-day account hard-delete, photo TTL cleanup, comp plan expiry.
+- [ ] Legal documents drafted in `docs/legal/`: Terms of Service, Privacy Policy, Cookie Policy, DMCA Takedown.
+- [ ] Logging with user-id hashing and redaction.
+- [ ] Owner runbook: incident response, manual suspension, AI kill switch, restore drill.
+- [ ] Launch readiness checklist and load test (500 concurrent users).
+
+**DoD:** clean-room user can register, use free tier with ads, upgrade, cancel, and delete account; owner can run all runbook procedures.
 
 ---
 
@@ -512,32 +550,46 @@ create policy "refs_own_prefix" on storage.objects for all
 | 1 | Row-Level Security | 1 | `supabase/migrations/*` | SQL isolation tests (two users) |
 | 2 | Server-side authentication | 1 | `middleware.ts`, `requireUser()` | Integration: no-cookie request → 401 |
 | 3 | Protected routes | 1 | `middleware.ts`, `(app)/layout.tsx` | E2E redirect to `/login` |
-| 4 | No exposed secrets | 0, 5 | `lib/env.ts`, `server-only`, CI bundle scan | Bundle grep + gitleaks in CI |
-| 5 | CORS & rate limiting | 5 | `lib/rateLimit.ts`, `next.config.ts` | Integration: 429 and cross-origin rejection |
+| 4 | No exposed secrets | 0, 8 | `lib/env.ts`, `server-only`, CI bundle scan | Bundle grep + gitleaks in CI |
+| 5 | CORS & rate limiting | 8 | `lib/rateLimit.ts`, `next.config.ts` | Integration: 429 and cross-origin rejection |
 | 6 | Server-side validation | 3 | Zod schemas in every route | Unit + fuzz suite |
-| 7 | Parameterized queries | 3 | `src/data/*` | Lint/grep rule + injection payload test |
+| 7 | Parameterized queries | 3 | `src/data/*` | Static security audit (`securitySql.test.ts`) |
 | 8 | Output sanitization | 3 | `lib/sanitize.ts`, lint ban on `dangerouslySetInnerHTML` | Unit + stored-payload E2E |
-| 9 | File upload restrictions | 3 | `assetService.ts` | Spoofed MIME, oversize, corrupt-file tests |
-| 10 | Garbage-input testing | 3 | `tests/fuzz/*` | Fuzz suite green in CI |
-| 11 | Webhook verification | Deferred (ready by design) | `docs/adr/0002-billing-later.md` | Design reviewed; implement with Stripe |
-| 12 | Idempotency | Deferred (ready by design) | `docs/adr/0002-billing-later.md` | Design reviewed; implement with Stripe |
-| 13 | Server-gated features | 4 | `entitlements.ts` | Unit: gate returns false for non-owner/over-quota |
-| 14 | AI spend limits | 4 | `quotaService.ts`, `ai_usage` | Integration: 3rd call refused at limit 2 |
-| 15 | Dependency audit | 0, 5 | `ci.yml`, `dependabot.yml` | CI fails on high/critical |
-| 16 | Error boundaries | 5 | `error.tsx`, `global-error.tsx` | E2E with mocked failing API |
-| 17 | Error-message leakage | 5 | `lib/errors.ts` | Forced-error tests assert generic body |
-| 18 | Live scanning / auditing | 6 | `security.yml` (CodeQL, ZAP, gitleaks) | Scheduled workflow green |
-| 19 | HTTPS & SSL | 6 | Vercel config, HSTS header | Header check on staging/prod |
-| 20 | Backups & logging | 6 | `docs/runbooks/restore.md`, logger | Restore drill + log redaction test |
-| 21 | Legal & privacy basics | Deferred | `docs/deferred.md` | Required before any second user |
+| 9 | File upload restrictions | 3 | `assetService.ts` | Magic bytes, spoofed MIME, corrupt-file tests |
+| 10 | Garbage-input testing | 3 | `tests/fuzz/*` | 17 fuzz tests passing in CI |
+| 11 | Webhook verification | 6 | `api/webhooks/billing`, `billingService` | Signature verification tests |
+| 12 | Idempotency | 6 | `webhook_events`, `billingService` | Replay 5x test produces 1 change |
+| 13 | Server-gated features | 4, 6 | `entitlements.ts` | Unit: gate returns false for over-quota |
+| 14 | AI spend limits | 6 | `quotaService.ts`, `ai_usage` | Integration: quota refusal at ceiling |
+| 15 | Dependency audit | 0, 8 | `ci.yml`, `dependabot.yml` | CI fails on high/critical |
+| 16 | Error boundaries | 8 | `error.tsx`, `global-error.tsx` | E2E with mocked failing API |
+| 17 | Error-message leakage | 8 | `lib/errors.ts` | Forced-error tests assert generic body |
+| 18 | Live scanning / auditing | 8 | `security.yml` (CodeQL, ZAP, gitleaks) | Scheduled workflow green |
+| 19 | HTTPS & SSL | 9 | Vercel config, HSTS header | Header check on staging/prod |
+| 20 | Backups & logging | 9 | `docs/runbooks/restore.md`, logger | Restore drill + log redaction test |
+| 21 | Legal & privacy basics | 9 | `docs/legal/*` | Published ToS, Privacy, Cookie, DMCA pages |
+| 22 | Role model, owner bootstrap, no self-escalation | 3R, 4 | `profiles`, triggers, `bootstrap-owner.ts` | SQL escalation tests |
+| 23 | Staff MFA and short sessions | 4 | `authz.ts`, middleware | AAL2 enforcement tests |
+| 24 | Central authorization (`can()`) | 4 | `authz.ts` | Matrix test for every cell |
+| 25 | DB-enforced limits | 3R, 6 | limit triggers, `effective_limit` | Trigger tests, bypass attempts |
+| 26 | Append-only audit log | 5 | `audit_log`, `adminService` | Update/delete fails; one row per action |
+| 27 | Admin privacy boundary | 3R, 5 | RLS policies | Admin cannot read content via RLS |
+| 28 | Bot and signup abuse protection | 4, 8 | Turnstile, rate limits | Rate-limit and blocklist tests |
+| 29 | Ads consent and CSP isolation | 7 | `AdSlot`, CMP, CSP | No pre-consent scripts; clean CSP on `/admin` |
+| 30 | Prompt-engine protection | 6, 8 | `generateService`, Engine page | Extraction and leak tests |
+| 31 | Account deletion and export | 4, 9 | `accountService`, jobs | E2E removal verified |
+| 32 | Copyright takedown process | 9 | `docs/legal`, abuse queue | Process dry-run documented |
 
 ---
 
 ## 5. Assumptions (explicit)
 
-- **[A]** Magic-link email login; public sign-up is off by default (a config flag), with no cap on users or brands per user.
-- **[A]** Names, domains and handles (`anyref-app`, `anyref.app`) are unverified; check before creating.
-- **[A]** Free tiers of Supabase, Vercel, Sentry and Upstash suffice at this scale; the agent must check current plan limits and record them in `docs/architecture.md`.
-- **[A]** Gemini model name and pricing are read from env/config at run time; the agent must look up current values and not hardcode them.
-- **[A]** The user will supply their existing Claude-project instructions and 5 references/products for the Phase 0 spike.
-- **[A]** Reference-derived prompts are for the owner's own brands; any resale of prompts needs a separate IP review (deferred).
+- **[A]** Passwordless magic link + Google OAuth sign-in; public sign-up enabled.
+- **[A]** Staff sessions require TOTP MFA (AAL2) with 8-hour lifetime.
+- **[A]** Minimum user age confirmed at sign-up is 16.
+- **[A]** Customer past-due billing grace period is 7 days before downgrade to Free.
+- **[A]** Suspended accounts retain data for 30 days for review before deletion.
+- **[A]** Account deletion self-serve request has a 14-day cancelable recovery window.
+- **[A]** Merchant of Record billing provider selected to automate global sales tax and VAT.
+- **[A]** Ad revenue supported by Google AdSense / Carbon Ads / custom sponsors with EEA/UK CMP consent.
+- **[A]** Launch load testing budgeted for 500 concurrent users.
