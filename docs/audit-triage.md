@@ -76,8 +76,8 @@ Running status of external audit findings for Anyref stabilization.
 
 | Item | Claim | Status | Commit | Test Name | Notes |
 |---|---|---|---|---|---|
-| S5-1 | `URL.revokeObjectURL` missing on unmount/replace | `TODO` | | | |
-| S5-2 | Brand switcher hidden on mobile | `TODO` | | | |
-| S5-3 | Dark mode brand `--primary` contrast safe | `TODO` | | | |
-| S5-4 | `@media (prefers-reduced-motion: reduce)` | `TODO` | | | |
-| S5-5 | Remove confirmed dead code | `TODO` | | | |
+| S5-1 | `URL.revokeObjectURL` missing on unmount/replace | `src/app/(app)/workspace/autofill/page.tsx`, `src/app/(app)/workspace/generate/page.tsx`, `src/app/(app)/entries/[id]/compare/page.tsx` | `CONFIRMED-FIXED` | af61564 | `tests/unit/stage5Quality.test.ts` | Added `useEffect` unmount cleanup and drag-and-drop replacement revoking of object URLs across autofill, generate, and compare pages to prevent browser memory leaks. |
+| S5-2 | Brand switcher hidden on mobile | `src/components/Navigation.tsx`, `src/components/BrandSwitcher.tsx` | `CONFIRMED-FIXED` | af61564 | `tests/unit/stage5Quality.test.ts` | Made BrandSwitcher reachable on mobile navigation by removing `hidden sm:block` and adding adaptive max-width truncation on the select dropdown for narrow viewports. |
+| S5-3 | Dark mode brand `--primary` contrast safe | `src/lib/brandTheme.ts`, `src/app/globals.css` | `CONFIRMED-FIXED` | af61564 | `tests/unit/stage5Quality.test.ts`, `tests/unit/brandTheme.test.ts` | Implemented `ensureDarkContrast` to dynamically compute contrast-safe variant `darkPrimary` (guaranteeing >= 4.5:1 WCAG ratio against dark surface) injected under `@media (prefers-color-scheme: dark)`. |
+| S5-4 | `@media (prefers-reduced-motion: reduce)` | `src/app/globals.css` | `CONFIRMED-FIXED` | af61564 | `tests/unit/stage5Quality.test.ts` | Added `@media (prefers-reduced-motion: reduce)` rules in `globals.css` to eliminate animations, transitions, and smooth scrolling for users with vestibular/motion sensitivities. |
+| S5-5 | Remove confirmed dead code | `src/components/PaywallModal.tsx` | `CONFIRMED-FIXED` | af61564 | `tests/unit/stage5Quality.test.ts` | Deleted orphaned `PaywallModal.tsx` which was completely unreferenced by any route or component following Stage 4 honest billing stabilization. |
