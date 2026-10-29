@@ -1,4 +1,4 @@
-import { createClient } from '../lib/supabaseServer';
+import { createClient, createAdminClient } from '../lib/supabaseServer';
 import { UnauthorizedError, ForbiddenError } from '../lib/errors';
 import type { User } from '@supabase/supabase-js';
 import type { AppRole, AccountStatus } from './authz';
@@ -17,20 +17,46 @@ export interface UserProfile {
   rawUser: User;
 }
 
-export async function getUser(): Promise<UserProfile | null> {
+export async function getUser(req?: Request): Promise<UserProfile | null> {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
+    let authHeader: string | null = null;
+    if (req) {
+      authHeader = req.headers.get('authorization');
+    }
+    if (!authHeader) {
+      try {
+        const { headers } = await import('next/headers');
+        const h = await headers();
+        authHeader = h.get('authorization');
+      } catch {
+        // Outside request context
+      }
+    }
 
-    if (error || !user) {
-      return null;
+    let user: User | null = null;
+    let supabaseClient: any;
+
+    if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+      const token = authHeader.slice(7).trim();
+      const admin = createAdminClient();
+      const { data, error } = await admin.auth.getUser(token);
+      if (error || !data.user) {
+        return null;
+      }
+      user = data.user;
+      supabaseClient = admin;
+    } else {
+      const supabase = await createClient();
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) {
+        return null;
+      }
+      user = data.user;
+      supabaseClient = supabase;
     }
 
     // Fetch corresponding profile from profiles table
-    let { data: profile } = await supabase
+    let { data: profile } = await supabaseClient
       .from('profiles')
       .select('role, status, plan_id, tos_version, tos_accepted_at, age_confirmed_at')
       .eq('user_id', user.id)
@@ -42,7 +68,7 @@ export async function getUser(): Promise<UserProfile | null> {
       const userEmail = user.email?.toLowerCase();
       const initialRole: AppRole = ownerEmail && userEmail === ownerEmail ? 'owner' : 'user';
 
-      const { data: newProfile } = await supabase
+      const { data: newProfile } = await supabaseClient
         .from('profiles')
         .insert({
           user_id: user.id,
@@ -82,8 +108,8 @@ export async function getUser(): Promise<UserProfile | null> {
   }
 }
 
-export async function requireUser(): Promise<UserProfile> {
-  const profile = await getUser();
+export async function requireUser(req?: Request): Promise<UserProfile> {
+  const profile = await getUser(req);
   if (!profile) {
     throw new UnauthorizedError('Authentication required to access this resource.');
   }
