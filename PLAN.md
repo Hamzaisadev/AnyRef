@@ -477,39 +477,30 @@ create policy "refs_own_prefix" on storage.objects for all
 
 ## Phase 6 — Plans, Quotas and Billing
 
-**Goal:** Enforce plan limits, global cost cap, and merchant-of-record billing with idempotent webhooks.
+**Goal:** Enforce plan limits, global cost cap, and dormant merchant-of-record billing with idempotent webhooks.
 
 **Tasks**
 - [x] Dynamic plan limits via `effective_limit` in `quotaService`.
 - [x] Global protections: `ai_kill_switch` stops all AI calls; `global_daily_cost_cap_usd` auto-trips the switch.
-- [x] Merchant-of-Record billing adapter (`BillingProvider`) for checkout and customer portal.
-- [x] Webhook route (`/api/webhooks/billing`): raw-body signature check, `webhook_events` idempotency table, `syncPlan()`.
+- [x] Merchant-of-Record billing adapter (`BillingProvider`) - dormant / checkout disabled until paid launch.
+- [x] Webhook route (`/api/webhooks/billing`): raw-body signature check with configured secret, `webhook_events` idempotency table, `syncPlan()`.
 - [x] Comp plan management and automated downgrade on expiry.
-- [x] "Little Paywall" modal with usage meters, pricing, and feature comparison.
+- [x] Honest billing view: shows active quotas and honest "Plus is coming soon" state.
 
-**Files:** `src/services/{billingService,quotaService,planService}.ts`, `src/app/api/webhooks/billing/route.ts`, `src/components/monetization/PaywallModal.tsx`.
+**Files:** `src/services/{billingService,quotaService,planService}.ts`, `src/app/api/webhooks/billing/route.ts`, `src/app/(app)/billing/page.tsx`.
 
 **Tests:** webhook replay 5x produces 1 state change; out-of-order events ignored; bad signature rejected with 400; staff never blocked by quota.
 
-**DoD:** full upgrade, cancel and downgrade cycle works in provider test mode; limits update immediately after webhook.
-
 ---
 
-## Phase 7 — Ads and Consent
+## Phase 7 — Ads and Consent (Dormant / Disabled)
 
-**Goal:** Studio-grade ad monetization for Free tier with layout stability and full privacy compliance.
+**Goal:** Clean studio workspace without ads (ads disabled across all plans via migration 0005).
 
 **Tasks**
-- [x] `AdProvider` interface + `<AdSlot>` component (renders only when `showAds=true` and `ads_enabled_global=true`).
-- [x] Placements: library sidebar, bottom of library grid, generating state. Never on forms, prompt copy, login, or admin.
-- [x] Fixed slot heights preventing CLS (Cumulative Layout Shift < 0.1).
-- [x] Consent management: EEA/UK CMP integration + non-EEA banner recorded in `consent_records`.
-- [x] Strict CSP allowlist for ad domains only on ad-eligible routes.
-- [x] Public crawlable content pages (guides, landing page) for ad network approval.
-
-**Tests:** ad slots absent for Plus and staff; no ad script loads before consent where required; CSP on `/admin` and `/login` contains zero ad domains.
-
-**DoD:** ads render for free users with consent and vanish instantly upon upgrading.
+- [x] `AdProvider` interface kept dormant for future evaluation.
+- [x] Ads unmounted: `<AdSlot>` and `<ConsentBanner>` removed from rendered pages.
+- [x] Database: `show_ads = false` across all plans (migration 0005).
 
 ---
 

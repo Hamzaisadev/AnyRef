@@ -47,7 +47,7 @@ export default function TermsPage() {
           <section className="space-y-2">
             <h2 className="text-lg font-bold">3. Subscriptions & Billing</h2>
             <p className="text-layout-layer">
-              Anyref offers a free ad-supported tier with daily limits and an upgraded Plus plan ($5/month). All digital transactions are processed securely through our Merchant of Record partner. Subscriptions may be cancelled at any time from your Billing settings.
+              Anyref provides a free tier with generous daily deconstruction and autofill quotas. An upgraded Plus tier is planned for future release. When paid billing is activated, transactions will be handled through an authorized Merchant of Record partner.
             </p>
           </section>
 
