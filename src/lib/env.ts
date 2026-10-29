@@ -14,6 +14,9 @@ export const envSchema = z
     AI_DAILY_CALL_LIMIT: z.coerce.number().int().positive().default(50),
     AI_DAILY_COST_CAP_USD: z.coerce.number().positive().default(2.0),
     MAX_UPLOAD_MB: z.coerce.number().int().positive().default(10),
+    OWNER_EMAIL: z.string().email().optional(),
+    ADMIN_MFA_REQUIRED: z.coerce.boolean().default(true),
+    NEXT_PUBLIC_ENABLE_ADS: z.coerce.boolean().default(true),
   })
   .transform((data) => {
     const key = data.NEXT_PUBLIC_SUPABASE_ANON_KEY || data.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';

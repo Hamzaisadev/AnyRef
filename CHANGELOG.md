@@ -16,6 +16,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Refactored `Navigation`, `BrandSwitcher`, `library/page.tsx`, `workspace/generate/page.tsx`, `workspace/autofill/page.tsx`, `entries/[id]/page.tsx`, `entries/[id]/compare/page.tsx`, `brands/page.tsx`, `login/page.tsx`, and `page.tsx` to use the semantic surface token architecture with guaranteed $\ge 4.5:1$ WCAG contrast.
 
 ### Added
+- **Phase 3R — Re-baseline & Public Multi-Tenant Migration**:
+  - Migration `supabase/migrations/0002_roles_plans.sql`:
+    - Enums: `app_role` (`'owner'`, `'admin'`, `'user'`), `account_status` (`'active'`, `'suspended'`, `'pending_deletion'`).
+    - Tables: `plans` (seeded with `free` and `plus`), `profiles` (with partial unique index `one_owner`), `subscriptions`, `webhook_events`, `quota_overrides`, `app_settings`, `audit_log`, `consent_records`.
+    - Immutability: revoked update and delete on `audit_log` from all non-superuser roles.
+    - Security Definer functions: `public.has_role()` and `public.effective_limit()`, ensuring staff accounts resolve to `null` (unlimited).
+    - Database trigger `enforce_brand_limit()` on `brands` to prevent API limit circumvention.
+    - Automatic `handle_new_user()` trigger creating `profiles` rows on `auth.users` sign-up.
+    - Protection trigger `protect_owner_role()` restricting owner role modification to offline bootstrap.
+  - Script `scripts/bootstrap-owner.ts` for safe single-owner provisioning using `OWNER_EMAIL`.
+  - Environment schema: added `OWNER_EMAIL`, `ADMIN_MFA_REQUIRED`, and `NEXT_PUBLIC_ENABLE_ADS` in `src/lib/env.ts`.
+  - Unit test suite `tests/unit/rbacSql.test.ts` (8 tests) verifying schema constraints, append-only audit log, and owner exclusivity.
+  - Expanded test suite to 96 passing tests across 15 suites.
+
 - **Phase 3 Input Handling and Data Integrity**:
   - Text and slot sanitization engine (`src/lib/sanitize.ts`): strips ASCII control characters (0x00-0x1F except \t, \n, \r), zero-width characters (ZWSP, ZWNJ, ZWJ, BOM), bidirectional overrides, and normalizes Unicode (NFKC).
   - Slot constraint enforcement (`sanitizeSlotValues`): enforces length limits server-side to prevent memory bloat and model context truncation.
