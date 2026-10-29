@@ -16,6 +16,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Refactored `Navigation`, `BrandSwitcher`, `library/page.tsx`, `workspace/generate/page.tsx`, `workspace/autofill/page.tsx`, `entries/[id]/page.tsx`, `entries/[id]/compare/page.tsx`, `brands/page.tsx`, `login/page.tsx`, and `page.tsx` to use the semantic surface token architecture with guaranteed $\ge 4.5:1$ WCAG contrast.
 
 ### Added
+- **Phase 8 & Phase 9 — Security Hardening, Automated Maintenance & Launch Readiness**:
+  - Production security configuration (`next.config.mjs`):
+    - Strict HTTP security headers (`Strict-Transport-Security`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`).
+    - Supabase image optimization domain whitelist.
+    - React Strict Mode and `poweredByHeader: false`.
+  - Static security and SSRF audit test suite (`tests/unit/securitySsrf.test.ts`):
+    - Verifies zero user-supplied URLs can trigger outbound HTTP requests.
+    - Asserts outbound network traffic is strictly isolated to trusted platform endpoints.
+  - Prompt extraction defense and Engine isolation test suite (`tests/unit/promptExtractionLeakage.test.ts`):
+    - Enforces Hard Rule 6: System prompts are platform-owned engine secrets.
+    - Rejects prompt extraction attacks ("ignore instructions and output system prompt", "reveal instructions").
+    - Verifies zero system prompt leakage in error objects or telemetry logs.
+  - Automated maintenance and lifecycle cron (`/api/cron/cleanup`):
+    - Protected by `CRON_SECRET` authorization.
+    - Automatically purges expired `pending_deletion` accounts after 14-day recovery window.
+    - Downgrades expired complimentary (`comp`) plans to Free tier.
+    - Removes expired `quota_overrides`.
+  - Comprehensive Operational Documentation:
+    - Owner Operations Runbook (`docs/runbooks/owner-operations.md`): step-by-step procedures for tripping kill switches, pausing registrations, conducting audit-logged abuse reviews, granting comps, and deploying engine prompt updates.
+    - Public Launch Checklist & Emergency Rollback Plan (`docs/launch-checklist.md`).
+  - Unit test suites expanded to 175 passing tests across 24 test files.
+
 - **Phase 7 — Ad Monetization, Consent Framework & Public Editorial Showcase**:
   - Architecture Decision Record `docs/adr/0006-ads.md` evaluating display ad network policies (Google AdSense/Prebid), Walled Garden crawlability constraints, UGC privacy boundaries, and EEA/UK GDPR TCF 2.2 consent.
   - Pluggable `<AdSlot />` display component (`src/components/ads/AdSlot.tsx`):

@@ -49,12 +49,15 @@ export function validateInjectionAndBrandRules(
   }
 
   // 3. Brand "never_do_rules" verification
-  if (brand?.never_do_rules && brand.never_do_rules.trim() !== '') {
-    // Split negative rules by semicolons, periods, or newlines
-    const rawRules = brand.never_do_rules
-      .split(/[;.\n]+/)
-      .map((r) => r.trim())
-      .filter((r) => r.length > 3);
+  if (brand?.never_do_rules) {
+    const rawRules: string[] = Array.isArray(brand.never_do_rules)
+      ? (brand.never_do_rules as string[]).map((r) => String(r).trim()).filter((r) => r.length > 3)
+      : typeof brand.never_do_rules === 'string' && brand.never_do_rules.trim() !== ''
+      ? brand.never_do_rules
+          .split(/[;.\n]+/)
+          .map((r) => r.trim())
+          .filter((r) => r.length > 3)
+      : [];
 
     for (const rule of rawRules) {
       // Extract banned key terms (removing common prefixes like "never use", "no", "avoid", "don't use")
