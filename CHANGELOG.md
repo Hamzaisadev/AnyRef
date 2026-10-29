@@ -16,6 +16,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Refactored `Navigation`, `BrandSwitcher`, `library/page.tsx`, `workspace/generate/page.tsx`, `workspace/autofill/page.tsx`, `entries/[id]/page.tsx`, `entries/[id]/compare/page.tsx`, `brands/page.tsx`, `login/page.tsx`, and `page.tsx` to use the semantic surface token architecture with guaranteed $\ge 4.5:1$ WCAG contrast.
 
 ### Added
+- **Phase 5 — Main Admin Panel & Operational Controls**:
+  - Dedicated `/admin` route group with isolated `AdminLayout`, `noindex`/`nofollow` robots directives, and staff session enforcement (`requireAdmin()`).
+  - System Overview (`/admin`): real-time multi-tenant telemetry (total accounts, active users, Plus subscribers, daily & 7d model inference calls and estimated spend) and global emergency switches:
+    - AI Kill Switch (instantly halts model inference requests platform-wide).
+    - Open Sign-ups toggle (instantly pauses public account registrations).
+    - Maintenance Mode flag.
+    - Global Ad Slots toggle.
+  - User Directory & Quota Management (`/admin/users`): search accounts, filter by role/status/plan, execute audit-logged suspensions, unsuspensions, complimentary Plus grants, and quota overrides.
+  - Abuse Review Queue (`/admin/abuse`): enforces strict zero-direct-RLS content access; requires mandatory investigation justification before decrypting and exposing user brands and prompt entries, permanently appending `abuse_review_conducted` to the audit log.
+  - Cost & Limit Protection (`/admin/cost`): daily circuit breaker monitoring model spend against `global_daily_cost_cap_usd`, with automatic kill-switch triggering at 100% threshold.
+  - Immutable Audit Log Viewer (`/admin/audit`): viewer for append-only `audit_log` records with actor, action, target, timestamp, reason, and IP details.
+  - Owner-Only Controls:
+    - Plans & Tier Pricing (`/admin/plans`): configure month/year pricing, daily generation limits, brand/entry quotas, and ad flags, with audit versioning.
+    - Prompt Engine Manager (`/admin/engine`): inspect and deploy versioned system prompts for deconstruction and autofill engines.
+    - Staff Privileges (`/admin/staff`): promote users to administrator or demote staff, preserving single-owner uniqueness.
+  - Admin service test suite `tests/unit/adminService.test.ts` (11 tests) verifying non-staff rejection, role boundary enforcement (admins cannot suspend admins or owners), owner capabilities, and abuse logging.
+  - Expanded project test suite to 149 passing tests across 19 test files.
+
 - **Phase 4 — Authentication, Authorization & Entitlements Engine**:
   - Central authorization authority (`src/services/authz.ts`) implementing the locked permission matrix for `user`, `admin`, and `owner` roles, preventing privilege escalation and enforcing that admins cannot act on owners or peer admins.
   - Dynamic entitlements calculator (`src/services/entitlements.ts`):
