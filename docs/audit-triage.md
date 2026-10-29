@@ -65,10 +65,10 @@ Running status of external audit findings for Anyref stabilization.
 
 | Item | Claim | Status | Commit | Test Name | Notes |
 |---|---|---|---|---|---|
-| S4-1 | Checkout button dead / fake URL | `TODO` | | | |
-| S4-2 | Webhook secret verification with configured secret | `TODO` | | | |
-| S4-3 | Remove AdSlot & ConsentBanner, set `show_ads = false` in migration | `TODO` | | | |
-| S4-4 | Update docs & legal pages to match reality | `TODO` | | | |
+| S4-1 | Checkout button dead / fake URL | `src/app/(app)/billing/page.tsx`, `src/services/billingService.ts` | `CONFIRMED-FIXED` | 62536b8 | `tests/integration/stage4/s4_honestBillingAndAds.test.ts` | Replaced dead checkout button with an honest disabled 'Plus is coming soon' badge, and eliminated unreachable fake checkout.anyref.app URLs from StandardMoRBillingProvider by throwing BadRequestError. |
+| S4-2 | Webhook secret verification with configured secret | `src/app/api/webhooks/billing/route.ts`, `tests/unit/billingService.test.ts` | `CONFIRMED-FIXED` | 62536b8 | `tests/integration/stage4/s4_honestBillingAndAds.test.ts` | Verified dormant billing webhook verifies HMAC-SHA256 signatures against configured environment secret and rejects forged/tampered signatures with 400. |
+| S4-3 | Remove AdSlot & ConsentBanner, set `show_ads = false` in migration | `src/app/(app)/layout.tsx`, `src/app/(app)/library/page.tsx`, `supabase/migrations/0005_disable_ads.sql` | `CONFIRMED-FIXED` | 76ab3cb | `tests/integration/stage4/s4_honestBillingAndAds.test.ts` | Completely unmounted AdSlot and ConsentBanner from all active layouts and pages, and applied migration 0005 setting show_ads = false across all database plans. |
+| S4-4 | Update docs & legal pages to match reality | `PLAN.md`, `src/app/terms/page.tsx` | `CONFIRMED-FIXED` | 346169a | `tests/integration/stage4/s4_honestBillingAndAds.test.ts` | Updated Terms of Service and PLAN.md to remove inaccurate claims regarding active ads and checkout, accurately reflecting current free tier quotas and upcoming Plus release. |
 
 ---
 
