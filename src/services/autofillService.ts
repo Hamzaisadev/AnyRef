@@ -7,6 +7,7 @@ import type { AutofillOutput } from '../ai/schemas';
 import { verifyImageMagicBytes } from './assetService';
 import { sanitizeText } from '../lib/sanitize';
 import { computeAiCost } from '../ai/pricing';
+import { getActiveSystemPrompt } from './promptService';
 import { validateInjectionAndBrandRules } from '../domain/validateInjection';
 
 export interface SanitizedAutofillResult extends AutofillOutput {
@@ -54,6 +55,7 @@ export class AutofillService {
     await QuotaService.checkCircuitBreaker();
     await QuotaService.checkDailyQuota(userId, 'autofill_per_day');
 
+    const promptInfo = await getActiveSystemPrompt('autofill');
     const provider = this.getProvider();
     const rawOutput = await provider.autofillSlots({
       imageBuffer,
@@ -61,6 +63,7 @@ export class AutofillService {
       brand,
       slots: entry.slots,
       hint: cleanHint,
+      systemPrompt: promptInfo.body,
     });
 
     // Record AI telemetry

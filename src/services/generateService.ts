@@ -8,6 +8,7 @@ import { validatePromptTemplate } from '../domain/validateTemplate';
 import { validateInjectionAndBrandRules } from '../domain/validateInjection';
 
 import { computeAiCost } from '../ai/pricing';
+import { getActiveSystemPrompt } from './promptService';
 
 export class GenerateService {
   constructor(
@@ -39,11 +40,13 @@ export class GenerateService {
     await QuotaService.checkCircuitBreaker();
     await QuotaService.checkDailyQuota(userId, 'generate_per_day');
 
+    const promptInfo = await getActiveSystemPrompt('generate');
     const provider = this.getProvider();
     const result = await provider.generateTemplate({
       imageBuffer,
       mimeType: magicCheck.mimeType,
       brand,
+      systemPrompt: promptInfo.body,
     });
 
     // Record AI telemetry
@@ -77,7 +80,10 @@ export class GenerateService {
       );
     }
 
-    return result;
+    return {
+      ...result,
+      system_prompt_version: promptInfo.version,
+    };
   }
 }
 
