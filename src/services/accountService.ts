@@ -159,3 +159,152 @@ export async function getAccountDeletionStatus(userId: string): Promise<Deletion
     daysRemaining,
   };
 }
+
+/**
+ * Ensures that a user has an initial sample brand and starter entries.
+ * Idempotent: does nothing if the user already has at least one brand.
+ */
+export async function ensureUserSeeded(userId: string): Promise<void> {
+  const admin = createAdminClient();
+
+  const { count, error: countErr } = await admin
+    .from('brands')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (countErr || (count && count > 0)) {
+    return;
+  }
+
+  // 1. Create Default Sample Brand
+  const { data: brand, error: brandErr } = await admin
+    .from('brands')
+    .insert({
+      user_id: userId,
+      name: 'Acme Sample Brand',
+      what_you_sell: 'Premium handcrafted insulated drinkware and outdoor lifestyle gear',
+      why: 'Keep your drinks at peak temperature while reducing single-use plastic waste',
+      tone: 'Modern, adventurous, reliable, minimalist',
+      colors: ['#1E293B', '#0EA5E9', '#F8FAFC'],
+      wordmark: 'ACME',
+      slogan: 'Built for Every Journey',
+      footer_text: 'Designed in California. Lifetime warranty.',
+      never_do_rules: ['Never show damaged or rusted tumblers', 'never use low-resolution clipart'],
+      default_values: { cta_text: 'SHOP NOW', urgency: 'NEW ARRIVAL' },
+    })
+    .select('id')
+    .single();
+
+  if (brandErr || !brand) {
+    return;
+  }
+
+  // 2. Create Starter Entries
+  await admin.from('entries').insert([
+    {
+      user_id: userId,
+      brand_id: brand.id,
+      prompt_template:
+        'A sleek product launch poster for {{brand_name}}. In the center sits the exact product in the attached product image, reproduced faithfully and unchanged against a dramatic dusk mountain backdrop. The top bold header reads "{{headline}}". Below the product, an accent pill says "{{subhead}}". Bottom footer contains wordmark "{{wordmark}}" with tag "{{slogan}}". Minimalist, studio lighting with natural rim light.',
+      slots: [
+        {
+          key: 'brand_name',
+          label: 'Brand Name',
+          type: 'short_text',
+          required: true,
+          brand_field: 'wordmark',
+          optional_block: false,
+          never_invent: false,
+        },
+        {
+          key: 'headline',
+          label: 'Main Headline',
+          type: 'short_text',
+          required: true,
+          brand_field: null,
+          optional_block: false,
+          never_invent: false,
+        },
+        {
+          key: 'subhead',
+          label: 'Subheading',
+          type: 'short_text',
+          required: false,
+          brand_field: null,
+          optional_block: true,
+          never_invent: false,
+        },
+        {
+          key: 'wordmark',
+          label: 'Wordmark',
+          type: 'short_text',
+          required: true,
+          brand_field: 'wordmark',
+          optional_block: false,
+          never_invent: false,
+        },
+        {
+          key: 'slogan',
+          label: 'Slogan',
+          type: 'short_text',
+          required: true,
+          brand_field: 'slogan',
+          optional_block: false,
+          never_invent: false,
+        },
+      ],
+      status: 'draft',
+      poster_type: 'launch',
+      intended_product_shape: 'tall',
+      note: 'Sample Launch Poster',
+    },
+    {
+      user_id: userId,
+      brand_id: brand.id,
+      prompt_template:
+        'A festive promotional poster for {{brand_name}}. In the center sits the exact product in the attached product image, reproduced faithfully and unchanged, surrounded by subtle golden bokeh lights and warm festive ribbons. Top banner reads "{{headline}}". Bottom includes "{{footer_text}}" with brand mark "{{wordmark}}". Warm, celebratory, premium lighting.',
+      slots: [
+        {
+          key: 'brand_name',
+          label: 'Brand Name',
+          type: 'short_text',
+          required: true,
+          brand_field: 'wordmark',
+          optional_block: false,
+          never_invent: false,
+        },
+        {
+          key: 'headline',
+          label: 'Festive Headline',
+          type: 'short_text',
+          required: true,
+          brand_field: null,
+          optional_block: false,
+          never_invent: false,
+        },
+        {
+          key: 'wordmark',
+          label: 'Wordmark',
+          type: 'short_text',
+          required: true,
+          brand_field: 'wordmark',
+          optional_block: false,
+          never_invent: false,
+        },
+        {
+          key: 'footer_text',
+          label: 'Footer Text',
+          type: 'short_text',
+          required: true,
+          brand_field: 'footer_text',
+          optional_block: false,
+          never_invent: false,
+        },
+      ],
+      status: 'draft',
+      poster_type: 'festive',
+      intended_product_shape: 'square',
+      note: 'Sample Festive Poster',
+    },
+  ]);
+}
