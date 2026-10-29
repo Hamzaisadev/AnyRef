@@ -95,4 +95,16 @@ describe('Stage 4: Honest Billing & Ads', () => {
     expect(layoutContent).not.toContain('<ConsentBanner');
     expect(libraryContent).not.toContain('<AdSlot');
   });
+
+  it('F2-9: PLAN.md does not check off [x] features that lack UI implementation', () => {
+    const planPath = path.resolve(process.cwd(), 'PLAN.md');
+    const planContent = fs.readFileSync(planPath, 'utf8');
+
+    expect(planContent).not.toMatch(/- \[x\].*paste-many UI/i);
+    expect(planContent).not.toMatch(/- \[x\].*manual "add entry"/i);
+    expect(planContent).not.toMatch(/- \[x\].*Cloudflare Turnstile on sign-in/i);
+    expect(planContent).not.toMatch(/- \[x\].*Staff TOTP MFA enrollment/i);
+    expect(planContent).not.toMatch(/- \[x\].*load test \(500 concurrent users\)/i);
+  });
 });
+

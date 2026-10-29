@@ -363,7 +363,8 @@ create policy "refs_own_prefix" on storage.objects for all
 
 **Tasks**
 - [x] **Brands:** CRUD, hex-color validation, logo upload, default values, brand switcher in header (persist active brand in cookie).
-- [x] **Library (ships first, replaces Keep):** thumbnail grid per brand, status/poster_type filters, entry detail, one-tap copy, manual "add entry" (paste prompt, add reference/result images).
+- [x] **Library (ships first, replaces Keep):** thumbnail grid per brand, status/poster_type filters, entry detail, one-tap copy.
+- [ ] **Manual "add entry" UI:** paste prompt directly on `/library` without deconstruction.
 - [x] **`domain/renderPrompt.ts`:** pure renderer (section 2.3) with full unit coverage.
 - [x] **`ai/AiProvider.ts` interface** + `geminiProvider.ts` (multimodal input, JSON schema output, timeout, retry-once).
 - [x] **Generate flow:** `/api/generate` → `generateService` → provider; validate against `GenerateOutput`; return proposal (not saved).
@@ -371,7 +372,7 @@ create policy "refs_own_prefix" on storage.objects for all
 - [x] **Compare screen:** two panels, paste-from-clipboard for result, status buttons, note, **Save** (explicit).
 - [x] **Manual slot editing:** select-to-slot and collapse-to-text with re-validation.
 - [x] **Remix:** duplicate entry with `parent_entry_id`.
-- [x] **Import:** `scripts/import-keep.ts` and simple paste-many UI → `draft` entries.
+- [ ] **Import:** `scripts/import-keep.ts` and simple paste-many UI → `draft` entries.
 - [x] **Autofill flow:** `/api/autofill` + review screen with source tags, layout-fit warning, batch mode, product-photo in-memory lifecycle per ADR 0004.
 
 **Files:** `src/services/*`, `src/data/*`, `src/ai/*`, `src/domain/*`, `src/components/*`, `src/app/(app)/*`, `src/app/api/*`.
@@ -393,7 +394,8 @@ create policy "refs_own_prefix" on storage.objects for all
 - [x] Parameterized access only (Supabase client / prepared statements); no string-built SQL anywhere. Add an ESLint rule/CI grep forbidding raw `.rpc` with concatenation.
 - [x] Output sanitization: render prompt and notes as text (React escapes by default); forbid `dangerouslySetInnerHTML` via lint; strip control characters and zero-width characters from user text slots; enforce max lengths from slot definitions server-side.
 - [x] Template validation on save: every `{{key}}` has a slot; every slot is used; keys unique; optional-block markers balanced.
-- [x] File upload restrictions: allow `image/png|jpeg|webp` only; verify magic bytes (not just MIME); max size from `MAX_UPLOAD_MB` (default 8); max dimensions; re-encode/strip EXIF; random filenames under `{user_id}/`; reject SVG for user uploads.
+- [x] File upload restrictions: allow `image/png|jpeg|webp` only; verify magic bytes (not just MIME); max size from `MAX_UPLOAD_MB` (default 8); random filenames under `{user_id}/`; reject SVG for user uploads.
+- [ ] Image re-encode / EXIF stripping and max pixel dimensions check on upload.
 - [x] Prompt-injection handling: system prompt rule (2.5); post-validate AI output (reject templates containing URLs, emails, or text that contradicts brand `never_do_rules`); never pass user text as system instructions.
 - [x] Fuzz/garbage tests (`tests/fuzz/`): random strings, 1 MB text, emoji/RTL/zero-width, SQL/HTML/script payloads, malformed JSON, truncated/corrupt images, polyglot files, wrong MIME.
 
@@ -440,11 +442,13 @@ create policy "refs_own_prefix" on storage.objects for all
 **Tasks**
 - [x] Passwordless magic link + Google OAuth with automatic `profiles` row generation on sign-up.
 - [x] Email-verified check in `requireUser()`; block sign-in for `suspended` and `pending_deletion` accounts.
-- [x] Bot protection: Cloudflare Turnstile on sign-in; rate limits on sending magic links; disposable-email blocklist.
+- [x] Bot protection: rate limits on auth/API endpoints and disposable-email blocklist on sign-in.
+- [ ] Cloudflare Turnstile widget UI on sign-in.
 - [x] Terms of Service and age confirmation (minimum age 16) recorded in `consent_records`.
 - [x] Central authorization service `src/services/authz.ts` implementing `can(actor, action, target)`.
 - [x] Real entitlement engine `src/services/entitlements.ts` returning `{ role, planId, limits, features, showAds }`.
-- [x] Staff TOTP MFA enrollment and AAL2 enforcement on `/admin`.
+- [x] Staff AAL2 enforcement check on `/admin` (when `ADMIN_MFA_REQUIRED=true`).
+- [ ] Staff TOTP MFA enrollment UI.
 - [x] Self-serve account deletion (sets `pending_deletion`, 14-day recovery window) and async data export job.
 
 **Files:** `src/services/{authz,entitlements,accountService,exportService}.ts`, `src/app/(auth)/*`, `src/app/(app)/settings/*`, `scripts/bootstrap-owner.ts`, `src/middleware.ts`.
@@ -513,7 +517,7 @@ create policy "refs_own_prefix" on storage.objects for all
 - [x] Storage quota enforcement in `assetService`.
 - [x] Prompt-extraction attack tests against Engine (attempts to leak system prompts via image text or hints).
 - [x] SSRF review: verify zero outbound calls to user-supplied URLs.
-- [x] Admin panel penetration checklist and OWASP ZAP baseline scan.
+- [ ] Admin panel penetration checklist and OWASP ZAP baseline scan.
 
 **DoD:** no high findings; zero system prompt text in any response, log, or error across tests.
 
@@ -528,7 +532,7 @@ create policy "refs_own_prefix" on storage.objects for all
 - [x] Legal documents drafted in `docs/legal/`: Terms of Service, Privacy Policy, Cookie Policy, DMCA Takedown.
 - [x] Logging with user-id hashing and redaction.
 - [x] Owner runbook: incident response, manual suspension, AI kill switch, restore drill.
-- [x] Launch readiness checklist and load test (500 concurrent users).
+- [ ] Launch readiness checklist and load test (500 concurrent users).
 
 **DoD:** clean-room user can register, use free tier with ads, upgrade, cancel, and delete account; owner can run all runbook procedures.
 
@@ -629,7 +633,7 @@ create policy "refs_own_prefix" on storage.objects for all
 
 ### 6.3 Technical Implementation
 - **Schema (`src/ai/schemas.ts`):** `BrandDraftOutput` with `FieldSource` enum (`you_said`, `inferred`, `suggested`, `empty`).
-- **Provider (`src/ai/geminiProvider.ts`):** `draftBrand(input)` with JSON output enforcement, schema validation retry, and pre-validation normalization. Model pinned to `gemini-3.5-flash` (no `-latest` suffix).
+- **Provider (`src/ai/geminiProvider.ts`):** `draftBrand(input)` with JSON output enforcement, schema validation retry, and pre-validation normalization. Model configured strictly via `AI_MODEL` in env (pinned to `gemini-3.5-flash-lite`, no `-latest` suffix).
 - **System Prompt:** Versioned prompt stored in `system_prompts` with `purpose = 'brand_draft'`, loaded dynamically via `promptService` with server-side static fallback. System prompts never leak to clients or logs.
 - **Quota & Telemetry (`quotaService.ts`):**
   - New `ai_usage.kind = 'brand_draft'`.

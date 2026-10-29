@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { ValidationError } from '../lib/errors';
+import { AppError, ValidationError } from '../lib/errors';
 import { validateEnv } from '../lib/env';
 
 export type AllowedImageType = 'image/png' | 'image/jpeg' | 'image/webp';
@@ -141,14 +141,14 @@ export class AssetService {
     claimedMimeType?: string
   ): Promise<{ path: string; signedUrl: string; mimeType: string }> {
     const validated = this.validateUpload(buffer, claimedMimeType);
-    const { QuotaService } = await import('./quotaService');
-    await QuotaService.checkStorageQuota(userId, validated.sizeBytes);
-
     const filename = `${crypto.randomUUID()}.${validated.extension}`;
     const storagePath = `${userId}/${filename}`;
 
     try {
       const env = validateEnv();
+      const { QuotaService } = await import('./quotaService');
+      await QuotaService.checkStorageQuota(userId, validated.sizeBytes);
+
       const supabase = createClient(
         env.NEXT_PUBLIC_SUPABASE_URL,
         env.SUPABASE_SERVICE_ROLE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -183,7 +183,10 @@ export class AssetService {
         signedUrl: signedData.signedUrl,
         mimeType: validated.mimeType,
       };
-    } catch {
+    } catch (err) {
+      if (err instanceof AppError) {
+        throw err;
+      }
       // Return predictable fallback for offline / test environments
       return {
         path: storagePath,
