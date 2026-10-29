@@ -1,12 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Mail, CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
 import { createBrowserClientInstance } from '@/lib/supabaseBrowser';
 import { isDisposableEmail } from '@/lib/disposableEmail';
+import { sanitizeRedirectPath } from '@/lib/sanitizeRedirect';
 
-export default function LoginPage() {
+function LoginFormContent() {
+  const searchParams = useSearchParams();
+  const rawRedirect = searchParams.get('redirectTo') || searchParams.get('next');
+  const safeRedirect = sanitizeRedirectPath(rawRedirect);
+
   const [email, setEmail] = useState('');
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
@@ -14,6 +20,14 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState('');
 
   const supabase = createBrowserClientInstance();
+
+  function getCallbackUrl(): string {
+    const callbackUrl = new URL('/api/auth/callback', window.location.origin);
+    if (safeRedirect && safeRedirect !== '/library') {
+      callbackUrl.searchParams.set('redirectTo', safeRedirect);
+    }
+    return callbackUrl.toString();
+  }
 
   async function handleGoogleSignIn() {
     if (!agreedTerms || !ageConfirmed) {
@@ -29,7 +43,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
+          redirectTo: getCallbackUrl(),
         },
       });
 
@@ -71,7 +85,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          emailRedirectTo: getCallbackUrl(),
           data: {
             tos_accepted: agreedTerms,
             age_confirmed: ageConfirmed,
@@ -272,5 +286,19 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-paper">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <LoginFormContent />
+    </Suspense>
   );
 }
