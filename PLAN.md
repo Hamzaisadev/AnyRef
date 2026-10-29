@@ -584,3 +584,56 @@ create policy "refs_own_prefix" on storage.objects for all
 - **[A]** Merchant of Record billing provider selected to automate global sales tax and VAT.
 - **[A]** Ad revenue supported by Google AdSense / Carbon Ads / custom sponsors with EEA/UK CMP consent.
 - **[A]** Launch load testing budgeted for 500 concurrent users.
+- **[A]** Free tier daily brand draft limit is 5 calls per day; Plus tier is 20 calls per day; staff is unlimited.
+- **[A]** AI Brand proposals are never auto-saved into the database. A brand draft exists in-memory and client-side until the user reviews, optionally edits, and explicitly clicks "Save brand".
+- **[A]** Website scraping, external HTTP fetching, and social profile imports are strictly prohibited to maintain SSRF isolation and protect against untrusted external content.
+- **[A]** Optional logo files must be uploaded through the existing authenticated upload route (`/api/upload`) into the private `logos` bucket, verified for magic bytes and user ownership, before being passed to the AI provider.
+
+---
+
+## 6. AI Brand Drafting ("Describe it")
+
+### 6.1 Overview & User Journey
+- **Entry Points:**
+  - On `/brands`: "New brand" offers two distinct paths via split action: **Describe it** (new, default) and **Fill the form manually** (traditional).
+  - On `/workspace/generate`: When a user has zero brands, an empty-state call-to-action is rendered: *"Create your first brand by describing it"* linking directly to `/brands/new`.
+- **Describe It Screen (`/brands/new`):**
+  - Textarea: Prompt asking for business description: what you sell, who it's for, desired tone, and known brand colors. Max 2,000 characters with live character counter. Accepts input in any language (including Roman Urdu and code-switched text).
+  - Optional logo upload (PNG/JPEG/WebP) allowing color extraction from visual identity.
+  - "Create brand draft" action triggers single server call to `POST /api/brands/draft`.
+- **Human-in-the-Loop Review & Save:**
+  - Form opens pre-filled with the AI proposal.
+  - Each field displays a clear source badge:
+    - **You said** (`you_said`): Sourced verbatim or directly from the user's text.
+    - **Inferred** (`inferred`): Inferred from business context or extracted from logo colors.
+    - **Suggested** (`suggested`): Proactive proposal (e.g. creative slogan) never passed off as user's own.
+    - **Needs you** (`empty`): Field unsupported by description, left blank for user review.
+  - User can edit any field.
+  - No database row is created in `brands` until the user explicitly clicks **"Save brand"**.
+
+### 6.2 Honesty Rules & Validation
+- **Zero Fabrication Policy:**
+  - Never invent facts. If the description does not support a field, return with source `empty` and empty value.
+  - Strictly forbidden from generating phone numbers, street addresses, email addresses, external URLs, social handles, prices, discounts, dates, certifications, awards, or customer counts.
+  - `footer_text` is populated **only** if the exact phrase appears in user's prompt text (e.g., "Free shipping over $50"); otherwise blank.
+  - `name` and `wordmark` come strictly from user text. If no business name is provided, both remain empty and "name" is flagged in `missing`.
+  - `slogan`: Uses user's slogan if stated (`you_said`); otherwise proposes one short tagline (`suggested`).
+  - `colors`: Converts named colors to 6-digit hex (`inferred`). If logo provided, extracts dominant colors (`inferred`). Otherwise leaves empty array with helper note *"Add colors for better prompts."*
+  - `never_do_rules`: Captures explicit constraints (e.g. "no cartoon style"). Otherwise empty.
+- **Server-Side Post-Validation (`validateBrandDraft.ts`):**
+  - Sanitizes all text fields: strips ASCII/Unicode control characters and zero-width characters.
+  - Contact & URL check: Regex detection for emails, URLs, and phone numbers. If detected in draft but not in user's original description, the field is stripped/blanked immediately.
+  - Enforces `validateBrand` length constraints (max 80 name, max 60 wordmark, max 120 slogan, max 600 rules).
+  - Validates all hex colors against `/^#[0-9A-Fa-f]{6}$/`.
+  - Rejects empty drafts with user-friendly error if description provided no extractable signal.
+
+### 6.3 Technical Implementation
+- **Schema (`src/ai/schemas.ts`):** `BrandDraftOutput` with `FieldSource` enum (`you_said`, `inferred`, `suggested`, `empty`).
+- **Provider (`src/ai/geminiProvider.ts`):** `draftBrand(input)` with JSON output enforcement, schema validation retry, and pre-validation normalization. Model pinned to `gemini-3.5-flash` (no `-latest` suffix).
+- **System Prompt:** Versioned prompt stored in `system_prompts` with `purpose = 'brand_draft'`, loaded dynamically via `promptService` with server-side static fallback. System prompts never leak to clients or logs.
+- **Quota & Telemetry (`quotaService.ts`):**
+  - New `ai_usage.kind = 'brand_draft'`.
+  - Plan limit `brand_draft_per_day`: 5 (free), 20 (plus), unlimited (staff).
+  - Real token counts (`input_tokens`, `output_tokens`) and cost (`est_cost_usd`) recorded for every call.
+  - Migration `supabase/migrations/0006_brand_draft.sql` extends check constraints and initializes plan limits.
+

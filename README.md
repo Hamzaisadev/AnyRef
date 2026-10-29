@@ -59,6 +59,7 @@ flowchart TD
 4. **Attach in Flow**: Monospace prompt output paired with an ordered attachment checklist (e.g., *1. Product cutout, 2. Brand logo*) for external multi-image generation.
 5. **Winner Vault & Zero-Cost Reuse**: Grade external results side-by-side with your reference. Approved templates become **Winners**, which can be filled with new product data and reused infinitely with **zero AI API cost**.
 6. **Autofill Studio**: Drop a raw product photo; AI infers slot values and flags **Layout-Fit Warnings** if the photo's aspect ratio conflicts with the reference layout. Product photos are processed purely in-memory and never stored.
+7. **AI Brand Creation ("Describe It")**: Create a new brand from a plain text business description in under a minute. The AI drafts brand fields (name, what you sell, why, tone, colors, wordmark, slogan, footer text, never-do rules, and default values). Every field displays a source badge (**You said**, **Inferred**, **Suggested**, or **Needs you**). Follows strict honesty rules: zero invented contact details or prices. Nothing is persisted until you review and click **Save brand**. Includes quota management (`brand_draft_per_day`: 5 free / 20 plus) and full injection resistance.
 
 ---
 

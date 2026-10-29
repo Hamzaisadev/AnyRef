@@ -61,6 +61,7 @@ describe('Slice 4 Seam: AutofillService (autofillService.ts)', () => {
       name: 'mock',
       generateTemplate: vi.fn(),
       autofillSlots: vi.fn(),
+      draftBrand: vi.fn(),
     };
 
     service = new AutofillService(mockEntryRepo, mockBrandRepo, () => mockAiProvider);

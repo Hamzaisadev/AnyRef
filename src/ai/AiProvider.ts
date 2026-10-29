@@ -1,6 +1,6 @@
 import type { Brand } from '../domain/brand';
 import type { Slot } from '../domain/slot';
-import type { GenerateOutput, AutofillOutput } from './schemas';
+import type { GenerateOutput, AutofillOutput, BrandDraftOutput } from './schemas';
 
 export interface AiUsage {
   inputTokens: number;
@@ -12,6 +12,10 @@ export type GenerateResult = GenerateOutput & {
 };
 
 export type AutofillResult = AutofillOutput & {
+  usage?: AiUsage;
+};
+
+export type BrandDraftResult = BrandDraftOutput & {
   usage?: AiUsage;
 };
 
@@ -31,8 +35,17 @@ export interface AutofillInput {
   systemPrompt?: string;
 }
 
+export interface BrandDraftInput {
+  description: string;
+  imageBuffer?: Buffer;
+  mimeType?: string;
+  systemPrompt?: string;
+}
+
 export interface AiProvider {
   name: string;
   generateTemplate(input: GenerateInput): Promise<GenerateResult>;
   autofillSlots(input: AutofillInput): Promise<AutofillResult>;
+  draftBrand(input: BrandDraftInput): Promise<BrandDraftResult>;
 }
+

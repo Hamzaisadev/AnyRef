@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   UploadCloud,
   ImageIcon,
@@ -222,17 +223,30 @@ export default function GenerateStudioPage() {
             <label className="block text-xs font-semibold uppercase text-ink tracking-wider">
               Active Brand Context
             </label>
-            <select
-              value={selectedBrandId}
-              onChange={(e) => switchBrand(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-surface-muted font-medium text-ink cursor-pointer"
-            >
-              {brands.map((b) => (
-                <option key={b.id} value={b.id} className="bg-surface text-ink">
-                  {b.name} {b.wordmark ? `(${b.wordmark})` : ''}
-                </option>
-              ))}
-            </select>
+            {brands.length === 0 ? (
+              <div className="p-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 text-center space-y-2">
+                <p className="text-xs text-layout-layer">No active brands configured.</p>
+                <Link
+                  href="/brands/new"
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-fg text-xs font-semibold hover:bg-primary/95 transition-all shadow-xs"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Create your first brand by describing it</span>
+                </Link>
+              </div>
+            ) : (
+              <select
+                value={selectedBrandId}
+                onChange={(e) => switchBrand(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-surface-muted font-medium text-ink cursor-pointer"
+              >
+                {brands.map((b) => (
+                  <option key={b.id} value={b.id} className="bg-surface text-ink">
+                    {b.name} {b.wordmark ? `(${b.wordmark})` : ''}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div

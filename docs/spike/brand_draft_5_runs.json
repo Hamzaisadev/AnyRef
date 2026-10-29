@@ -1,0 +1,343 @@
+{
+  "timestamp": "2026-10-29T09:45:18.733Z",
+  "runsCount": 5,
+  "averages": {
+    "avgInputTokens": 846,
+    "avgOutputTokens": 375,
+    "avgTotalTokens": 1221,
+    "avgCostUsd": 0.000176,
+    "avgDurationMs": 8819
+  },
+  "runs": [
+    {
+      "testCase": {
+        "id": "run-1-bakery",
+        "title": "Artisan Sourdough Bakery (English)",
+        "language": "English",
+        "description": "We are Artisan Sourdough Co., a neighborhood bakery crafting organic, naturally fermented artisan breads and pastries for local families and cafes. Our voice is warm, rustic, and welcoming. We love earth tones like deep forest green #2D5A27 and warm cream #F9F6F0. Slogan: Baked with patience. Footer note: Fresh delivery every morning before 7am. Never use artificial additives or industrial shortcuts."
+      },
+      "durationMs": 10761,
+      "usage": {
+        "inputTokens": 846,
+        "outputTokens": 386,
+        "totalTokens": 1232,
+        "costUsd": 0.00017925
+      },
+      "draft": {
+        "name": {
+          "value": "Artisan Sourdough Co.",
+          "source": "you_said",
+          "note": ""
+        },
+        "what_you_sell": {
+          "value": "Organic, naturally fermented artisan breads and pastries",
+          "source": "you_said"
+        },
+        "why": {
+          "value": "",
+          "source": "empty"
+        },
+        "tone": {
+          "value": "Warm, rustic, and welcoming",
+          "source": "inferred"
+        },
+        "colors": {
+          "value": [
+            "#2D5A27",
+            "#F9F6F0"
+          ],
+          "source": "inferred",
+          "note": "approximate from 'deep forest green #2D5A27 and warm cream #F9F6F0'"
+        },
+        "wordmark": {
+          "value": "Artisan Sourdough Co.",
+          "source": "you_said"
+        },
+        "slogan": {
+          "value": "Baked with patience.",
+          "source": "you_said"
+        },
+        "footer_text": {
+          "value": "Fresh delivery every morning before 7am.",
+          "source": "you_said"
+        },
+        "never_do_rules": {
+          "value": "Never use artificial additives or industrial shortcuts.",
+          "source": "you_said"
+        },
+        "default_values": {
+          "value": {},
+          "source": "empty"
+        },
+        "missing": [
+          "why"
+        ]
+      }
+    },
+    {
+      "testCase": {
+        "id": "run-2-desi-chai",
+        "title": "Chai Khana Lounge (Roman Urdu)",
+        "language": "Roman Urdu",
+        "description": "Hum aik modern desi chai cafe hain jiska naam 'Chai Khana Lounge' hai. Hum karak chai, crispy parathay aur desi nashta serve kartay hain young professionals aur students ko. Humari tone friendly, energetic aur desi cool honi chahiye. Colors deep maroon #800020 aur mustard yellow #FFDB58 hain. Slogan: Garam chai, purani yaadein. Kabhi bhi boring corporate tone use mat karna. Delivery free over 500 rupees."
+      },
+      "durationMs": 10011,
+      "usage": {
+        "inputTokens": 863,
+        "outputTokens": 370,
+        "totalTokens": 1233,
+        "costUsd": 0.000175725
+      },
+      "draft": {
+        "name": {
+          "value": "Chai Khana Lounge",
+          "source": "you_said",
+          "note": ""
+        },
+        "what_you_sell": {
+          "value": "Karak chai, crispy parathay aur desi nashta",
+          "source": "you_said"
+        },
+        "why": {
+          "value": "",
+          "source": "empty"
+        },
+        "tone": {
+          "value": "Friendly, energetic, desi cool",
+          "source": "you_said"
+        },
+        "colors": {
+          "value": [
+            "#800020",
+            "#FFDB58"
+          ],
+          "source": "you_said",
+          "note": ""
+        },
+        "wordmark": {
+          "value": "Chai Khana Lounge",
+          "source": "you_said"
+        },
+        "slogan": {
+          "value": "Garam chai, purani yaadein",
+          "source": "you_said"
+        },
+        "footer_text": {
+          "value": "Delivery free over 500 rupees",
+          "source": "you_said"
+        },
+        "never_do_rules": {
+          "value": "Kabhi bhi boring corporate tone use mat karna",
+          "source": "you_said"
+        },
+        "default_values": {
+          "value": {},
+          "source": "empty"
+        },
+        "missing": [
+          "why"
+        ]
+      }
+    },
+    {
+      "testCase": {
+        "id": "run-3-cloud-saas",
+        "title": "CloudMetrics DevOps Observability (English SaaS)",
+        "language": "English",
+        "description": "CloudMetrics is an automated infrastructure cost optimization and cloud telemetry platform for DevOps teams and engineering managers. Tone should be precise, authoritative, minimal, and engineering-focused. Our primary brand color is midnight navy #0B192C and accent is neon cyan #00FFFF. Wordmark: CLOUDMETRICS. Never use cartoonish illustrations or hype marketing buzzwords. Footer text: Secure by design. Built for engineers."
+      },
+      "durationMs": 8530,
+      "usage": {
+        "inputTokens": 845,
+        "outputTokens": 417,
+        "totalTokens": 1262,
+        "costUsd": 0.000188475
+      },
+      "draft": {
+        "name": {
+          "value": "CloudMetrics",
+          "source": "you_said",
+          "note": ""
+        },
+        "what_you_sell": {
+          "value": "Automated infrastructure cost optimization and cloud telemetry platform for DevOps teams and engineering managers.",
+          "source": "you_said",
+          "note": ""
+        },
+        "why": {
+          "value": "",
+          "source": "empty",
+          "note": ""
+        },
+        "tone": {
+          "value": "precise, authoritative, minimal, engineering-focused",
+          "source": "you_said",
+          "note": ""
+        },
+        "colors": {
+          "value": [
+            "#0B192C",
+            "#00FFFF"
+          ],
+          "source": "you_said",
+          "note": ""
+        },
+        "wordmark": {
+          "value": "CLOUDMETRICS",
+          "source": "you_said",
+          "note": ""
+        },
+        "slogan": {
+          "value": "Precision cloud telemetry and cost optimization.",
+          "source": "suggested",
+          "note": ""
+        },
+        "footer_text": {
+          "value": "Secure by design. Built for engineers.",
+          "source": "you_said",
+          "note": ""
+        },
+        "never_do_rules": {
+          "value": "Never use cartoonish illustrations or hype marketing buzzwords.",
+          "source": "you_said",
+          "note": ""
+        },
+        "default_values": {
+          "value": {},
+          "source": "empty",
+          "note": ""
+        },
+        "missing": [
+          "why"
+        ]
+      }
+    },
+    {
+      "testCase": {
+        "id": "run-4-minimal-florist",
+        "title": "Zest & Bloom Floral Studio (Minimal, No Colors Given)",
+        "language": "English",
+        "description": "Zest & Bloom is a boutique floral design studio creating custom botanical arrangements and architectural bouquets for intimate weddings, editorial shoots, and quiet luxury events. Our tone is artistic, refined, poetic, and serene. Slogan: Poetry in petals. Never use gaudy plastic wraps or neon dyes."
+      },
+      "durationMs": 6232,
+      "usage": {
+        "inputTokens": 815,
+        "outputTokens": 343,
+        "totalTokens": 1158,
+        "costUsd": 0.000164025
+      },
+      "draft": {
+        "name": {
+          "value": "Zest & Bloom",
+          "source": "you_said",
+          "note": ""
+        },
+        "what_you_sell": {
+          "value": "Custom botanical arrangements and architectural bouquets for intimate weddings, editorial shoots, and quiet luxury events",
+          "source": "you_said"
+        },
+        "why": {
+          "value": "",
+          "source": "empty"
+        },
+        "tone": {
+          "value": "artistic, refined, poetic, and serene",
+          "source": "you_said"
+        },
+        "colors": {
+          "value": [],
+          "source": "empty",
+          "note": "Add colors for better prompts."
+        },
+        "wordmark": {
+          "value": "Zest & Bloom",
+          "source": "you_said"
+        },
+        "slogan": {
+          "value": "Poetry in petals",
+          "source": "you_said"
+        },
+        "footer_text": {
+          "value": "",
+          "source": "empty"
+        },
+        "never_do_rules": {
+          "value": "Never use gaudy plastic wraps or neon dyes.",
+          "source": "you_said"
+        },
+        "default_values": {
+          "value": {},
+          "source": "empty"
+        },
+        "missing": [
+          "colors"
+        ]
+      }
+    },
+    {
+      "testCase": {
+        "id": "run-5-organic-honey",
+        "title": "Khaalis Honey (Mixed English & Roman Urdu)",
+        "language": "Mixed (Urdu/English)",
+        "description": "Mera brand 'Khaalis Honey' pure organic raw Sidr honey bechta hai health-conscious families ko. 100% natural, unpasteurized, no artificial sugar or chemicals. Tone honi chahiye authentic, trustworthy, clean aur rooted in nature. Colors golden amber #D4A373 aur olive green #556B2F. Slogan: Straight from the hives. Kabhi bhi fake health claims ya artificial images use mat karna. Delivery all across Pakistan."
+      },
+      "durationMs": 8560,
+      "usage": {
+        "inputTokens": 859,
+        "outputTokens": 361,
+        "totalTokens": 1220,
+        "costUsd": 0.00017272499999999998
+      },
+      "draft": {
+        "name": {
+          "value": "Khaalis Honey",
+          "source": "you_said",
+          "note": ""
+        },
+        "what_you_sell": {
+          "value": "Pure organic raw Sidr honey",
+          "source": "you_said"
+        },
+        "why": {
+          "value": "",
+          "source": "empty"
+        },
+        "tone": {
+          "value": "authentic, trustworthy, clean, rooted in nature",
+          "source": "you_said"
+        },
+        "colors": {
+          "value": [
+            "#D4A373",
+            "#556B2F"
+          ],
+          "source": "you_said",
+          "note": ""
+        },
+        "wordmark": {
+          "value": "Khaalis Honey",
+          "source": "you_said"
+        },
+        "slogan": {
+          "value": "Straight from the hives",
+          "source": "you_said"
+        },
+        "footer_text": {
+          "value": "Delivery all across Pakistan",
+          "source": "you_said"
+        },
+        "never_do_rules": {
+          "value": "Kabhi bhi fake health claims ya artificial images use mat karna",
+          "source": "you_said"
+        },
+        "default_values": {
+          "value": {},
+          "source": "empty"
+        },
+        "missing": [
+          "why"
+        ]
+      }
+    }
+  ]
+}

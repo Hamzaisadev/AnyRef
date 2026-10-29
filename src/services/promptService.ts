@@ -2,6 +2,7 @@ import { createAdminClient } from '../lib/supabaseServer';
 import {
   DEFAULT_GENERATE_SYSTEM_PROMPT,
   DEFAULT_AUTOFILL_SYSTEM_PROMPT,
+  DEFAULT_BRAND_DRAFT_SYSTEM_PROMPT,
 } from '../ai/geminiProvider';
 
 export interface ActiveSystemPrompt {
@@ -24,7 +25,7 @@ const promptCache = new Map<string, CacheEntry>();
  * System prompt body NEVER leaves the server (Hard Rule 5).
  */
 export async function getActiveSystemPrompt(
-  purpose: 'generate' | 'autofill'
+  purpose: 'generate' | 'autofill' | 'brand_draft'
 ): Promise<ActiveSystemPrompt> {
   const cached = promptCache.get(purpose);
   if (cached && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
@@ -58,7 +59,9 @@ export async function getActiveSystemPrompt(
     body:
       purpose === 'generate'
         ? DEFAULT_GENERATE_SYSTEM_PROMPT
-        : DEFAULT_AUTOFILL_SYSTEM_PROMPT,
+        : purpose === 'autofill'
+        ? DEFAULT_AUTOFILL_SYSTEM_PROMPT
+        : DEFAULT_BRAND_DRAFT_SYSTEM_PROMPT,
   };
 
   return defaultPrompt;

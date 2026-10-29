@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GeminiProvider } from '@/ai/geminiProvider';
+import {
+  GeminiProvider,
+  normalizeGenerateOutput,
+  normalizeAutofillOutput,
+  parseJsonFromLlm,
+} from '@/ai/geminiProvider';
+import { GenerateOutput, AutofillOutput } from '@/ai/schemas';
 import { AiInvalidOutputError, AiProviderError } from '@/lib/errors';
 import type { Brand } from '@/domain/brand';
 
@@ -145,5 +151,110 @@ describe('Slice 3 Seam: GeminiProvider (geminiProvider.ts)', () => {
         brand: mockBrand,
       })
     ).rejects.toThrow(AiProviderError);
+  });
+
+  describe('normalizeGenerateOutput resilience', () => {
+    it('normalizes raw model output with missing fields, uppercase keys, and synonym enums', () => {
+      const rawLlmOutput = {
+        prompt:
+          'A professional studio shot with neutral concrete backdrop. In the center sits the exact product in the attached product image, reproduced faithfully and unchanged. Top text reads {{Headline}} in bold sans-serif. Bottom footer reads {{Brand-Wordmark}}.',
+        slots: [
+          {
+            key: 'Headline',
+            label: 'Headline',
+            type: 'text',
+          },
+          {
+            key: 'Brand-Wordmark',
+            label: 'Brand Wordmark',
+            type: 'text',
+            brand_field: 'wordmark',
+          },
+        ],
+        poster_type: 'promotional',
+        product_shape: 'portrait',
+      };
+
+      const normalized = normalizeGenerateOutput(rawLlmOutput);
+      const validation = GenerateOutput.safeParse(normalized);
+
+      expect(validation.success).toBe(true);
+      if (validation.success) {
+        expect(validation.data.poster_type).toBe('sale');
+        expect(validation.data.intended_product_shape).toBe('tall');
+        expect(validation.data.layout_notes).toBe('Reference poster layout analyzed.');
+        const s0 = validation.data.slots[0]!;
+        const s1 = validation.data.slots[1]!;
+        expect(s0.key).toBe('headline');
+        expect(s0.type).toBe('short_text');
+        expect(s0.required).toBe(true);
+        expect(s0.optional_block).toBe(false);
+        expect(s0.brand_field).toBeNull();
+        expect(s1.key).toBe('brand_wordmark');
+        expect(s1.brand_field).toBe('wordmark');
+        expect(validation.data.prompt_template).toContain('{{headline}}');
+        expect(validation.data.prompt_template).toContain('{{brand_wordmark}}');
+      }
+    });
+
+    it('synthesizes missing slot definitions from placeholders in prompt_template', () => {
+      const rawLlmOutput = {
+        prompt_template:
+          'A minimalist studio poster with soft directional lighting. In the center sits the exact product in the attached product image, reproduced faithfully and unchanged. Features prominent callout {{discount_text}} and cta button [[?cta_button: {{cta_button}}]].',
+        slots: [],
+        poster_type: 'sale',
+        intended_product_shape: 'square',
+        layout_notes: 'Studio lighting',
+      };
+
+      const normalized = normalizeGenerateOutput(rawLlmOutput);
+      const validation = GenerateOutput.safeParse(normalized);
+
+      expect(validation.success).toBe(true);
+      if (validation.success) {
+        expect(validation.data.slots.some((s) => s.key === 'discount_text')).toBe(true);
+        expect(validation.data.slots.some((s) => s.key === 'cta_button')).toBe(true);
+      }
+    });
+  });
+
+  describe('parseJsonFromLlm', () => {
+    it('strips markdown code blocks around JSON', () => {
+      const markdownJson = '```json\n{\n  "key": "value"\n}\n```';
+      const parsed = parseJsonFromLlm(markdownJson);
+      expect(parsed).toEqual({ key: 'value' });
+    });
+  });
+
+  describe('normalizeAutofillOutput resilience', () => {
+    it('normalizes shorthand string values and maps shape synonyms', () => {
+      const rawAutofill = {
+        values: {
+          headline: 'Fresh Brew, Every Morning',
+          cta: { value: 'Shop Now', source: 'brand_default', confidence: 'high' },
+        },
+        needs_you: ['price_tag'],
+        product_shape: 'vertical',
+        product_guess: 'Coffee beans bag',
+      };
+
+      const normalized = normalizeAutofillOutput(rawAutofill);
+      const validation = AutofillOutput.safeParse(normalized);
+
+      expect(validation.success).toBe(true);
+      if (validation.success) {
+        expect(validation.data.product_shape).toBe('tall');
+        expect(validation.data.values.headline).toEqual({
+          value: 'Fresh Brew, Every Morning',
+          source: 'ai',
+          confidence: 'high',
+        });
+        expect(validation.data.values.cta).toEqual({
+          value: 'Shop Now',
+          source: 'brand_default',
+          confidence: 'high',
+        });
+      }
+    });
   });
 });

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Palette,
   Plus,
@@ -12,6 +13,8 @@ import {
   Loader2,
   Sparkles,
   Edit2,
+  Edit3,
+  ChevronDown,
   Upload,
   AlertTriangle,
   ImageIcon,
@@ -27,6 +30,7 @@ export default function BrandsPage() {
   // Form state (Create or Edit)
   const [showForm, setShowForm] = useState(false);
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
+  const [showNewBrandMenu, setShowNewBrandMenu] = useState(false);
 
   const [name, setName] = useState('');
   const [whatYouSell, setWhatYouSell] = useState('');
@@ -282,22 +286,72 @@ export default function BrandsPage() {
           </p>
         </div>
 
-        <button
-          onClick={showForm ? () => setShowForm(false) : openCreateForm}
-          className="inline-flex items-center space-x-2 px-5 py-2.5 bg-primary text-primary-fg text-xs sm:text-sm font-semibold rounded-xl hover:bg-primary/95 transition-all shadow-xs active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary min-h-[40px] cursor-pointer"
-        >
-          {showForm ? (
-            <>
-              <X className="w-4 h-4" />
-              <span>Cancel</span>
-            </>
-          ) : (
-            <>
-              <Plus className="w-4 h-4" />
+        {showForm ? (
+          <button
+            type="button"
+            onClick={() => {
+              setShowForm(false);
+              setEditingBrand(null);
+            }}
+            className="inline-flex items-center space-x-2 px-5 py-2.5 bg-surface border border-border-subtle text-ink text-xs sm:text-sm font-semibold rounded-xl hover:bg-surface-muted transition-all shadow-xs active:scale-[0.98] min-h-[40px] cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+            <span>Cancel</span>
+          </button>
+        ) : (
+          <div className="relative inline-flex items-center rounded-xl shadow-xs">
+            <Link
+              href="/brands/new"
+              className="inline-flex items-center space-x-2 px-4 py-2.5 bg-primary text-primary-fg text-xs sm:text-sm font-semibold rounded-l-xl hover:bg-primary/95 transition-all active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary min-h-[40px]"
+              title="Describe it (AI draft - default)"
+            >
+              <Sparkles className="w-4 h-4" />
               <span>New Brand</span>
-            </>
-          )}
-        </button>
+            </Link>
+            <button
+              type="button"
+              onClick={() => setShowNewBrandMenu(!showNewBrandMenu)}
+              aria-label="New brand creation options"
+              aria-expanded={showNewBrandMenu}
+              className="px-2.5 py-2.5 bg-primary text-primary-fg border-l border-white/20 rounded-r-xl hover:bg-primary/90 transition-all min-h-[40px] cursor-pointer"
+            >
+              <ChevronDown className="w-4 h-4" />
+            </button>
+
+            {showNewBrandMenu && (
+              <div
+                className="absolute right-0 top-full mt-2 w-60 bg-surface border border-border-subtle rounded-xl shadow-lg py-1.5 z-20"
+                onMouseLeave={() => setShowNewBrandMenu(false)}
+              >
+                <Link
+                  href="/brands/new"
+                  onClick={() => setShowNewBrandMenu(false)}
+                  className="flex items-center space-x-2.5 px-3.5 py-2 text-xs font-semibold text-ink hover:bg-surface-muted transition-colors"
+                >
+                  <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                  <div className="text-left">
+                    <div>Describe it (Default)</div>
+                    <div className="text-[10px] text-layout-layer font-normal">AI drafts from business description</div>
+                  </div>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNewBrandMenu(false);
+                    openCreateForm();
+                  }}
+                  className="w-full flex items-center space-x-2.5 px-3.5 py-2 text-xs font-semibold text-ink hover:bg-surface-muted transition-colors cursor-pointer text-left"
+                >
+                  <Edit3 className="w-4 h-4 text-layout-layer shrink-0" />
+                  <div>
+                    <div>Fill the form manually</div>
+                    <div className="text-[10px] text-layout-layer font-normal">Blank brand configuration form</div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Brand Form (Create or Edit) */}
@@ -697,6 +751,23 @@ export default function BrandsPage() {
             <p className="text-layout-layer text-sm max-w-sm mx-auto leading-relaxed">
               Create your first brand profile to automatically bind wordmarks, slogans, and palette tokens into every prompt.
             </p>
+          </div>
+          <div className="flex items-center justify-center gap-3 pt-2">
+            <Link
+              href="/brands/new"
+              className="inline-flex items-center space-x-1.5 px-4 py-2 bg-primary text-primary-fg text-xs font-semibold rounded-xl hover:bg-primary/95 transition-all shadow-xs"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Describe it (AI Draft)</span>
+            </Link>
+            <button
+              type="button"
+              onClick={openCreateForm}
+              className="inline-flex items-center space-x-1.5 px-4 py-2 bg-surface-muted border border-border-subtle text-ink text-xs font-semibold rounded-xl hover:border-border-strong transition-all cursor-pointer"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Fill manually</span>
+            </button>
           </div>
         </div>
       ) : (

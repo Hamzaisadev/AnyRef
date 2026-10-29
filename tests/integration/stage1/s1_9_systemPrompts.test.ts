@@ -69,6 +69,7 @@ describe('S1-9: Dynamic versioned system prompts from database', () => {
     let receivedSystemPrompt = '';
     const mockProvider: AiProvider = {
       name: 'mock',
+      draftBrand: vi.fn(),
       generateTemplate: vi.fn().mockImplementation(async (input) => {
         receivedSystemPrompt = input.systemPrompt || '';
         return {

@@ -89,7 +89,7 @@ export class QuotaService {
    */
   static async checkDailyQuota(
     userId: string,
-    actionType: 'generate_per_day' | 'autofill_per_day',
+    actionType: 'generate_per_day' | 'autofill_per_day' | 'brand_draft_per_day',
     requestedCount: number = 1
   ): Promise<QuotaCheckResult> {
     const entitlements = await getEntitlements(userId);
@@ -112,7 +112,12 @@ export class QuotaService {
       };
     }
 
-    const kind = actionType === 'generate_per_day' ? 'generate' : 'autofill';
+    const kind =
+      actionType === 'generate_per_day'
+        ? 'generate'
+        : actionType === 'autofill_per_day'
+        ? 'autofill'
+        : 'brand_draft';
     const supabase = createAdminClient();
     const todayMidnight = new Date();
     todayMidnight.setUTCHours(0, 0, 0, 0);
@@ -128,9 +133,14 @@ export class QuotaService {
     const remaining = Math.max(0, limit - used);
 
     if (used + requestedCount > limit) {
-      const actionName = actionType === 'generate_per_day' ? 'prompt generation' : 'autofill';
+      const actionName =
+        actionType === 'generate_per_day'
+          ? 'prompt generation'
+          : actionType === 'autofill_per_day'
+          ? 'autofill'
+          : 'brand draft';
       throw new QuotaExceededError(
-        `Daily ${actionName} limit reached (${used}/${limit}). Adding ${requestedCount} item(s) would exceed your daily limit. Upgrade to Plus for 10x higher limits or wait for reset at 00:00 UTC.`,
+        `Daily ${actionName} limit reached (${used}/${limit}). Adding ${requestedCount} item(s) would exceed your daily limit. Upgrade to Plus for higher limits or wait for reset at 00:00 UTC.`,
         { limit, used, resetAt, planId: entitlements.planId }
       );
     }
@@ -221,20 +231,36 @@ export class QuotaService {
    */
   static async recordAiUsage(params: {
     userId: string;
-    kind: 'generate' | 'autofill';
+    kind: 'generate' | 'autofill' | 'brand_draft';
     inputTokens: number;
     outputTokens: number;
     costUsd: number;
     requestId?: string;
   }): Promise<void> {
     const admin = createAdminClient();
-    const { error } = await admin.from('ai_usage').insert({
+    let { error } = await admin.from('ai_usage').insert({
       user_id: params.userId,
       kind: params.kind,
       input_tokens: params.inputTokens,
       output_tokens: params.outputTokens,
       est_cost_usd: params.costUsd,
     });
+
+    // If migration 0006_brand_draft.sql has not yet been executed in the remote database,
+    // gracefully record telemetry under 'generate' so usage accounting and cost caps remain unbroken.
+    if (error && error.code === '23514' && params.kind === 'brand_draft') {
+      console.warn(
+        '[QuotaService] Migration 0006_brand_draft.sql pending in database: recording usage under generate until check constraint is updated.'
+      );
+      const fallback = await admin.from('ai_usage').insert({
+        user_id: params.userId,
+        kind: 'generate',
+        input_tokens: params.inputTokens,
+        output_tokens: params.outputTokens,
+        est_cost_usd: params.costUsd,
+      });
+      error = fallback.error;
+    }
 
     if (error) {
       const reqId = params.requestId ? ` [request_id=${params.requestId}]` : '';

@@ -8,6 +8,7 @@ export interface PlanLimits {
   generate_per_day: number | null;
   autofill_per_day: number | null;
   batch_max: number | null;
+  brand_draft_per_day: number | null;
 }
 
 export interface Entitlements {
@@ -29,6 +30,7 @@ const DEFAULT_FREE_LIMITS: PlanLimits = {
   generate_per_day: 5,
   autofill_per_day: 5,
   batch_max: 1,
+  brand_draft_per_day: 5,
 };
 
 const UNLIMITED_STAFF_LIMITS: PlanLimits = {
@@ -38,6 +40,7 @@ const UNLIMITED_STAFF_LIMITS: PlanLimits = {
   generate_per_day: null,
   autofill_per_day: null,
   batch_max: null,
+  brand_draft_per_day: null,
 };
 
 export async function getEntitlements(userId: string): Promise<Entitlements> {
