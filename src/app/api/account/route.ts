@@ -5,6 +5,7 @@ import {
   requestAccountDeletion,
   cancelAccountDeletion,
 } from '@/services/accountService';
+import { QuotaService } from '@/services/quotaService';
 import { withErrorHandler } from '@/lib/apiHandler';
 import { BadRequestError } from '@/lib/errors';
 
@@ -13,7 +14,10 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   return withErrorHandler(async () => {
     const user = await requireUser(request, { allowPendingDeletion: true });
-    const deletionStatus = await getAccountDeletionStatus(user.id);
+    const [deletionStatus, entitlements] = await Promise.all([
+      getAccountDeletionStatus(user.id),
+      QuotaService.getEntitlements(user.id),
+    ]);
 
     return NextResponse.json({
       profile: {
@@ -27,6 +31,7 @@ export async function GET(request: NextRequest) {
         age_confirmed_at: user.age_confirmed_at,
       },
       deletionStatus,
+      entitlements,
     });
   }, request);
 }

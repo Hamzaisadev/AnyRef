@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Copy,
   Check,
@@ -19,6 +19,7 @@ import {
   Plus,
   Loader2,
   X,
+  GitFork,
 } from 'lucide-react';
 import type { Entry } from '@/domain/entry';
 import type { Brand } from '@/domain/brand';
@@ -32,11 +33,13 @@ interface PageProps {
 }
 
 function WorkbenchContent({ id }: { id: string }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [entry, setEntry] = useState<Entry | null>(null);
   const [brand, setBrand] = useState<Brand | null>(null);
   const [slotValues, setSlotValues] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
+  const [remixing, setRemixing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -120,6 +123,27 @@ function WorkbenchContent({ id }: { id: string }) {
     await navigator.clipboard.writeText(renderResult.text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleRemix() {
+    if (!entry) return;
+    setRemixing(true);
+    try {
+      const res = await fetch(`/api/entries/${entry.id}/remix`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.entry?.id) {
+          router.push(`/entries/${data.entry.id}`);
+        }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setError(errData.error?.message || 'Failed to remix entry');
+      }
+    } catch {
+      setError('Network error while remixing entry');
+    } finally {
+      setRemixing(false);
+    }
   }
 
   function handleStartEditTemplate() {
@@ -252,6 +276,19 @@ function WorkbenchContent({ id }: { id: string }) {
         </div>
 
         <div className="flex items-center space-x-3 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={handleRemix}
+            disabled={remixing}
+            className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 border border-border-subtle rounded-xl text-xs sm:text-sm font-semibold hover:bg-surface-hover transition-all text-ink active:scale-[0.98] disabled:opacity-50 min-h-[40px]"
+          >
+            {remixing ? (
+              <Loader2 className="w-4 h-4 animate-spin text-layout-layer" />
+            ) : (
+              <GitFork className="w-4 h-4 text-layout-layer" />
+            )}
+            <span>Remix</span>
+          </button>
           <Link
             href={`/entries/${entry.id}/compare`}
             className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 border border-border-subtle rounded-xl text-xs sm:text-sm font-semibold hover:bg-surface-hover transition-all text-ink active:scale-[0.98] min-h-[40px]"

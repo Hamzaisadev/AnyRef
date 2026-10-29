@@ -26,15 +26,20 @@ export default function AutofillStudioPage() {
   const { activeBrand } = useBrand();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [selectedEntryId, setSelectedEntryId] = useState('');
-  const [photo, setPhoto] = useState<File | null>(null);
+  const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [batchMax, setBatchMax] = useState<number>(1);
   const [hint, setHint] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<SanitizedAutofillResult | null>(null);
+  const [batchResults, setBatchResults] = useState<SanitizedAutofillResult[]>([]);
+  const [activeBatchIndex, setActiveBatchIndex] = useState<number>(0);
   const [editableValues, setEditableValues] = useState<Record<string, string>>({});
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+
+  const photo = photos[0] ?? null;
 
   useEffect(() => {
     return () => {
@@ -43,6 +48,20 @@ export default function AutofillStudioPage() {
       }
     };
   }, [photoPreview]);
+
+  useEffect(() => {
+    fetch('/api/account')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const limit = data?.entitlements?.limits?.batch_max;
+        if (typeof limit === 'number' && limit >= 1) {
+          setBatchMax(limit);
+        }
+      })
+      .catch(() => {
+        // Default to 1 on error
+      });
+  }, []);
 
   useEffect(() => {
     const brandQuery = activeBrand?.id ? `?brand_id=${activeBrand.id}` : '';
@@ -59,16 +78,30 @@ export default function AutofillStudioPage() {
       });
   }, [activeBrand?.id]);
 
-  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files && e.target.files[0]) {
-      const selected = e.target.files[0];
-      if (photoPreview && photoPreview.startsWith('blob:')) {
-        URL.revokeObjectURL(photoPreview);
-      }
-      setPhoto(selected);
-      setPhotoPreview(URL.createObjectURL(selected));
-      setResult(null);
+  function applySelectedFiles(fileList: FileList) {
+    const allFiles = Array.from(fileList);
+    if (allFiles.length === 0) return;
+
+    const cappedFiles = allFiles.slice(0, batchMax);
+    if (photoPreview && photoPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(photoPreview);
+    }
+
+    setPhotos(cappedFiles);
+    setPhotoPreview(URL.createObjectURL(cappedFiles[0]!));
+    setResult(null);
+    setBatchResults([]);
+    setActiveBatchIndex(0);
+    if (allFiles.length > batchMax) {
+      setError(`Your current plan allows up to ${batchMax} product photo${batchMax === 1 ? '' : 's'} per batch.`);
+    } else {
       setError('');
+    }
+  }
+
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files && e.target.files.length > 0) {
+      applySelectedFiles(e.target.files);
     }
   }
 
@@ -88,21 +121,28 @@ export default function AutofillStudioPage() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const selected = e.dataTransfer.files[0];
-      if (photoPreview && photoPreview.startsWith('blob:')) {
-        URL.revokeObjectURL(photoPreview);
-      }
-      setPhoto(selected);
-      setPhotoPreview(URL.createObjectURL(selected));
-      setResult(null);
-      setError('');
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      applySelectedFiles(e.dataTransfer.files);
     }
+  }
+
+  function selectBatchResult(index: number, items: SanitizedAutofillResult[] = batchResults) {
+    const chosen = items[index];
+    if (!chosen) return;
+    setActiveBatchIndex(index);
+    setResult(chosen);
+    const targetEntry = entries.find((e) => e.id === selectedEntryId);
+    const initial = buildInitialAutofillValues(
+      targetEntry?.slots || [],
+      activeBrand,
+      chosen
+    );
+    setEditableValues(initial);
   }
 
   async function handleAutofill(e: React.FormEvent) {
     e.preventDefault();
-    if (!photo) {
+    if (photos.length === 0) {
       setError('Please upload a product photo.');
       return;
     }
@@ -117,7 +157,9 @@ export default function AutofillStudioPage() {
     try {
       const formData = new FormData();
       formData.append('entry_id', selectedEntryId);
-      formData.append('product_photo', photo);
+      for (const itemPhoto of photos.slice(0, batchMax)) {
+        formData.append('product_photo', itemPhoto);
+      }
       if (hint.trim()) {
         formData.append('hint', hint.trim());
       }
@@ -131,14 +173,15 @@ export default function AutofillStudioPage() {
       if (!res.ok) {
         setError(data.error?.message || 'Autofill extraction failed.');
       } else {
-        setResult(data.result);
-        const targetEntry = entries.find((e) => e.id === selectedEntryId);
-        const initial = buildInitialAutofillValues(
-          targetEntry?.slots || [],
-          activeBrand,
-          data.result
-        );
-        setEditableValues(initial);
+        const list: SanitizedAutofillResult[] = Array.isArray(data.results) && data.results.length > 0
+          ? data.results
+          : data.result
+          ? [data.result]
+          : [];
+        setBatchResults(list);
+        if (list[0]) {
+          selectBatchResult(0, list);
+        }
       }
     } catch {
       setError('Network communication failed during autofill.');
@@ -240,6 +283,7 @@ export default function AutofillStudioPage() {
             <input
               type="file"
               accept="image/*"
+              multiple
               onChange={handlePhotoChange}
               className="absolute inset-0 opacity-0 cursor-pointer"
               aria-label="Upload product photo"
@@ -251,6 +295,11 @@ export default function AutofillStudioPage() {
                   alt="Product preview"
                   className="max-h-56 mx-auto rounded-xl object-contain shadow-2xs border border-border-subtle"
                 />
+                {photos.length > 1 && (
+                  <p className="text-xs font-semibold text-primary">
+                    {photos.length} product photos queued (max {batchMax})
+                  </p>
+                )}
                 <p className="text-xs text-layout-layer font-medium">Click or drag another photo to replace</p>
               </div>
             ) : (
@@ -259,10 +308,10 @@ export default function AutofillStudioPage() {
                   <UploadCloud className="w-6 h-6" />
                 </div>
                 <div className="text-sm font-semibold text-ink">
-                  Upload Product Photo
+                  Upload Product Photo{batchMax > 1 ? `s (up to ${batchMax})` : ''}
                 </div>
                 <p className="text-xs text-layout-layer max-w-xs mx-auto">
-                  Analyzed in memory for silhouette &amp; style — never saved to database
+                  Analyzed in memory for silhouette &amp; style — never saved to database (Plan batch limit: {batchMax})
                 </p>
               </div>
             )}
@@ -294,7 +343,7 @@ export default function AutofillStudioPage() {
               </>
             ) : (
               <>
-                <span>Run Smart Autofill</span>
+                <span>{photos.length > 1 ? `Run Batch Autofill (${photos.length})` : 'Run Smart Autofill'}</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -303,12 +352,33 @@ export default function AutofillStudioPage() {
 
         {/* Right: Review & Layout-Fit Warnings (7 cols) */}
         <div className="lg:col-span-7 bg-surface p-6 sm:p-7 rounded-2xl border border-border-subtle shadow-xs space-y-6">
-          <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
-            <span className="w-6 h-6 rounded-lg bg-surface-muted flex items-center justify-center text-xs font-mono font-bold text-ink border border-border-subtle">
-              2
-            </span>
-            <span>Provenance Review</span>
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
+              <span className="w-6 h-6 rounded-lg bg-surface-muted flex items-center justify-center text-xs font-mono font-bold text-ink border border-border-subtle">
+                2
+              </span>
+              <span>Provenance Review</span>
+            </h2>
+
+            {batchResults.length > 1 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {batchResults.map((item, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => selectBatchResult(idx)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                      activeBatchIndex === idx
+                        ? 'bg-primary text-primary-fg'
+                        : 'bg-surface-muted text-layout-layer hover:text-ink border border-border-subtle'
+                    }`}
+                  >
+                    #{idx + 1}: {item.product_guess.slice(0, 16)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {loading ? (
             <div className="py-24 text-center space-y-4">

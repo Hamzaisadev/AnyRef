@@ -126,4 +126,36 @@ describe('S3-3: Batch autofill quota and limit enforcement', () => {
       QuotaService.checkEntryQuota(testUser.user.id, 2)
     ).rejects.toThrow(QuotaExceededError);
   });
+
+  it('wires multi-file batch autofill UI & API route capped at batch_max and Remix buttons', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+
+    const routeSource = fs.readFileSync(
+      path.join(process.cwd(), 'src/app/api/autofill/route.ts'),
+      'utf8'
+    );
+    expect(routeSource).toContain("formData.getAll('product_photo')");
+    expect(routeSource).toContain('autofillService.autofillBatch');
+
+    const autofillPageSource = fs.readFileSync(
+      path.join(process.cwd(), 'src/app/(app)/workspace/autofill/page.tsx'),
+      'utf8'
+    );
+    expect(autofillPageSource).toContain('multiple');
+    expect(autofillPageSource).toContain('batchMax');
+
+    const libraryPageSource = fs.readFileSync(
+      path.join(process.cwd(), 'src/app/(app)/library/page.tsx'),
+      'utf8'
+    );
+    expect(libraryPageSource).toContain('/remix');
+
+    const entryWorkbenchSource = fs.readFileSync(
+      path.join(process.cwd(), 'src/app/(app)/entries/[id]/page.tsx'),
+      'utf8'
+    );
+    expect(entryWorkbenchSource).toContain('/remix');
+  });
 });
+

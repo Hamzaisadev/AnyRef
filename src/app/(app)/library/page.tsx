@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Trophy,
   Sliders,
@@ -16,18 +17,22 @@ import {
   Sparkles,
   UploadCloud,
   ImageIcon,
+  GitFork,
+  Loader2,
 } from 'lucide-react';
 import type { Entry, EntryStatus } from '@/domain/entry';
 import { useBrand } from '@/context/BrandContext';
 import { renderPrompt } from '@/domain/renderPrompt';
 
 export default function LibraryPage() {
+  const router = useRouter();
   const { brands, activeBrandId } = useBrand();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [remixingId, setRemixingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchEntries();
@@ -50,6 +55,25 @@ export default function LibraryPage() {
       // Ignore
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleRemix(entryId: string) {
+    setRemixingId(entryId);
+    try {
+      const res = await fetch(`/api/entries/${entryId}/remix`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.entry?.id) {
+          router.push(`/entries/${data.entry.id}`);
+          return;
+        }
+        await fetchEntries();
+      }
+    } catch {
+      // Ignore
+    } finally {
+      setRemixingId(null);
     }
   }
 
@@ -315,6 +339,21 @@ export default function LibraryPage() {
                     <span>Workbench</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemix(entry.id)}
+                    disabled={remixingId === entry.id}
+                    className="p-2 rounded-xl border border-border-subtle hover:bg-surface-hover text-layout-layer hover:text-ink transition-all active:scale-[0.98] disabled:opacity-50 min-h-[36px] flex items-center justify-center"
+                    title="Remix template"
+                    aria-label="Remix template"
+                  >
+                    {remixingId === entry.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <GitFork className="w-4 h-4" />
+                    )}
+                  </button>
 
                   <Link
                     href={`/entries/${entry.id}/compare`}
