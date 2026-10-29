@@ -1,17 +1,20 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabaseServer';
+import { createAdminClient } from '@/lib/supabaseServer';
 import { logAuditEvent } from '@/data/auditRepo';
+import { env } from '@/lib/env';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   // Enforce CRON_SECRET authorization header
   const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET || 'test_cron_secret';
+  const cronSecret = env.CRON_SECRET;
 
-  if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || !authHeader || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized cron invocation' }, { status: 401 });
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const now = new Date().toISOString();
   interface CronSummary {
     purgedAccounts: number;

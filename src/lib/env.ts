@@ -3,10 +3,13 @@ import { z } from 'zod';
 
 export const envSchema = z
   .object({
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     NEXT_PUBLIC_SUPABASE_URL: z.string().url('NEXT_PUBLIC_SUPABASE_URL must be a valid URL'),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+    CRON_SECRET: z.string().optional(),
+    BILLING_WEBHOOK_SECRET: z.string().optional(),
     AI_PROVIDER: z.enum(['gemini', 'claude']).default('gemini'),
     AI_MODEL: z.string().min(1, 'AI_MODEL is required').default('gemini-flash-latest'),
     GEMINI_API_KEY: z.string().optional(),
@@ -20,14 +23,43 @@ export const envSchema = z
   })
   .transform((data) => {
     const key = data.NEXT_PUBLIC_SUPABASE_ANON_KEY || data.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
+    const isProd = (data.NODE_ENV ?? process.env.NODE_ENV) === 'production';
     return {
       ...data,
       NEXT_PUBLIC_SUPABASE_ANON_KEY: key,
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: key,
-      SUPABASE_SERVICE_ROLE_KEY: data.SUPABASE_SERVICE_ROLE_KEY || key,
+      SUPABASE_SERVICE_ROLE_KEY: data.SUPABASE_SERVICE_ROLE_KEY || (isProd ? '' : key),
+      CRON_SECRET: data.CRON_SECRET || (isProd ? '' : 'test_cron_secret'),
+      BILLING_WEBHOOK_SECRET: data.BILLING_WEBHOOK_SECRET || (isProd ? '' : 'test_webhook_secret'),
     };
   })
   .superRefine((data, ctx) => {
+    const isProd = (data.NODE_ENV ?? process.env.NODE_ENV) === 'production';
+
+    if (isProd) {
+      if (!data.SUPABASE_SERVICE_ROLE_KEY || data.SUPABASE_SERVICE_ROLE_KEY === data.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['SUPABASE_SERVICE_ROLE_KEY'],
+          message: 'SUPABASE_SERVICE_ROLE_KEY must be a distinct, non-empty secret in production',
+        });
+      }
+      if (!data.CRON_SECRET || data.CRON_SECRET === 'test_cron_secret') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['CRON_SECRET'],
+          message: 'CRON_SECRET is required and cannot be a test placeholder in production',
+        });
+      }
+      if (!data.BILLING_WEBHOOK_SECRET || data.BILLING_WEBHOOK_SECRET === 'test_webhook_secret') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['BILLING_WEBHOOK_SECRET'],
+          message: 'BILLING_WEBHOOK_SECRET is required and cannot be a test placeholder in production',
+        });
+      }
+    }
+
     if (data.AI_PROVIDER === 'gemini' && (!data.GEMINI_API_KEY || data.GEMINI_API_KEY.trim() === '')) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

@@ -48,4 +48,48 @@ describe('validateEnv (Seam 1: Environment Validation)', () => {
     const invalidEnv = { ...validBaseEnv, AI_PROVIDER: 'unsupported-ai' };
     expect(() => validateEnv(invalidEnv)).toThrow();
   });
+
+  describe('Production Secret Enforcement (S1-10)', () => {
+    const validProdEnv = {
+      ...validBaseEnv,
+      NODE_ENV: 'production',
+      SUPABASE_SERVICE_ROLE_KEY: 'distinct-prod-service-role-secret-key-12345',
+      CRON_SECRET: 'prod-cron-secret-xyz-7890',
+      BILLING_WEBHOOK_SECRET: 'prod-billing-webhook-secret-abc-4567',
+    };
+
+    it('successfully validates when all production secrets are valid and distinct', () => {
+      const result = validateEnv(validProdEnv);
+      expect(result.CRON_SECRET).toBe('prod-cron-secret-xyz-7890');
+      expect(result.BILLING_WEBHOOK_SECRET).toBe('prod-billing-webhook-secret-abc-4567');
+      expect(result.SUPABASE_SERVICE_ROLE_KEY).toBe('distinct-prod-service-role-secret-key-12345');
+    });
+
+    it('rejects production boot without CRON_SECRET or with test placeholder', () => {
+      expect(() => validateEnv({ ...validProdEnv, CRON_SECRET: undefined })).toThrow(
+        /CRON_SECRET is required/i
+      );
+      expect(() => validateEnv({ ...validProdEnv, CRON_SECRET: 'test_cron_secret' })).toThrow(
+        /CRON_SECRET is required/i
+      );
+    });
+
+    it('rejects production boot without BILLING_WEBHOOK_SECRET or with test placeholder', () => {
+      expect(() => validateEnv({ ...validProdEnv, BILLING_WEBHOOK_SECRET: undefined })).toThrow(
+        /BILLING_WEBHOOK_SECRET is required/i
+      );
+      expect(() =>
+        validateEnv({ ...validProdEnv, BILLING_WEBHOOK_SECRET: 'test_webhook_secret' })
+      ).toThrow(/BILLING_WEBHOOK_SECRET is required/i);
+    });
+
+    it('rejects production boot when SUPABASE_SERVICE_ROLE_KEY is identical to anon key', () => {
+      expect(() =>
+        validateEnv({
+          ...validProdEnv,
+          SUPABASE_SERVICE_ROLE_KEY: validProdEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        })
+      ).toThrow(/SUPABASE_SERVICE_ROLE_KEY must be a distinct/i);
+    });
+  });
 });
