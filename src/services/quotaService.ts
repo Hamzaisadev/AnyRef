@@ -85,10 +85,12 @@ export class QuotaService {
   /**
    * Checks daily generation or autofill quota for a given user.
    * Staff (owner/admin) resolve to unlimited (null) and are never blocked.
+   * Enforces requestedCount so batch calls cannot exceed daily quota boundaries.
    */
   static async checkDailyQuota(
     userId: string,
-    actionType: 'generate_per_day' | 'autofill_per_day'
+    actionType: 'generate_per_day' | 'autofill_per_day',
+    requestedCount: number = 1
   ): Promise<QuotaCheckResult> {
     const entitlements = await getEntitlements(userId);
     const limit = entitlements.limits[actionType];
@@ -125,10 +127,10 @@ export class QuotaService {
     const used = count || 0;
     const remaining = Math.max(0, limit - used);
 
-    if (used >= limit) {
+    if (used + requestedCount > limit) {
       const actionName = actionType === 'generate_per_day' ? 'prompt generation' : 'autofill';
       throw new QuotaExceededError(
-        `Daily ${actionName} limit reached (${used}/${limit}). Upgrade to Plus for 10x higher limits or wait for reset at 00:00 UTC.`,
+        `Daily ${actionName} limit reached (${used}/${limit}). Adding ${requestedCount} item(s) would exceed your daily limit. Upgrade to Plus for 10x higher limits or wait for reset at 00:00 UTC.`,
         { limit, used, resetAt, planId: entitlements.planId }
       );
     }
@@ -141,6 +143,27 @@ export class QuotaService {
       resetAt,
       planId: entitlements.planId,
     };
+  }
+
+  /**
+   * Checks batch size against the user's plan batch_max limit.
+   * For Free plan, batch_max is 1 (batch autofill is not allowed for > 1 items).
+   * Plus plan allows up to 10 items per batch.
+   * Staff have unlimited batch_max (null).
+   */
+  static async checkBatchQuota(userId: string, batchSize: number): Promise<void> {
+    if (batchSize <= 0) return;
+    const entitlements = await getEntitlements(userId);
+    const batchMax = entitlements.limits.batch_max;
+
+    if (batchMax === null) return; // Unlimited staff
+
+    if (batchSize > batchMax) {
+      throw new QuotaExceededError(
+        `Batch size of ${batchSize} exceeds your plan limit (${batchMax} item${batchMax === 1 ? '' : 's'} per batch). Upgrade to Plus for batch processing up to 10 items.`,
+        { limit: batchMax, used: batchSize, planId: entitlements.planId }
+      );
+    }
   }
 
   /**
@@ -168,9 +191,9 @@ export class QuotaService {
   }
 
   /**
-   * Checks entry capacity quota before creating a new entry.
+   * Checks entry capacity quota before creating a new entry or batch of entries.
    */
-  static async checkEntryQuota(userId: string): Promise<void> {
+  static async checkEntryQuota(userId: string, countToAdd: number = 1): Promise<void> {
     const entitlements = await getEntitlements(userId);
     const limit = entitlements.limits.max_entries;
 
@@ -183,9 +206,9 @@ export class QuotaService {
       .eq('user_id', userId);
 
     const entryCount = count || 0;
-    if (entryCount >= limit) {
+    if (entryCount + countToAdd > limit) {
       throw new QuotaExceededError(
-        `Entry limit reached (${entryCount}/${limit} saved entries). Upgrade to Plus to save up to 2,000 reference entries.`,
+        `Entry limit reached (${entryCount}/${limit} saved entries). Adding ${countToAdd} item(s) would exceed your plan limit. Upgrade to Plus to save up to 2,000 reference entries.`,
         { limit, used: entryCount, planId: entitlements.planId }
       );
     }

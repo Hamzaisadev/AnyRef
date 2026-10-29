@@ -135,6 +135,32 @@ export class AutofillService {
       productShape: actualShape,
     };
   }
+
+  async autofillBatch(
+    userId: string,
+    items: Array<{
+      entryId: string;
+      imageBuffer: Buffer;
+      mimeType: string;
+      hint?: string;
+    }>
+  ): Promise<SanitizedAutofillResult[]> {
+    const { QuotaService } = await import('./quotaService');
+
+    // 1. Enforce batch size limit against entitlements.limits.batch_max
+    await QuotaService.checkBatchQuota(userId, items.length);
+
+    // 2. Enforce daily autofill quota for the requested batch size
+    await QuotaService.checkDailyQuota(userId, 'autofill_per_day', items.length);
+
+    // 3. Process each item (checking circuit breaker and recording AI usage per item)
+    const results: SanitizedAutofillResult[] = [];
+    for (const item of items) {
+      const res = await this.autofill(userId, item.entryId, item.imageBuffer, item.mimeType, item.hint);
+      results.push(res);
+    }
+    return results;
+  }
 }
 
 export const autofillService = new AutofillService();
