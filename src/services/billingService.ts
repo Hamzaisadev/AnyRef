@@ -37,30 +37,20 @@ export interface BillingProvider {
 export class StandardMoRBillingProvider implements BillingProvider {
   public readonly name = 'mor_standard';
 
-  async createCheckoutSession(params: {
+  async createCheckoutSession(_params: {
     userId: string;
     planId: string;
     email: string;
     returnUrl: string;
   }): Promise<{ checkoutUrl: string }> {
-    return {
-      checkoutUrl: `https://checkout.anyref.app/session?user_id=${encodeURIComponent(
-        params.userId
-      )}&plan=${encodeURIComponent(params.planId)}&return_url=${encodeURIComponent(
-        params.returnUrl
-      )}`,
-    };
+    throw new BadRequestError('Paid checkout is not yet active. Plus tier is coming soon.');
   }
 
-  async createCustomerPortalSession(params: {
+  async createCustomerPortalSession(_params: {
     customerId: string;
     returnUrl: string;
   }): Promise<{ portalUrl: string }> {
-    return {
-      portalUrl: `https://billing.anyref.app/portal?customer_id=${encodeURIComponent(
-        params.customerId
-      )}&return_url=${encodeURIComponent(params.returnUrl)}`,
-    };
+    throw new BadRequestError('Customer portal is not yet active.');
   }
 
   verifyWebhookSignature(rawBody: string, signature: string, secret: string): boolean {

@@ -1,7 +1,6 @@
 import { requireUser } from '@/services/session';
 import { getEntitlements } from '@/services/entitlements';
-import { CreditCard, Sparkles, Check, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
-import Link from 'next/link';
+import { Sparkles, Check, Clock } from 'lucide-react';
 
 export default async function BillingPage() {
   const profile = await requireUser();
@@ -17,7 +16,7 @@ export default async function BillingPage() {
           Subscription & Plans
         </h1>
         <p className="text-layout-layer text-sm font-sans mt-1">
-          Manage your Anyref studio membership, quotas, and billing settings.
+          Manage your Anyref studio membership, quotas, and account limits.
         </p>
       </div>
 
@@ -39,19 +38,16 @@ export default async function BillingPage() {
                     : 'bg-surface-muted text-layout-layer border border-border-subtle'
                 }`}
               >
-                {isStaff ? 'Staff Unlimited' : isPlus ? 'Active Subscriber' : 'Ad-Supported'}
+                {isStaff ? 'Staff Unlimited' : isPlus ? 'Active Subscriber' : 'Standard Tier'}
               </span>
             </div>
           </div>
 
           {!isPlus && !isStaff && (
-            <Link
-              href="#pricing-comparison"
-              className="px-5 py-2.5 rounded-xl bg-primary text-primary-fg font-semibold text-sm hover:bg-primary/95 transition-all flex items-center space-x-2 self-start sm:self-auto shadow-2xs"
-            >
-              <span>Upgrade to Plus</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            <div className="px-3.5 py-1.5 rounded-xl bg-surface-muted border border-border-subtle text-layout-layer text-xs font-semibold self-start sm:self-auto flex items-center space-x-1.5">
+              <Clock className="w-3.5 h-3.5" />
+              <span>Plus is coming soon</span>
+            </div>
           )}
         </div>
 
@@ -85,9 +81,11 @@ export default async function BillingPage() {
           </div>
 
           <div className="p-4 rounded-2xl bg-surface-muted border border-border-subtle">
-            <span className="text-xs text-layout-layer block mb-1">Studio Ads</span>
+            <span className="text-xs text-layout-layer block mb-1">Saved Templates</span>
             <span className="text-lg font-bold text-ink">
-              {entitlements.showAds ? 'Enabled' : 'Removed'}
+              {entitlements.limits.max_entries === null
+                ? 'Unlimited'
+                : `Up to ${entitlements.limits.max_entries}`}
             </span>
           </div>
         </div>
@@ -103,7 +101,7 @@ export default async function BillingPage() {
             <div>
               <h3 className="font-tight font-bold text-xl text-ink">Free Tier</h3>
               <p className="text-xs text-layout-layer mt-0.5">
-                Essential reference prompt extraction with basic daily quotas.
+                Essential reference prompt extraction with standard daily quotas.
               </p>
               <div className="mt-4 flex items-baseline space-x-1">
                 <span className="text-3xl font-extrabold text-ink">$0</span>
@@ -128,8 +126,9 @@ export default async function BillingPage() {
                 <Check className="w-4 h-4 text-layout-layer shrink-0" />
                 <span>50 saved template entries</span>
               </li>
-              <li className="flex items-center space-x-2 text-layout-layer">
-                <span>Ad-supported workspace</span>
+              <li className="flex items-center space-x-2">
+                <Check className="w-4 h-4 text-layout-layer shrink-0" />
+                <span>Standard prompt export (JSON)</span>
               </li>
             </ul>
           </div>
@@ -137,17 +136,17 @@ export default async function BillingPage() {
           {/* Plus Tier */}
           <div className="p-6 rounded-3xl bg-surface border-2 border-primary shadow-sm space-y-5 relative">
             <span className="absolute -top-3 right-6 px-3 py-0.5 rounded-full bg-primary text-primary-fg text-xs font-bold uppercase tracking-wider">
-              Recommended
+              Coming Soon
             </span>
 
             <div>
               <h3 className="font-tight font-bold text-xl text-ink">Plus Tier</h3>
               <p className="text-xs text-layout-layer mt-0.5">
-                Full-power prompt studio for creators, designers, and marketing teams.
+                High-capacity prompt studio for active creators and marketing teams.
               </p>
               <div className="mt-4 flex items-baseline space-x-1">
                 <span className="text-3xl font-extrabold text-ink">$5</span>
-                <span className="text-xs text-layout-layer">/ month (or $48/year)</span>
+                <span className="text-xs text-layout-layer">/ month (planned)</span>
               </div>
             </div>
 
@@ -174,12 +173,6 @@ export default async function BillingPage() {
               </li>
               <li className="flex items-center space-x-2">
                 <Check className="w-4 h-4 text-primary shrink-0" />
-                <span>
-                  <strong>100% Ad-Free studio experience</strong>
-                </span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <Check className="w-4 h-4 text-primary shrink-0" />
                 <span>Batch processing & priority model inference</span>
               </li>
             </ul>
@@ -192,10 +185,12 @@ export default async function BillingPage() {
               ) : (
                 <button
                   type="button"
-                  className="w-full py-3 px-4 bg-primary text-primary-fg font-semibold rounded-xl hover:bg-primary/95 transition-all text-sm flex items-center justify-center space-x-2 shadow-2xs"
+                  disabled
+                  className="w-full py-3 px-4 bg-surface-muted text-layout-layer border border-border-subtle font-semibold rounded-xl text-sm flex items-center justify-center space-x-2 cursor-not-allowed opacity-80"
+                  aria-disabled="true"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Upgrade to Plus for $5/mo</span>
+                  <Sparkles className="w-4 h-4 text-layout-layer" />
+                  <span>Plus is coming soon</span>
                 </button>
               )}
             </div>

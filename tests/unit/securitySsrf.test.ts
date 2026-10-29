@@ -38,8 +38,6 @@ describe('Phase 8 Hardening: SSRF Prevention Static Audit', () => {
     const trustedHosts = [
       'generativelanguage.googleapis.com',
       'supabase.co',
-      'checkout.anyref.app',
-      'billing.anyref.app',
     ];
 
     for (const file of serviceFiles) {
