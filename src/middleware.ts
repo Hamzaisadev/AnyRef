@@ -40,7 +40,9 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/workspace') ||
     pathname.startsWith('/brands') ||
     pathname.startsWith('/library') ||
-    pathname.startsWith('/entries');
+    pathname.startsWith('/entries') ||
+    pathname.startsWith('/settings') ||
+    pathname.startsWith('/admin');
 
   // If user is not logged in and attempts to access protected routes -> /login
   if (isProtectedRoute && !user) {
@@ -48,6 +50,25 @@ export async function middleware(request: NextRequest) {
     redirectUrl.pathname = '/login';
     redirectUrl.searchParams.set('redirectTo', pathname);
     return NextResponse.redirect(redirectUrl);
+  }
+
+  // Admin route defense: enforce staff role for /admin
+  if (pathname.startsWith('/admin') && user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, status')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (
+      !profile ||
+      (profile.role !== 'owner' && profile.role !== 'admin') ||
+      profile.status !== 'active'
+    ) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = '/library';
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   // If user is already logged in and attempts to access /login -> /library

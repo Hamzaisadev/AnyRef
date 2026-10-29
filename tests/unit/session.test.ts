@@ -18,13 +18,38 @@ describe('Seam 5: Session Service (session.ts)', () => {
           error: null,
         }),
       },
+      from: vi.fn((table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { role: 'user', status: 'active', plan_id: 'free' },
+              error: null,
+            }),
+          };
+        }
+        return { select: vi.fn().mockReturnThis() };
+      }),
     } as unknown as Awaited<ReturnType<typeof supabaseServer.createClient>>);
 
     const user = await getUser();
-    expect(user).toEqual(mockUser);
+    expect(user).toMatchObject({
+      id: 'usr-1234',
+      email: 'creator@anyref.app',
+      role: 'user',
+      status: 'active',
+      plan_id: 'free',
+    });
 
     const requiredUser = await requireUser();
-    expect(requiredUser).toEqual(mockUser);
+    expect(requiredUser).toMatchObject({
+      id: 'usr-1234',
+      email: 'creator@anyref.app',
+      role: 'user',
+      status: 'active',
+      plan_id: 'free',
+    });
   });
 
   it('getUser returns null and does not throw when unauthenticated', async () => {

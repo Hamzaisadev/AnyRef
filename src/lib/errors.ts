@@ -13,6 +13,12 @@ export class AppError extends Error {
   }
 }
 
+export class BadRequestError extends AppError {
+  constructor(message = 'Bad request.', details?: unknown) {
+    super(message, 'BAD_REQUEST', 400, details);
+  }
+}
+
 export class ValidationError extends AppError {
   constructor(message: string, details?: unknown) {
     super(message, 'VALIDATION_ERROR', 400, details);
@@ -34,6 +40,12 @@ export class ForbiddenError extends AppError {
 export class NotFoundError extends AppError {
   constructor(message = 'Requested resource not found.') {
     super(message, 'NOT_FOUND', 404);
+  }
+}
+
+export class TooManyRequestsError extends AppError {
+  constructor(message = 'Too many requests. Please slow down.', details?: unknown) {
+    super(message, 'TOO_MANY_REQUESTS', 429, details);
   }
 }
 

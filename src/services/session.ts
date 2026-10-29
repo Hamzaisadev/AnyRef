@@ -1,8 +1,19 @@
 import { createClient } from '../lib/supabaseServer';
-import { UnauthorizedError } from '../lib/errors';
+import { UnauthorizedError, ForbiddenError } from '../lib/errors';
 import type { User } from '@supabase/supabase-js';
+import type { AppRole, AccountStatus } from './authz';
+import { can } from './authz';
 
-export async function getUser(): Promise<User | null> {
+export interface UserProfile {
+  id: string;
+  email: string;
+  role: AppRole;
+  status: AccountStatus;
+  plan_id: string;
+  rawUser: User;
+}
+
+export async function getUser(): Promise<UserProfile | null> {
   try {
     const supabase = await createClient();
     const {
@@ -14,16 +25,89 @@ export async function getUser(): Promise<User | null> {
       return null;
     }
 
-    return user;
+    // Fetch corresponding profile from profiles table
+    let { data: profile } = await supabase
+      .from('profiles')
+      .select('role, status, plan_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    // Auto-heal: If profile row is missing, insert initial default
+    if (!profile) {
+      const ownerEmail = process.env.OWNER_EMAIL?.toLowerCase();
+      const userEmail = user.email?.toLowerCase();
+      const initialRole: AppRole = ownerEmail && userEmail === ownerEmail ? 'owner' : 'user';
+
+      const { data: newProfile } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: user.id,
+          role: initialRole,
+          status: 'active',
+          plan_id: 'free',
+          plan_source: 'default',
+        })
+        .select('role, status, plan_id')
+        .single();
+
+      profile = newProfile;
+    }
+
+    const role = (profile?.role as AppRole) || 'user';
+    const status = (profile?.status as AccountStatus) || 'active';
+    const plan_id = (profile?.plan_id as string) || 'free';
+
+    return {
+      id: user.id,
+      email: user.email || '',
+      role,
+      status,
+      plan_id,
+      rawUser: user,
+    };
   } catch {
     return null;
   }
 }
 
-export async function requireUser(): Promise<User> {
-  const user = await getUser();
-  if (!user) {
+export async function requireUser(): Promise<UserProfile> {
+  const profile = await getUser();
+  if (!profile) {
     throw new UnauthorizedError('Authentication required to access this resource.');
   }
-  return user;
+
+  // Account lifecycle gates
+  if (profile.status === 'suspended') {
+    throw new ForbiddenError('Your account has been suspended. Please contact support.');
+  }
+
+  if (profile.status === 'pending_deletion') {
+    throw new ForbiddenError('This account is pending deletion.');
+  }
+
+  return profile;
+}
+
+export async function requireAdmin(requireMfa = true): Promise<UserProfile> {
+  const profile = await requireUser();
+
+  const isStaff = can(
+    { id: profile.id, role: profile.role, status: profile.status },
+    'open_admin_panel'
+  );
+
+  if (!isStaff) {
+    throw new ForbiddenError('Access denied: Administrator privileges required.');
+  }
+
+  // Enforce TOTP MFA (AAL2) for staff in production if configured
+  if (requireMfa && process.env.ADMIN_MFA_REQUIRED === 'true') {
+    const supabase = await createClient();
+    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aalData && aalData.currentLevel !== 'aal2' && process.env.NODE_ENV === 'production') {
+      throw new ForbiddenError('Multi-Factor Authentication (AAL2) required for administrative access.');
+    }
+  }
+
+  return profile;
 }

@@ -16,7 +16,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Refactored `Navigation`, `BrandSwitcher`, `library/page.tsx`, `workspace/generate/page.tsx`, `workspace/autofill/page.tsx`, `entries/[id]/page.tsx`, `entries/[id]/compare/page.tsx`, `brands/page.tsx`, `login/page.tsx`, and `page.tsx` to use the semantic surface token architecture with guaranteed $\ge 4.5:1$ WCAG contrast.
 
 ### Added
-- **Phase 3R — Re-baseline & Public Multi-Tenant Migration**:
+- **Phase 4 — Authentication, Authorization & Entitlements Engine**:
+  - Central authorization authority (`src/services/authz.ts`) implementing the locked permission matrix for `user`, `admin`, and `owner` roles, preventing privilege escalation and enforcing that admins cannot act on owners or peer admins.
+  - Dynamic entitlements calculator (`src/services/entitlements.ts`):
+    - Resolves `null` (unlimited) quotas and `showAds = false` for staff accounts (`owner`, `admin`).
+    - Resolves Free plan quotas (`5` generations/day, `5` autofills/day, `2` brands, `50` entries, `showAds = true`).
+    - Resolves Plus plan quotas (`50` generations/day, `100` autofills/day, `10` brands, `2000` entries, `showAds = false`).
+    - Applies unexpired `quota_overrides` over base plan limits.
+  - Account lifecycle management (`src/services/accountService.ts`):
+    - 14-day grace period for self-serve account deletion (`pending_deletion`).
+    - Self-serve deletion cancellation and account restoration.
+    - Owner deletion protection preventing accidental orphaned workspace states.
+  - GDPR/privacy user data export (`src/services/exportService.ts`) packaging brands, entries, and metadata into a secure JSON bundle with 24-hour rate limiting.
+  - Public signup protection:
+    - Disposable email domain detection (`src/lib/disposableEmail.ts`) rejecting throwaway addresses.
+    - Mandatory terms of service acceptance and age confirmation (16+).
+    - Google OAuth sign-in integration and passwordless magic link authentication.
+  - Enhanced session security (`src/services/session.ts` and `src/middleware.ts`):
+    - Gatekeeping against `suspended` and `pending_deletion` accounts across all server calls.
+    - MFA assurance verification (AAL2) for administrative routes.
+    - Route guards protecting `/admin` and authenticated app pathways (`/workspace`, `/brands`, `/library`, `/entries`, `/settings`).
+  - Unit test suites:
+    - `tests/unit/authz.test.ts` (30 tests) testing every cell of the permission matrix and role boundaries.
+    - `tests/unit/entitlements.test.ts` (5 tests) testing staff unlimited limits, plan tiers, and override merging.
+    - `tests/unit/accountService.test.ts` (7 tests) testing deletion lifecycle, remaining days calculation, and disposable email rejection.
+  - Expanded project test suite to 138 passing tests across 18 test files.
+
   - Migration `supabase/migrations/0002_roles_plans.sql`:
     - Enums: `app_role` (`'owner'`, `'admin'`, `'user'`), `account_status` (`'active'`, `'suspended'`, `'pending_deletion'`).
     - Tables: `plans` (seeded with `free` and `plus`), `profiles` (with partial unique index `one_owner`), `subscriptions`, `webhook_events`, `quota_overrides`, `app_settings`, `audit_log`, `consent_records`.
