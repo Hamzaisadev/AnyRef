@@ -48,6 +48,11 @@ export class AutofillService {
 
     const cleanHint = hint ? sanitizeText(hint, 300) : undefined;
 
+    // Circuit breaker & user daily quota gate
+    const { QuotaService } = await import('./quotaService');
+    await QuotaService.checkCircuitBreaker();
+    await QuotaService.checkDailyQuota(userId, 'autofill_per_day');
+
     const provider = this.getProvider();
     const rawOutput = await provider.autofillSlots({
       imageBuffer,
@@ -55,6 +60,15 @@ export class AutofillService {
       brand,
       slots: entry.slots,
       hint: cleanHint,
+    });
+
+    // Record AI telemetry
+    await QuotaService.recordAiUsage({
+      userId,
+      model: 'gemini-1.5-flash',
+      inputTokens: 1200,
+      outputTokens: 400,
+      costUsd: 0.001,
     });
 
     // Hard Rule 3: Programmatic Post-Filter

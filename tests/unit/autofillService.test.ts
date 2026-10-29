@@ -4,6 +4,14 @@ import type { EntryRepo } from '@/data/entryRepo';
 import type { BrandRepo } from '@/data/brandRepo';
 import type { AiProvider } from '@/ai/AiProvider';
 
+vi.mock('@/services/quotaService', () => ({
+  QuotaService: {
+    checkCircuitBreaker: vi.fn().mockResolvedValue(undefined),
+    checkDailyQuota: vi.fn().mockResolvedValue({ allowed: true }),
+    recordAiUsage: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 describe('Slice 4 Seam: AutofillService (autofillService.ts)', () => {
   let mockEntryRepo: EntryRepo;
   let mockBrandRepo: BrandRepo;

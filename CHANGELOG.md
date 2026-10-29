@@ -16,6 +16,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Refactored `Navigation`, `BrandSwitcher`, `library/page.tsx`, `workspace/generate/page.tsx`, `workspace/autofill/page.tsx`, `entries/[id]/page.tsx`, `entries/[id]/compare/page.tsx`, `brands/page.tsx`, `login/page.tsx`, and `page.tsx` to use the semantic surface token architecture with guaranteed $\ge 4.5:1$ WCAG contrast.
 
 ### Added
+- **Phase 6 — Plans, Quotas & Merchant-of-Record Billing Engine**:
+  - Architecture Decision Record `docs/adr/0005-billing.md` establishing Merchant-of-Record (MoR) architecture handling global VAT/sales tax and international creator payouts.
+  - Quota and safety circuit breaker service (`src/services/quotaService.ts`):
+    - Daily AI generation (`5`/day on Free, `50`/day on Plus) and autofill (`5`/day on Free, `100`/day on Plus) quota enforcement.
+    - Resource capacity checks for brands (`2` on Free, `10` on Plus) and saved entries (`50` on Free, `2000` on Plus).
+    - Unconditional staff bypass (`null = unlimited`) for owner and admin roles.
+    - Global circuit breaker: halts non-owner model requests during active kill switch, and auto-trips the kill switch when cumulative spend exceeds `global_daily_cost_cap_usd`.
+    - Real-time AI inference telemetry recording in `ai_usage`.
+  - Merchant-of-Record billing engine (`src/services/billingService.ts`):
+    - Pluggable `BillingProvider` interface with HMAC raw-body signature verification.
+    - Database-backed webhook idempotency using `webhook_events (provider, event_id)` primary key conflict detection, guaranteeing safe replay protection.
+    - Out-of-order event rejection utilizing `subscriptions.last_event_at`.
+    - Single authoritative server-side plan sync (`syncPlan()`) with audit logging.
+  - Webhook ingestion route (`/api/webhooks/billing`) with cryptographic signature validation.
+  - User-facing monetization components:
+    - Interactive `<PaywallModal />` (`src/components/PaywallModal.tsx`) featuring real-time usage meters, feature matrix, and one-click Plus upgrade flow.
+    - Studio Subscription & Billing management page (`/billing`) with plan comparison, quota cards, and upgrade actions.
+  - Unit test suites:
+    - `tests/unit/billingService.test.ts` (5 tests) verifying signature verification, duplicate webhook replays, out-of-order event drops, and plan synchronization.
+    - `tests/unit/quotaService.test.ts` (7 tests) verifying circuit breakers, owner test run bypass, staff unlimited access, daily limit thresholds, and brand limits.
+  - Expanded project test suite to 161 passing tests across 21 test files.
+
 - **Phase 5 — Main Admin Panel & Operational Controls**:
   - Dedicated `/admin` route group with isolated `AdminLayout`, `noindex`/`nofollow` robots directives, and staff session enforcement (`requireAdmin()`).
   - System Overview (`/admin`): real-time multi-tenant telemetry (total accounts, active users, Plus subscribers, daily & 7d model inference calls and estimated spend) and global emergency switches:

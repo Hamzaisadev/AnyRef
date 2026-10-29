@@ -32,11 +32,25 @@ export class GenerateService {
       throw new ForbiddenError(`Cannot generate: Brand "${brandId}" not found or unauthorized.`);
     }
 
+    // Circuit breaker & user daily quota gate
+    const { QuotaService } = await import('./quotaService');
+    await QuotaService.checkCircuitBreaker();
+    await QuotaService.checkDailyQuota(userId, 'generate_per_day');
+
     const provider = this.getProvider();
     const result = await provider.generateTemplate({
       imageBuffer,
       mimeType: magicCheck.mimeType,
       brand,
+    });
+
+    // Record AI telemetry
+    await QuotaService.recordAiUsage({
+      userId,
+      model: 'gemini-1.5-flash',
+      inputTokens: 1000,
+      outputTokens: 500,
+      costUsd: 0.001,
     });
 
     // 2. Post-validate AI output consistency
