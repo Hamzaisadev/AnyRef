@@ -1,6 +1,8 @@
 'use client';
 
-import { ChevronDown } from 'lucide-react';
+import React from 'react';
+import Link from 'next/link';
+import { ChevronDown, Plus } from 'lucide-react';
 import type { Brand } from '@/domain/brand';
 import { useBrand } from '@/context/BrandContext';
 
@@ -37,7 +39,15 @@ export function BrandSwitcher({
   const activeBrand = brands.find((b) => b.id === currentBrandId) || brands[0];
 
   if (brands.length === 0) {
-    return null;
+    return (
+      <Link
+        href="/brands"
+        className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors shadow-2xs group"
+      >
+        <Plus className="w-3.5 h-3.5 text-primary" />
+        <span>Create your first brand</span>
+      </Link>
+    );
   }
 
   return (
