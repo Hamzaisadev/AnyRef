@@ -112,7 +112,11 @@ export async function getUser(req?: Request): Promise<UserProfile | null> {
   }
 }
 
-export async function requireUser(req?: Request): Promise<UserProfile> {
+export interface RequireUserOptions {
+  allowPendingDeletion?: boolean;
+}
+
+export async function requireUser(req?: Request, options?: RequireUserOptions): Promise<UserProfile> {
   const profile = await getUser(req);
   if (!profile) {
     throw new UnauthorizedError('Authentication required to access this resource.');
@@ -123,7 +127,7 @@ export async function requireUser(req?: Request): Promise<UserProfile> {
     throw new ForbiddenError('Your account has been suspended. Please contact support.');
   }
 
-  if (profile.status === 'pending_deletion') {
+  if (profile.status === 'pending_deletion' && !options?.allowPendingDeletion) {
     throw new ForbiddenError('This account is pending deletion.');
   }
 

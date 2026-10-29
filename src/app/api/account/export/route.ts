@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   return withErrorHandler(async () => {
-    const user = await requireUser();
+    const user = await requireUser(request);
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
     const userAgent = request.headers.get('user-agent') || undefined;
 
@@ -22,5 +22,5 @@ export async function GET(request: NextRequest) {
         'Content-Disposition': `attachment; filename="${filename}"`,
       },
     });
-  });
+  }, request);
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Layers, Wand2, Sparkles, Palette, LogOut } from 'lucide-react';
+import { Layers, Wand2, Sparkles, Palette, LogOut, Settings } from 'lucide-react';
 import { BrandSwitcher } from './BrandSwitcher';
 import { useBrand } from '@/context/BrandContext';
 import type { Brand } from '@/domain/brand';
@@ -94,16 +94,28 @@ export function Navigation({ brands: propBrands, activeBrandId: propActiveBrandI
           })}
         </nav>
 
-        {/* Right: User & Sign Out */}
+        {/* Right: User, Settings & Sign Out */}
         <div className="flex items-center space-x-2.5 sm:space-x-3">
           {userEmail && (
-            <span
-              className="hidden lg:inline text-xs text-layout-layer max-w-[160px] truncate font-mono bg-surface-muted px-2.5 py-1 rounded-lg border border-border-subtle"
-              title={userEmail}
+            <Link
+              href="/settings"
+              className="hidden lg:inline text-xs text-layout-layer max-w-[160px] truncate font-mono bg-surface-muted px-2.5 py-1 rounded-lg border border-border-subtle hover:border-primary/40 hover:text-ink transition-colors"
+              title={`Settings (${userEmail})`}
             >
               {userEmail}
-            </span>
+            </Link>
           )}
+
+          <Link
+            href="/settings"
+            className={`p-2 rounded-lg border border-border-subtle text-layout-layer hover:text-ink hover:bg-surface-hover transition-colors ${
+              pathname === '/settings' ? 'bg-primary/10 text-primary border-primary/20' : ''
+            }`}
+            title="Settings"
+            aria-label="Account Settings"
+          >
+            <Settings className="w-3.5 h-3.5" />
+          </Link>
 
           <form action="/api/auth/logout" method="POST">
             <button
