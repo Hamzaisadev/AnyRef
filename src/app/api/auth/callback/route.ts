@@ -20,12 +20,19 @@ export async function GET(request: Request) {
       if (data?.user?.id) {
         await ensureUserSeeded(data.user.id);
         const metadata = data.user.user_metadata || {};
-        if (metadata.tos_accepted || metadata.age_confirmed) {
+        const tosAccepted =
+          Boolean(metadata.tos_accepted) || searchParams.get('tos_accepted') === 'true';
+        const ageConfirmed =
+          Boolean(metadata.age_confirmed) || searchParams.get('age_confirmed') === 'true';
+        const tosVersion =
+          searchParams.get('tos_version') || metadata.tos_version || '2026-01';
+
+        if (tosAccepted || ageConfirmed) {
           await ConsentService.recordUserConsent({
             userId: data.user.id,
-            tosVersion: metadata.tos_version || '2026-01',
-            tosAccepted: Boolean(metadata.tos_accepted),
-            ageConfirmed: Boolean(metadata.age_confirmed),
+            tosVersion,
+            tosAccepted,
+            ageConfirmed,
           });
         }
       }

@@ -17,6 +17,27 @@ export interface UserProfile {
   rawUser: User;
 }
 
+export async function ensureProfileExists(user: User) {
+  const admin = createAdminClient();
+  const ownerEmail = process.env.OWNER_EMAIL?.toLowerCase();
+  const userEmail = user.email?.toLowerCase();
+  const initialRole: AppRole = ownerEmail && userEmail === ownerEmail ? 'owner' : 'user';
+
+  const { data: newProfile } = await admin
+    .from('profiles')
+    .insert({
+      user_id: user.id,
+      role: initialRole,
+      status: 'active',
+      plan_id: 'free',
+      plan_source: 'default',
+    })
+    .select('role, status, plan_id, tos_version, tos_accepted_at, age_confirmed_at')
+    .single();
+
+  return newProfile;
+}
+
 export async function getUser(req?: Request): Promise<UserProfile | null> {
   try {
     let authHeader: string | null = null;
@@ -66,25 +87,9 @@ export async function getUser(req?: Request): Promise<UserProfile | null> {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    // Auto-heal: If profile row is missing, insert initial default
+    // Auto-heal: If profile row is missing, insert initial default using admin client (bypassing RLS)
     if (!profile) {
-      const ownerEmail = process.env.OWNER_EMAIL?.toLowerCase();
-      const userEmail = user.email?.toLowerCase();
-      const initialRole: AppRole = ownerEmail && userEmail === ownerEmail ? 'owner' : 'user';
-
-      const { data: newProfile } = await supabaseClient
-        .from('profiles')
-        .insert({
-          user_id: user.id,
-          role: initialRole,
-          status: 'active',
-          plan_id: 'free',
-          plan_source: 'default',
-        })
-        .select('role, status, plan_id, tos_version, tos_accepted_at, age_confirmed_at')
-        .single();
-
-      profile = newProfile;
+      profile = await ensureProfileExists(user);
     }
 
     const role = (profile?.role as AppRole) || 'user';

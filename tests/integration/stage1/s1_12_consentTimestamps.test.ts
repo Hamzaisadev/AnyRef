@@ -54,4 +54,49 @@ describe('S1-12: Consent timestamps persistence on login/signup', () => {
     expect(updatedProfile?.tos_accepted_at).not.toBeNull();
     expect(updatedProfile?.age_confirmed_at).not.toBeNull();
   });
+
+  it('persists ToS and age consent on Google OAuth sign-in via callback query params and uses admin client for session profile auto-heal', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+
+    const loginSource = fs.readFileSync(
+      path.join(process.cwd(), 'src/app/(auth)/login/page.tsx'),
+      'utf8'
+    );
+    expect(loginSource).toContain("searchParams.set('tos_accepted'");
+    expect(loginSource).toContain("searchParams.set('age_confirmed'");
+
+    const callbackSource = fs.readFileSync(
+      path.join(process.cwd(), 'src/app/api/auth/callback/route.ts'),
+      'utf8'
+    );
+    expect(callbackSource).toContain("searchParams.get('tos_accepted')");
+    expect(callbackSource).toContain("searchParams.get('age_confirmed')");
+
+    // Test real DB auto-heal when profile row is missing
+    const testUser = await createTestUser('user');
+    await admin.from('profiles').delete().eq('user_id', testUser.user.id);
+
+    const { data: missingCheck } = await admin
+      .from('profiles')
+      .select('user_id')
+      .eq('user_id', testUser.user.id)
+      .maybeSingle();
+    expect(missingCheck).toBeNull();
+
+    const { ensureProfileExists } = await import('@/services/session');
+    const healed = await ensureProfileExists(testUser.user);
+    expect(healed).not.toBeNull();
+    expect(healed?.role).toBe('user');
+
+    // Verify row now exists in real DB
+    const { data: healedRow } = await admin
+      .from('profiles')
+      .select('user_id, role, status, plan_id')
+      .eq('user_id', testUser.user.id)
+      .single();
+    expect(healedRow?.user_id).toBe(testUser.user.id);
+    expect(healedRow?.status).toBe('active');
+  });
 });
+

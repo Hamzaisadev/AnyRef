@@ -26,6 +26,13 @@ function LoginFormContent() {
     if (safeRedirect && safeRedirect !== '/library') {
       callbackUrl.searchParams.set('redirectTo', safeRedirect);
     }
+    if (agreedTerms) {
+      callbackUrl.searchParams.set('tos_accepted', 'true');
+    }
+    if (ageConfirmed) {
+      callbackUrl.searchParams.set('age_confirmed', 'true');
+    }
+    callbackUrl.searchParams.set('tos_version', '2026-01');
     return callbackUrl.toString();
   }
 
