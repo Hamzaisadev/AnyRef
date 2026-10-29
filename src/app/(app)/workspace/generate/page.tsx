@@ -2,6 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  UploadCloud,
+  ImageIcon,
+  Sparkles,
+  Wand2,
+  Check,
+  Copy,
+  AlertTriangle,
+  Bookmark,
+  Layers,
+  Sliders,
+  Tag,
+  Loader2,
+  ArrowRight,
+} from 'lucide-react';
 import type { Brand } from '@/domain/brand';
 import type { GenerateOutput } from '@/ai/schemas';
 
@@ -13,8 +28,10 @@ export default function GenerateStudioPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [copiedTemplate, setCopiedTemplate] = useState(false);
   const [error, setError] = useState('');
   const [proposal, setProposal] = useState<GenerateOutput | null>(null);
+  const [dragActive, setDragActive] = useState(false);
 
   useEffect(() => {
     fetch('/api/brands')
@@ -31,6 +48,31 @@ export default function GenerateStudioPage() {
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files[0]) {
       const selected = e.target.files[0];
+      setFile(selected);
+      setPreviewUrl(URL.createObjectURL(selected));
+      setProposal(null);
+      setError('');
+    }
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const selected = e.dataTransfer.files[0];
       setFile(selected);
       setPreviewUrl(URL.createObjectURL(selected));
       setProposal(null);
@@ -75,6 +117,13 @@ export default function GenerateStudioPage() {
     }
   }
 
+  async function handleCopyTemplate() {
+    if (!proposal) return;
+    await navigator.clipboard.writeText(proposal.prompt_template);
+    setCopiedTemplate(true);
+    setTimeout(() => setCopiedTemplate(false), 2000);
+  }
+
   async function handleSaveEntry() {
     if (!proposal || !selectedBrandId) return;
 
@@ -112,70 +161,100 @@ export default function GenerateStudioPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="font-tight font-bold text-3xl text-ink tracking-tight">
+        <div className="flex items-center space-x-2 text-xs text-primary font-semibold tracking-wider uppercase mb-1">
+          <Wand2 className="w-3.5 h-3.5" />
+          <span>Poster Engineering Studio</span>
+        </div>
+        <h1 className="font-tight font-bold text-3xl sm:text-4xl text-ink tracking-tight">
           Reference Deconstruction Studio
         </h1>
-        <p className="text-layout-layer text-sm mt-1">
-          Upload any poster reference from Pinterest or campaigns. AI will analyze the layout, lighting, and typography hierarchy without altering product or brand fidelity.
+        <p className="text-layout-layer text-sm sm:text-base mt-1 max-w-2xl leading-relaxed">
+          Upload any reference poster. Gemini analyzes composition hierarchy, typography slots, and lighting setup without saving temporary copies.
         </p>
       </div>
 
       {error && (
-        <div className="p-4 bg-danger/10 border border-danger/20 text-danger text-sm rounded-xl">
-          {error}
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="flex items-center space-x-2.5 p-4 bg-danger/10 border border-danger/20 text-danger text-sm rounded-xl font-medium"
+        >
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
       {/* Main Studio View */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         {/* Left: Input & Dropzone */}
-        <div className="bg-white p-6 rounded-2xl border border-ink/10 shadow-sm space-y-5">
-          <h2 className="font-tight font-bold text-lg text-ink">1. Upload Reference</h2>
+        <div className="bg-white p-6 sm:p-7 rounded-2xl border border-ink/10 shadow-sm space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
+              <span className="w-6 h-6 rounded-lg bg-ink/5 flex items-center justify-center text-xs font-mono font-bold text-ink">
+                1
+              </span>
+              <span>Upload Poster Reference</span>
+            </h2>
+          </div>
 
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase text-ink/70">
-              Active Brand
+            <label className="block text-xs font-semibold uppercase text-ink tracking-wider">
+              Active Brand Context
             </label>
             <select
               value={selectedBrandId}
               onChange={(e) => setSelectedBrandId(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-paper/30 font-medium text-ink cursor-pointer"
             >
               {brands.map((b) => (
                 <option key={b.id} value={b.id}>
-                  {b.name} ({b.wordmark || 'No wordmark'})
+                  {b.name} {b.wordmark ? `(${b.wordmark})` : ''}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="border-2 border-dashed border-ink/20 rounded-xl p-8 text-center space-y-4 hover:border-primary/50 transition-all cursor-pointer relative bg-paper/50">
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`border-2 border-dashed rounded-2xl p-8 text-center space-y-4 transition-all duration-150 cursor-pointer relative ${
+              dragActive
+                ? 'border-primary bg-primary/5 ring-4 ring-primary/10'
+                : 'border-ink/20 hover:border-primary/50 bg-paper/40'
+            }`}
+          >
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp"
               onChange={handleFileChange}
               className="absolute inset-0 opacity-0 cursor-pointer"
+              aria-label="Upload reference poster image"
             />
             {previewUrl ? (
               <div className="space-y-3">
                 <img
                   src={previewUrl}
                   alt="Reference Preview"
-                  className="max-h-72 mx-auto rounded-lg shadow-sm border border-ink/10 object-contain"
+                  className="max-h-72 mx-auto rounded-xl shadow-xs border border-ink/10 object-contain"
                 />
-                <p className="text-xs text-layout-layer font-medium">Click or drag to replace image</p>
+                <p className="text-xs text-layout-layer font-medium">
+                  Click or drag another image to replace
+                </p>
               </div>
             ) : (
-              <div className="space-y-2">
-                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary mx-auto flex items-center justify-center text-xl">
-                  🖼️
+              <div className="space-y-3 py-4">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary mx-auto flex items-center justify-center">
+                  <UploadCloud className="w-6 h-6" />
                 </div>
-                <div className="text-sm font-medium text-ink">
-                  Drag and drop a poster image, or <span className="text-primary underline">browse</span>
+                <div>
+                  <div className="text-sm font-semibold text-ink">
+                    Drag and drop your poster, or <span className="text-primary underline">browse files</span>
+                  </div>
+                  <p className="text-xs text-layout-layer mt-1">
+                    Supports JPG, PNG, WEBP up to 10MB
+                  </p>
                 </div>
-                <p className="text-xs text-layout-layer">
-                  Supports JPG, PNG, WEBP up to 10MB
-                </p>
               </div>
             )}
           </div>
@@ -183,98 +262,163 @@ export default function GenerateStudioPage() {
           <button
             onClick={handleGenerate}
             disabled={generating || !file}
-            className="w-full py-3 bg-primary text-white font-medium rounded-xl hover:opacity-95 transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 text-sm flex items-center justify-center space-x-2"
+            className="w-full py-3.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary/95 transition-all duration-150 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 text-sm flex items-center justify-center space-x-2 active:scale-[0.98] min-h-[48px]"
           >
             {generating ? (
-              <span>Deconstructing Poster with Gemini...</span>
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Deconstructing Poster with Gemini...</span>
+              </>
             ) : (
-              <span>Deconstruct Reference &rarr;</span>
+              <>
+                <span>Deconstruct Reference</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
             )}
           </button>
         </div>
 
         {/* Right: Deconstructed Template & Slot Syntax */}
-        <div className="bg-white p-6 rounded-2xl border border-ink/10 shadow-sm space-y-5">
+        <div className="bg-white p-6 sm:p-7 rounded-2xl border border-ink/10 shadow-sm space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="font-tight font-bold text-lg text-ink">2. Deconstruction Output</h2>
+            <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
+              <span className="w-6 h-6 rounded-lg bg-ink/5 flex items-center justify-center text-xs font-mono font-bold text-ink">
+                2
+              </span>
+              <span>Deconstruction Output</span>
+            </h2>
+
             {proposal && (
               <button
                 onClick={handleSaveEntry}
                 disabled={saving}
-                className="px-4 py-1.5 bg-success text-white text-xs font-semibold rounded-lg hover:opacity-95 transition-all shadow-sm disabled:opacity-50"
+                className="inline-flex items-center space-x-1.5 px-4 py-2 bg-success text-white text-xs font-semibold rounded-xl hover:bg-success/95 transition-all shadow-xs active:scale-[0.98] disabled:opacity-50 min-h-[36px]"
               >
-                {saving ? 'Saving...' : 'Save as Entry'}
+                {saving ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Bookmark className="w-3.5 h-3.5" />
+                    <span>Save as Entry</span>
+                  </>
+                )}
               </button>
             )}
           </div>
 
           {generating ? (
-            <div className="py-20 text-center space-y-3">
-              <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-sm text-layout-layer font-medium">
-                Analyzing composition, typography hierarchy, and lighting...
-              </p>
+            <div className="py-24 text-center space-y-4">
+              <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary mx-auto flex items-center justify-center animate-pulse">
+                <Sparkles className="w-5 h-5 animate-spin" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-tight font-bold text-ink text-base">Deconstructing Layout</p>
+                <p className="text-xs text-layout-layer max-w-xs mx-auto leading-relaxed">
+                  Extracting composition geometry, copy slots, and lighting hierarchy into structured prompt tokens...
+                </p>
+              </div>
             </div>
           ) : proposal ? (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Syntax Token Guide */}
-              <div className="flex items-center space-x-3 text-xs bg-paper p-2.5 rounded-lg border border-ink/10">
-                <span className="flex items-center space-x-1">
+              <div className="flex flex-wrap items-center gap-3 text-xs bg-paper/80 p-3 rounded-xl border border-ink/10">
+                <span className="flex items-center space-x-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-brand-layer" />
-                  <span className="text-brand-layer font-medium">Brand Slot</span>
+                  <span className="text-brand-layer font-semibold">Brand Slot</span>
                 </span>
-                <span className="flex items-center space-x-1">
+                <span className="flex items-center space-x-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-accent" />
-                  <span className="text-accent font-medium">Campaign Slot</span>
+                  <span className="text-accent font-semibold">Campaign Slot</span>
                 </span>
-                <span className="flex items-center space-x-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-layout-layer" />
-                  <span className="text-layout-layer font-medium">Layout Text</span>
+                <span className="flex items-center space-x-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-danger" />
+                  <span className="text-danger font-semibold">Never-Invent Guard</span>
                 </span>
               </div>
 
               {/* Template Display */}
-              <div className="p-4 bg-paper rounded-xl border border-ink/15 font-mono text-xs text-ink/90 leading-relaxed whitespace-pre-wrap">
-                {proposal.prompt_template}
+              <div className="relative group">
+                <div className="p-4 bg-paper rounded-xl border border-ink/15 font-mono text-xs text-ink/90 leading-relaxed whitespace-pre-wrap select-all max-h-60 overflow-y-auto">
+                  {proposal.prompt_template}
+                </div>
+                <button
+                  onClick={handleCopyTemplate}
+                  className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-white/90 border border-ink/10 text-layout-layer hover:text-ink shadow-2xs transition-all opacity-80 hover:opacity-100"
+                  title="Copy template"
+                >
+                  {copiedTemplate ? (
+                    <Check className="w-3.5 h-3.5 text-success" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5" />
+                  )}
+                </button>
               </div>
 
               {/* Slot Table */}
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase text-ink/70">
-                  Configured Slots ({proposal.slots.length})
-                </h3>
-                <div className="space-y-1.5 max-h-56 overflow-y-auto">
-                  {proposal.slots.map((slot) => (
-                    <div
-                      key={slot.key}
-                      className="flex items-center justify-between p-2.5 rounded-lg bg-paper border border-ink/10 text-xs"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <span
-                          className={`w-2 h-2 rounded-full ${
-                            slot.brand_field ? 'bg-brand-layer' : slot.never_invent ? 'bg-danger' : 'bg-accent'
-                          }`}
-                        />
-                        <span className="font-mono font-bold text-ink">{slot.key}</span>
-                        <span className="text-layout-layer">({slot.type})</span>
-                        {slot.never_invent && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-danger/10 text-danger font-semibold">
-                            Never-Invent
-                          </span>
-                        )}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold uppercase text-ink tracking-wider">
+                    Configured Slots ({proposal.slots.length})
+                  </h3>
+                  {proposal.poster_type && (
+                    <span className="text-[11px] font-mono uppercase bg-ink/5 px-2 py-0.5 rounded text-layout-layer">
+                      {proposal.poster_type}
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {proposal.slots.map((slot) => {
+                    const isBrand = Boolean(slot.brand_field);
+                    const isNeverInvent = slot.never_invent;
+
+                    return (
+                      <div
+                        key={slot.key}
+                        className="flex items-center justify-between p-3 rounded-xl bg-paper/60 border border-ink/10 text-xs hover:border-ink/20 transition-colors"
+                      >
+                        <div className="flex items-center space-x-2.5 min-w-0">
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              isBrand ? 'bg-brand-layer' : isNeverInvent ? 'bg-danger' : 'bg-accent'
+                            }`}
+                          />
+                          <span className="font-mono font-bold text-ink truncate">{slot.key}</span>
+                          <span className="text-layout-layer text-[11px]">({slot.type})</span>
+                          {isNeverInvent && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-danger/10 text-danger font-semibold shrink-0">
+                              Never-Invent
+                            </span>
+                          )}
+                          {isBrand && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand-layer/10 text-brand-layer font-semibold shrink-0">
+                              Brand
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-layout-layer text-[11px] truncate max-w-[160px] pl-2 text-right">
+                          {slot.hint || slot.label}
+                        </span>
                       </div>
-                      <span className="text-layout-layer text-[11px] truncate max-w-[180px]">
-                        {slot.hint || slot.label}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="py-24 text-center text-layout-layer text-sm space-y-2">
-              <div className="text-2xl">✨</div>
-              <p>Upload a poster on the left and click "Deconstruct Reference" to generate your prompt template.</p>
+            <div className="py-24 text-center text-layout-layer space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-ink/5 mx-auto flex items-center justify-center text-layout-layer">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-tight font-semibold text-ink text-sm">Template will appear here</p>
+                <p className="text-xs text-layout-layer max-w-xs mx-auto leading-relaxed">
+                  Select a brand, upload a reference poster, and click Deconstruct Reference to generate your structured prompt template.
+                </p>
+              </div>
             </div>
           )}
         </div>

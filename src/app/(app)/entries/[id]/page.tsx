@@ -2,6 +2,19 @@
 
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
+import {
+  Copy,
+  Check,
+  Eye,
+  Paperclip,
+  AlertCircle,
+  Tag,
+  ShieldCheck,
+  Sliders,
+  Sparkles,
+  ArrowRight,
+  Terminal,
+} from 'lucide-react';
 import type { Entry } from '@/domain/entry';
 import type { Brand } from '@/domain/brand';
 import { renderPrompt, RenderResult } from '@/domain/renderPrompt';
@@ -79,11 +92,21 @@ export default function WorkbenchPage({ params }: PageProps) {
   }
 
   if (loading) {
-    return <div className="py-20 text-center text-layout-layer text-sm">Loading workbench...</div>;
+    return (
+      <div className="py-24 text-center space-y-3">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-layout-layer text-sm font-medium">Loading workbench template...</p>
+      </div>
+    );
   }
 
   if (error || !entry) {
-    return <div className="p-4 bg-danger/10 text-danger rounded-xl">{error || 'Entry not found'}</div>;
+    return (
+      <div className="p-5 bg-danger/10 border border-danger/20 text-danger rounded-2xl flex items-center space-x-3">
+        <AlertCircle className="w-5 h-5 shrink-0" />
+        <span className="text-sm font-medium">{error || 'Entry not found'}</span>
+      </div>
+    );
   }
 
   return (
@@ -91,42 +114,61 @@ export default function WorkbenchPage({ params }: PageProps) {
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-ink/10 pb-6">
         <div>
-          <div className="flex items-center space-x-3 mb-1">
-            <span className="text-xs font-mono uppercase bg-ink/5 text-layout-layer px-2 py-0.5 rounded">
+          <div className="flex items-center space-x-2.5 mb-1.5">
+            <span className="text-xs font-mono uppercase bg-ink/5 text-layout-layer px-2 py-0.5 rounded-md font-semibold">
               {entry.poster_type || 'POSTER'}
             </span>
-            <span className="text-xs font-semibold text-primary">
-              Brand: {brand?.name || 'Active Brand'}
+            <span className="text-xs font-semibold text-primary flex items-center space-x-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              <span>Brand: {brand?.name || 'Active Brand'}</span>
             </span>
           </div>
-          <h1 className="font-tight font-bold text-3xl text-ink tracking-tight">
+          <h1 className="font-tight font-bold text-3xl sm:text-4xl text-ink tracking-tight">
             Prompt Workbench
           </h1>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 w-full sm:w-auto">
           <Link
             href={`/entries/${entry.id}/compare`}
-            className="px-4 py-2 border border-ink/15 rounded-lg text-sm font-semibold hover:bg-ink/5 transition-all text-ink"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 border border-ink/15 rounded-xl text-xs sm:text-sm font-semibold hover:bg-ink/5 transition-all text-ink active:scale-[0.98] min-h-[40px]"
           >
-            Visual Compare
+            <Eye className="w-4 h-4 text-layout-layer" />
+            <span>Visual Compare</span>
           </Link>
           <button
             onClick={handleCopy}
-            className="px-5 py-2 bg-primary text-white text-sm font-semibold rounded-lg hover:opacity-95 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 flex items-center space-x-2"
+            className={`flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-5 py-2.5 text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-[0.98] min-h-[40px] ${
+              copied
+                ? 'bg-success text-white'
+                : 'bg-primary text-white hover:bg-primary/95'
+            }`}
           >
-            <span>{copied ? '✓ Copied to Clipboard!' : 'Copy Rendered Prompt'}</span>
+            {copied ? (
+              <>
+                <Check className="w-4 h-4" />
+                <span>Copied to Clipboard!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4" />
+                <span>Copy Rendered Prompt</span>
+              </>
+            )}
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left: Slot Input Form (7 cols) */}
-        <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-ink/10 shadow-sm space-y-6">
+        <div className="lg:col-span-7 bg-white p-6 sm:p-7 rounded-2xl border border-ink/10 shadow-sm space-y-6">
           <div>
-            <h2 className="font-tight font-bold text-lg text-ink">Fill Campaign Variables</h2>
-            <p className="text-xs text-layout-layer mt-0.5">
-              Brand tokens are auto-bound. Fill campaign headline and promo slots.
+            <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
+              <Sliders className="w-4 h-4 text-accent" />
+              <span>Campaign &amp; Brand Variables</span>
+            </h2>
+            <p className="text-xs text-layout-layer mt-1 leading-relaxed">
+              Brand wordmarks and legal footers are auto-populated. Enter headline and promo variables below.
             </p>
           </div>
 
@@ -137,9 +179,13 @@ export default function WorkbenchPage({ params }: PageProps) {
                 const val = slotValues[slot.key] || '';
                 const isNeverInvent = slot.never_invent;
                 const isBrandSlot = Boolean(slot.brand_field);
+                const charRatio = slot.max_length ? val.length / slot.max_length : 0;
 
                 return (
-                  <div key={slot.key} className="space-y-1.5 p-3 rounded-xl border border-ink/10 bg-paper/30">
+                  <div
+                    key={slot.key}
+                    className="space-y-2 p-4 rounded-xl border border-ink/10 bg-paper/40 transition-colors hover:border-ink/20"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <label
@@ -149,19 +195,27 @@ export default function WorkbenchPage({ params }: PageProps) {
                           {slot.label}
                         </label>
                         {isBrandSlot && (
-                          <span className="text-[10px] px-1.5 py-0.2 bg-brand-layer/15 text-brand-layer rounded font-semibold">
+                          <span className="text-[10px] px-2 py-0.5 bg-brand-layer/15 text-brand-layer rounded-full font-semibold">
                             Brand Slot
                           </span>
                         )}
                         {isNeverInvent && (
-                          <span className="text-[10px] px-1.5 py-0.2 bg-accent/20 text-accent font-semibold rounded">
+                          <span className="text-[10px] px-2 py-0.5 bg-accent/20 text-accent font-semibold rounded-full">
                             Needs You
                           </span>
                         )}
                       </div>
 
                       {slot.max_length && (
-                        <span className="text-[11px] text-layout-layer font-mono">
+                        <span
+                          className={`text-[11px] font-mono font-medium ${
+                            charRatio > 0.9
+                              ? 'text-danger'
+                              : charRatio > 0.75
+                              ? 'text-accent'
+                              : 'text-layout-layer'
+                          }`}
+                        >
                           {val.length}/{slot.max_length}
                         </span>
                       )}
@@ -172,7 +226,7 @@ export default function WorkbenchPage({ params }: PageProps) {
                         id={`slot-${slot.key}`}
                         value={val}
                         onChange={(e) => handleSlotChange(slot.key, e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-white"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-white text-ink font-medium"
                       >
                         <option value="">Select option...</option>
                         {slot.options.map((opt) => (
@@ -189,12 +243,12 @@ export default function WorkbenchPage({ params }: PageProps) {
                         maxLength={slot.max_length}
                         onChange={(e) => handleSlotChange(slot.key, e.target.value)}
                         placeholder={slot.hint || `Enter ${slot.label.toLowerCase()}...`}
-                        className="w-full px-3 py-2 rounded-lg border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-white text-ink"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-white text-ink font-medium placeholder:text-layout-layer/70"
                       />
                     )}
 
                     {slot.hint && (
-                      <p className="text-[11px] text-layout-layer">{slot.hint}</p>
+                      <p className="text-[11px] text-layout-layer leading-relaxed">{slot.hint}</p>
                     )}
                   </div>
                 );
@@ -206,24 +260,28 @@ export default function WorkbenchPage({ params }: PageProps) {
         <div className="lg:col-span-5 space-y-6">
           {/* Attach in Flow Checklist */}
           {renderResult.attachChecklist.length > 0 && (
-            <div className="bg-white p-5 rounded-2xl border border-ink/10 shadow-sm space-y-3">
-              <h3 className="font-tight font-bold text-sm text-ink flex items-center space-x-1.5">
-                <span>📎</span>
-                <span>Attach in Flow (External Generator)</span>
-              </h3>
-              <p className="text-xs text-layout-layer">
-                Upload these visual assets in your external generator in exact order:
+            <div className="bg-white p-6 rounded-2xl border border-ink/10 shadow-sm space-y-3.5">
+              <div className="flex items-center space-x-2">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                  <Paperclip className="w-4 h-4" />
+                </div>
+                <h3 className="font-tight font-bold text-sm text-ink">
+                  Attach in Flow (External Generator)
+                </h3>
+              </div>
+              <p className="text-xs text-layout-layer leading-relaxed">
+                Upload these visual assets into Midjourney or Flux in exact sequence:
               </p>
-              <ol className="space-y-1.5 text-xs font-medium">
+              <ol className="space-y-2 text-xs font-medium">
                 {renderResult.attachChecklist.map((item) => (
                   <li
                     key={item.order}
-                    className="flex items-center space-x-2 p-2 rounded-lg bg-paper border border-ink/10"
+                    className="flex items-center space-x-2.5 p-2.5 rounded-xl bg-paper/80 border border-ink/10"
                   >
-                    <span className="w-5 h-5 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center">
+                    <span className="w-5 h-5 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center shrink-0">
                       {item.order}
                     </span>
-                    <span className="text-ink">{item.label}</span>
+                    <span className="text-ink font-semibold">{item.label}</span>
                   </li>
                 ))}
               </ol>
@@ -231,23 +289,34 @@ export default function WorkbenchPage({ params }: PageProps) {
           )}
 
           {/* Rendered Prompt Preview */}
-          <div className="bg-white p-5 rounded-2xl border border-ink/10 shadow-sm space-y-3">
+          <div className="bg-white p-6 rounded-2xl border border-ink/10 shadow-sm space-y-3.5">
             <div className="flex items-center justify-between">
-              <h3 className="font-tight font-bold text-sm text-ink">
-                Live Prompt Output
-              </h3>
-              <span className="text-xs font-mono text-layout-layer">
+              <div className="flex items-center space-x-2">
+                <Terminal className="w-4 h-4 text-primary" />
+                <h3 className="font-tight font-bold text-sm text-ink">
+                  Live Prompt Output
+                </h3>
+              </div>
+              <span className="text-xs font-mono text-layout-layer bg-ink/5 px-2 py-0.5 rounded">
                 {renderResult.text.length} chars
               </span>
             </div>
 
-            <div className="p-4 bg-paper rounded-xl border border-ink/15 font-mono text-xs text-ink/90 leading-relaxed whitespace-pre-wrap select-all max-h-96 overflow-y-auto">
-              {renderResult.text}
+            <div className="relative group">
+              <div className="p-4 bg-paper rounded-xl border border-ink/15 font-mono text-xs text-ink/90 leading-relaxed whitespace-pre-wrap select-all max-h-96 overflow-y-auto">
+                {renderResult.text}
+              </div>
             </div>
 
             {renderResult.missingRequired.length > 0 && (
-              <div className="p-2.5 bg-accent/10 border border-accent/20 rounded-lg text-xs text-accent font-medium">
-                Missing required: {renderResult.missingRequired.join(', ')}
+              <div
+                role="status"
+                className="flex items-start space-x-2 p-3 bg-accent/10 border border-accent/20 rounded-xl text-xs text-accent font-medium leading-relaxed"
+              >
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>
+                  Missing required inputs: <strong>{renderResult.missingRequired.join(', ')}</strong>
+                </span>
               </div>
             )}
           </div>

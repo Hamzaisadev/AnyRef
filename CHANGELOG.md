@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **UI/UX Craft & Tone Overhaul**:
+  - Eliminated all emoji icons across all views; replaced with dedicated, sharp `lucide-react` SVG icons (`Trophy`, `Sliders`, `XCircle`, `FileText`, `Sparkles`, `UploadCloud`, `Package`, `ShieldCheck`, `CheckCircle2`, `Copy`, `Plus`, `Eye`, `ArrowRight`, `ChevronDown`, `LogOut`).
+  - Humanized UI copy across all pages: removed inflated marketing AI jargon, promotional buzzwords, and repetitive headers, replacing them with direct, grounded human language.
+  - Upgraded Navigation with active indicator pills, smooth interactive hover states, accessible touch targets (≥44px), and integrated brand switcher chevron.
+  - Upgraded Reference Deconstruction Studio with responsive drag-and-drop zone, active drag-over indicator ring, animated progress indicator during Gemini parsing, one-click template copying with check feedback, and tri-color slot pills.
+  - Upgraded Prompt Workbench with character-counter warning thresholds, live prompt output pane with tactile copy feedback, and numbered "Attach in Flow" cards.
+  - Upgraded Visual Compare & Winner Vault with interactive verdict buttons, clipboard paste zone (`Ctrl+V`), and evaluation notes.
+  - Upgraded Smart Autofill Studio with prominent Layout-Fit warning alert banner, provenance badges (`Brand Default`, `AI Inferred`, `Needs You`), and ephemeral photo handling cues.
+  - Upgraded Brand Management with tactile color swatches, active palette deletion pills, and clean modal form states.
+
 ### Added
 - **Phase 2 Core Features**:
   - Brand domain, repository, and service (`src/domain/brand.ts`, `src/data/brandRepo.ts`, `src/services/brandService.ts`) with hex-color validation, CRUD operations, and cross-tenant isolation.

@@ -1,6 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import {
+  UploadCloud,
+  Package,
+  Sparkles,
+  AlertTriangle,
+  Check,
+  Tag,
+  ShieldCheck,
+  Loader2,
+  ArrowRight,
+  Sliders,
+} from 'lucide-react';
 import type { Entry } from '@/domain/entry';
 import type { SanitizedAutofillResult } from '@/services/autofillService';
 
@@ -13,7 +25,7 @@ export default function AutofillStudioPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<SanitizedAutofillResult | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
   useEffect(() => {
     fetch('/api/entries')
@@ -30,6 +42,31 @@ export default function AutofillStudioPage() {
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files[0]) {
       const selected = e.target.files[0];
+      setPhoto(selected);
+      setPhotoPreview(URL.createObjectURL(selected));
+      setResult(null);
+      setError('');
+    }
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const selected = e.dataTransfer.files[0];
       setPhoto(selected);
       setPhotoPreview(URL.createObjectURL(selected));
       setResult(null);
@@ -83,17 +120,26 @@ export default function AutofillStudioPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="font-tight font-bold text-3xl text-ink tracking-tight">
-          Autofill Studio
+        <div className="flex items-center space-x-2 text-xs text-primary font-semibold tracking-wider uppercase mb-1">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Product Intelligence</span>
+        </div>
+        <h1 className="font-tight font-bold text-3xl sm:text-4xl text-ink tracking-tight">
+          Smart Autofill Studio
         </h1>
-        <p className="text-layout-layer text-sm mt-1">
-          Drop a raw product photo. AI analyzes product features, detects layout-fit compatibility, and prepares your prompt without saving temporary images.
+        <p className="text-layout-layer text-sm sm:text-base mt-1 max-w-2xl leading-relaxed">
+          Upload a raw product photo. Gemini detects silhouette, validates layout-fit compatibility with your reference, and auto-populates slots without storing image files.
         </p>
       </div>
 
       {error && (
-        <div className="p-4 bg-danger/10 border border-danger/20 text-danger text-sm rounded-xl">
-          {error}
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="flex items-center space-x-2.5 p-4 bg-danger/10 border border-danger/20 text-danger text-sm rounded-xl font-medium"
+        >
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
@@ -101,56 +147,71 @@ export default function AutofillStudioPage() {
         {/* Left: Input Form (5 cols) */}
         <form
           onSubmit={handleAutofill}
-          className="lg:col-span-5 bg-white p-6 rounded-2xl border border-ink/10 shadow-sm space-y-5"
+          className="lg:col-span-5 bg-white p-6 sm:p-7 rounded-2xl border border-ink/10 shadow-sm space-y-6"
         >
-          <h2 className="font-tight font-bold text-lg text-ink">1. Product &amp; Template</h2>
+          <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
+            <span className="w-6 h-6 rounded-lg bg-ink/5 flex items-center justify-center text-xs font-mono font-bold text-ink">
+              1
+            </span>
+            <span>Product &amp; Template</span>
+          </h2>
 
           {/* Template Select */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase text-ink/70">
+            <label className="block text-xs font-semibold uppercase text-ink tracking-wider">
               Target Template Entry
             </label>
             <select
               value={selectedEntryId}
               onChange={(e) => setSelectedEntryId(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-white"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-paper/30 font-medium text-ink cursor-pointer"
             >
               {entries.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.poster_type ? `[${e.poster_type.toUpperCase()}] ` : ''}
-                  {e.prompt_template.slice(0, 50)}...
+                  {e.prompt_template.slice(0, 48)}...
                 </option>
               ))}
             </select>
           </div>
 
           {/* Photo Dropzone */}
-          <div className="border-2 border-dashed border-ink/20 rounded-xl p-6 text-center space-y-3 relative hover:border-primary/50 transition-all cursor-pointer bg-paper/50">
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`border-2 border-dashed rounded-2xl p-6 text-center space-y-3 relative transition-all duration-150 cursor-pointer ${
+              dragActive
+                ? 'border-primary bg-primary/5 ring-4 ring-primary/10'
+                : 'border-ink/20 hover:border-primary/50 bg-paper/40'
+            }`}
+          >
             <input
               type="file"
               accept="image/*"
               onChange={handlePhotoChange}
               className="absolute inset-0 opacity-0 cursor-pointer"
+              aria-label="Upload product photo"
             />
             {photoPreview ? (
               <div className="space-y-2">
                 <img
                   src={photoPreview}
                   alt="Product preview"
-                  className="max-h-56 mx-auto rounded-lg object-contain shadow-sm"
+                  className="max-h-56 mx-auto rounded-xl object-contain shadow-2xs border border-ink/10"
                 />
-                <p className="text-xs text-layout-layer font-medium">Click to replace photo</p>
+                <p className="text-xs text-layout-layer font-medium">Click or drag another photo to replace</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                <div className="w-10 h-10 rounded-full bg-primary/10 text-primary mx-auto flex items-center justify-center text-lg">
-                  📦
+              <div className="space-y-2 py-4">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary mx-auto flex items-center justify-center">
+                  <UploadCloud className="w-6 h-6" />
                 </div>
-                <div className="text-sm font-medium text-ink">
+                <div className="text-sm font-semibold text-ink">
                   Upload Product Photo
                 </div>
-                <p className="text-xs text-layout-layer">
-                  Ephemeral in-memory analysis (never stored)
+                <p className="text-xs text-layout-layer max-w-xs mx-auto">
+                  Analyzed in memory for silhouette &amp; style — never saved to database
                 </p>
               </div>
             )}
@@ -158,7 +219,7 @@ export default function AutofillStudioPage() {
 
           {/* Hint */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase text-ink/70">
+            <label className="block text-xs font-semibold uppercase text-ink tracking-wider">
               Campaign Hint / Brief (Optional)
             </label>
             <input
@@ -166,72 +227,91 @@ export default function AutofillStudioPage() {
               value={hint}
               onChange={(e) => setHint(e.target.value)}
               placeholder="e.g. Festive launch, emphasize midnight black finish"
-              className="w-full px-3 py-2 rounded-lg border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-ink/20 text-sm focus:ring-2 focus:ring-primary focus:outline-none bg-paper/30 font-medium text-ink placeholder:text-layout-layer/70"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading || !photo || !selectedEntryId}
-            className="w-full py-2.5 bg-primary text-white font-semibold rounded-lg hover:opacity-95 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 text-sm flex items-center justify-center space-x-2"
+            className="w-full py-3.5 bg-primary text-white font-semibold rounded-xl hover:bg-primary/95 shadow-xs transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 text-sm flex items-center justify-center space-x-2 active:scale-[0.98] min-h-[48px]"
           >
             {loading ? (
-              <span>Extracting Product Attributes...</span>
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Extracting Product Attributes...</span>
+              </>
             ) : (
-              <span>Run Smart Autofill</span>
+              <>
+                <span>Run Smart Autofill</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
             )}
           </button>
         </form>
 
         {/* Right: Review & Layout-Fit Warnings (7 cols) */}
-        <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-ink/10 shadow-sm space-y-6">
-          <h2 className="font-tight font-bold text-lg text-ink">2. Provenance Review</h2>
+        <div className="lg:col-span-7 bg-white p-6 sm:p-7 rounded-2xl border border-ink/10 shadow-sm space-y-6">
+          <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
+            <span className="w-6 h-6 rounded-lg bg-ink/5 flex items-center justify-center text-xs font-mono font-bold text-ink">
+              2
+            </span>
+            <span>Provenance Review</span>
+          </h2>
 
           {loading ? (
-            <div className="py-20 text-center space-y-3">
-              <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-sm text-layout-layer font-medium">
-                Detecting product silhouette, aspect ratio, and extracting copy...
-              </p>
+            <div className="py-24 text-center space-y-4">
+              <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary mx-auto flex items-center justify-center animate-pulse">
+                <Sparkles className="w-5 h-5 animate-spin" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-tight font-bold text-ink text-base">Analyzing Product Silhouette</p>
+                <p className="text-xs text-layout-layer max-w-xs mx-auto leading-relaxed">
+                  Checking layout aspect ratio fit, mapping brand attributes, and clearing never-invent slots...
+                </p>
+              </div>
             </div>
           ) : result ? (
             <div className="space-y-5">
               {/* Layout-Fit Warning Alert */}
               {result.layoutFitWarning && (
-                <div className="p-4 rounded-xl bg-accent/15 border border-accent/30 text-ink space-y-1">
+                <div
+                  role="status"
+                  className="p-4 rounded-xl bg-accent/15 border border-accent/30 text-ink space-y-1.5"
+                >
                   <div className="flex items-center space-x-2 font-tight font-bold text-accent text-sm">
-                    <span>⚠️</span>
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span>Layout-Fit Conflict Detected</span>
                   </div>
                   <p className="text-xs text-ink/80 leading-relaxed">
-                    This reference poster was designed for a <strong>{result.intendedProductShape}</strong> layout, but the uploaded product photo is <strong>{result.productShape}</strong>. To avoid awkward cropping or visual distortion, consider pairing with a matching aspect-ratio template.
+                    This reference poster was designed for a <strong>{result.intendedProductShape}</strong> layout, but the uploaded product is <strong>{result.productShape}</strong>. Consider choosing a matching aspect-ratio template to prevent visual crowding.
                   </p>
                 </div>
               )}
 
               {/* Product Guess Tag */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-paper border border-ink/10 text-xs">
-                <span className="text-layout-layer">Product Identified:</span>
-                <span className="font-mono font-bold text-ink">{result.product_guess}</span>
+              <div className="flex items-center justify-between p-3.5 rounded-xl bg-paper/60 border border-ink/10 text-xs">
+                <span className="text-layout-layer font-medium">Product Identified:</span>
+                <span className="font-mono font-bold text-ink text-sm">{result.product_guess}</span>
               </div>
 
               {/* Slots Provenance Table */}
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase text-ink/70">
+                <h3 className="text-xs font-semibold uppercase text-ink tracking-wider">
                   Extracted Slot Values
                 </h3>
                 <div className="space-y-2">
                   {Object.entries(result.values).map(([key, item]) => (
                     <div
                       key={key}
-                      className="flex items-center justify-between p-3 rounded-lg border border-ink/10 bg-paper/40 text-xs"
+                      className="flex items-center justify-between p-3.5 rounded-xl border border-ink/10 bg-paper/40 text-xs hover:border-ink/20 transition-colors"
                     >
                       <div className="space-y-0.5">
                         <span className="font-mono font-bold text-ink block">{key}</span>
                         <span className="text-ink/90 font-medium">{item.value}</span>
                       </div>
                       <span
-                        className={`text-[10px] px-2 py-0.5 rounded font-semibold uppercase ${
+                        className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold uppercase shrink-0 ${
                           item.source === 'brand_default'
                             ? 'bg-brand-layer/15 text-brand-layer'
                             : 'bg-primary/10 text-primary'
@@ -246,13 +326,13 @@ export default function AutofillStudioPage() {
                   {result.needs_you.map((key) => (
                     <div
                       key={key}
-                      className="flex items-center justify-between p-3 rounded-lg border border-accent/20 bg-accent/5 text-xs"
+                      className="flex items-center justify-between p-3.5 rounded-xl border border-accent/25 bg-accent/5 text-xs"
                     >
                       <div className="space-y-0.5">
                         <span className="font-mono font-bold text-ink block">{key}</span>
-                        <span className="text-layout-layer italic">Left blank for human input</span>
+                        <span className="text-layout-layer italic">Kept blank for human input</span>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded font-semibold uppercase bg-accent/20 text-accent">
+                      <span className="text-[10px] px-2.5 py-0.5 rounded-full font-semibold uppercase bg-accent/20 text-accent shrink-0">
                         Needs You (Rule 3)
                       </span>
                     </div>
@@ -261,9 +341,16 @@ export default function AutofillStudioPage() {
               </div>
             </div>
           ) : (
-            <div className="py-24 text-center text-layout-layer text-sm space-y-2">
-              <div className="text-2xl">🤖</div>
-              <p>Upload a product photo on the left to automatically populate template slots with brand DNA.</p>
+            <div className="py-24 text-center text-layout-layer space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-ink/5 mx-auto flex items-center justify-center text-layout-layer">
+                <Package className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-tight font-semibold text-ink text-sm">Autofill output will appear here</p>
+                <p className="text-xs text-layout-layer max-w-xs mx-auto leading-relaxed">
+                  Select a template and upload a product photo to automatically match brand tokens and campaign variables.
+                </p>
+              </div>
             </div>
           )}
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ChevronDown } from 'lucide-react';
 import type { Brand } from '@/domain/brand';
 
 interface BrandSwitcherProps {
@@ -34,14 +35,14 @@ export function BrandSwitcher({
   const activeBrand = brands.find((b) => b.id === selectedId) || brands[0];
 
   return (
-    <div className="relative inline-flex items-center space-x-2">
-      <div className="flex items-center space-x-2 bg-paper/80 border border-ink/15 px-3 py-1.5 rounded-lg">
+    <div className="relative inline-flex items-center">
+      <div className="relative flex items-center space-x-2 bg-paper/90 border border-ink/15 hover:border-ink/30 px-3 py-1.5 rounded-lg shadow-2xs transition-all duration-150 group">
         {activeBrand && activeBrand.colors.length > 0 && (
-          <div className="flex -space-x-1">
+          <div className="flex -space-x-1.5 shrink-0" aria-hidden="true">
             {activeBrand.colors.slice(0, 3).map((hex, i) => (
               <span
                 key={i}
-                className="w-3.5 h-3.5 rounded-full border border-white"
+                className="w-3.5 h-3.5 rounded-full border border-white shadow-2xs"
                 style={{ backgroundColor: hex }}
                 title={hex}
               />
@@ -53,7 +54,7 @@ export function BrandSwitcher({
           value={selectedId}
           onChange={(e) => handleChange(e.target.value)}
           aria-label="Select active brand"
-          className="bg-transparent text-ink text-sm font-semibold focus:outline-none cursor-pointer"
+          className="appearance-none bg-transparent text-ink text-xs sm:text-sm font-semibold pr-5 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary cursor-pointer tracking-tight"
         >
           {brands.map((brand) => (
             <option key={brand.id} value={brand.id}>
@@ -61,6 +62,8 @@ export function BrandSwitcher({
             </option>
           ))}
         </select>
+
+        <ChevronDown className="w-3.5 h-3.5 text-layout-layer pointer-events-none absolute right-2.5 transition-transform group-hover:text-ink" />
       </div>
     </div>
   );
