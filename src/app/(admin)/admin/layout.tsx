@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   Activity,
   Radio,
+  KeyRound,
 } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -97,6 +98,14 @@ export default async function AdminLayout({
           >
             <FileText className="w-4 h-4 text-slate-400" />
             <span>Audit Log</span>
+          </Link>
+
+          <Link
+            href="/admin/mfa"
+            className="flex items-center space-x-2.5 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+          >
+            <KeyRound className="w-4 h-4 text-amber-400" />
+            <span>Staff MFA (AAL2)</span>
           </Link>
 
           <div className="pt-3 mt-3 border-t border-slate-800/80">

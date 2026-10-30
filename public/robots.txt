@@ -1,0 +1,67 @@
+# ==========================================
+# Anyref Robots Configuration
+# https://anyref.app
+# ==========================================
+
+# Default rule for standard web crawlers
+User-agent: *
+Allow: /
+Allow: /guides
+Allow: /guides/*
+Allow: /library
+Allow: /privacy
+Allow: /terms
+Allow: /brand/
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /api/
+Disallow: /workspace/
+Disallow: /settings
+Disallow: /billing
+
+# ==========================================
+# AI Search & Retrieval Crawlers (AI Citations)
+# ==========================================
+# Google Search, Google AI Overviews & AI Mode
+User-agent: Googlebot
+Allow: /
+
+# ChatGPT Search index & real-time citation retrieval
+User-agent: OAI-SearchBot
+Allow: /
+
+# Claude Search index & real-time answers
+User-agent: Claude-SearchBot
+Allow: /
+
+# Claude user-initiated page retrieval
+User-agent: Claude-User
+Allow: /
+
+# Perplexity Search index & real-time sources
+User-agent: PerplexityBot
+Allow: /
+
+# Perplexity user-initiated fetcher
+User-agent: Perplexity-User
+Allow: /
+
+# ==========================================
+# AI Training & Evaluation Crawlers
+# ==========================================
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# Sitemap declaration
+Sitemap: https://anyref.app/sitemap.xml

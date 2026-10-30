@@ -303,7 +303,7 @@ anyref/
 - [x] Write all repo docs from section 3 (real content, no placeholders).
 - [x] CI workflow (`ci.yml`) + `dependabot.yml`.
 - [x] **Spike (`scripts/spike-gemini.ts`):** take 5 past Pinterest references and the user's current Claude-project instructions as the system prompt. Run each through Gemini with the `GenerateOutput` schema. Save outputs to `docs/spike/`. The user generates posters from each prompt in Flow and rates them 1–5 against the Claude-made versions.
-- [ ] Write `docs/adr/0005-ai-provider-selection.md` with verdict: **PASS** (average rating within 0.5 of Claude and ≥4 of 5 JSON outputs valid) or **FAIL** (implement `claudeProvider` and set it as default).
+- [x] Write `docs/adr/0007-ai-provider-selection.md` with verdict: **PASS** (average rating within 0.5 of Claude and ≥4 of 5 JSON outputs valid).
 
 **Files:** repo root config, `src/lib/env.ts`, `scripts/*`, `docs/*`, `.github/*`, `public/brand/*`.
 
@@ -364,7 +364,7 @@ create policy "refs_own_prefix" on storage.objects for all
 **Tasks**
 - [x] **Brands:** CRUD, hex-color validation, logo upload, default values, brand switcher in header (persist active brand in cookie).
 - [x] **Library (ships first, replaces Keep):** thumbnail grid per brand, status/poster_type filters, entry detail, one-tap copy.
-- [ ] **Manual "add entry" UI:** paste prompt directly on `/library` without deconstruction.
+- [x] **Manual "add entry" UI:** paste prompt directly on `/library` without deconstruction.
 - [x] **`domain/renderPrompt.ts`:** pure renderer (section 2.3) with full unit coverage.
 - [x] **`ai/AiProvider.ts` interface** + `geminiProvider.ts` (multimodal input, JSON schema output, timeout, retry-once).
 - [x] **Generate flow:** `/api/generate` → `generateService` → provider; validate against `GenerateOutput`; return proposal (not saved).
@@ -372,7 +372,7 @@ create policy "refs_own_prefix" on storage.objects for all
 - [x] **Compare screen:** two panels, paste-from-clipboard for result, status buttons, note, **Save** (explicit).
 - [x] **Manual slot editing:** select-to-slot and collapse-to-text with re-validation.
 - [x] **Remix:** duplicate entry with `parent_entry_id`.
-- [ ] **Import:** `scripts/import-keep.ts` and simple paste-many UI → `draft` entries.
+- [x] **Import:** `scripts/import-keep.ts` and simple paste-many UI → `draft` entries.
 - [x] **Autofill flow:** `/api/autofill` + review screen with source tags, layout-fit warning, batch mode, product-photo in-memory lifecycle per ADR 0004.
 
 **Files:** `src/services/*`, `src/data/*`, `src/ai/*`, `src/domain/*`, `src/components/*`, `src/app/(app)/*`, `src/app/api/*`.
@@ -395,7 +395,7 @@ create policy "refs_own_prefix" on storage.objects for all
 - [x] Output sanitization: render prompt and notes as text (React escapes by default); forbid `dangerouslySetInnerHTML` via lint; strip control characters and zero-width characters from user text slots; enforce max lengths from slot definitions server-side.
 - [x] Template validation on save: every `{{key}}` has a slot; every slot is used; keys unique; optional-block markers balanced.
 - [x] File upload restrictions: allow `image/png|jpeg|webp` only; verify magic bytes (not just MIME); max size from `MAX_UPLOAD_MB` (default 8); random filenames under `{user_id}/`; reject SVG for user uploads.
-- [ ] Image re-encode / EXIF stripping and max pixel dimensions check on upload.
+- [x] Image re-encode / EXIF stripping and max pixel dimensions check on upload.
 - [x] Prompt-injection handling: system prompt rule (2.5); post-validate AI output (reject templates containing URLs, emails, or text that contradicts brand `never_do_rules`); never pass user text as system instructions.
 - [x] Fuzz/garbage tests (`tests/fuzz/`): random strings, 1 MB text, emoji/RTL/zero-width, SQL/HTML/script payloads, malformed JSON, truncated/corrupt images, polyglot files, wrong MIME.
 
@@ -443,12 +443,12 @@ create policy "refs_own_prefix" on storage.objects for all
 - [x] Passwordless magic link + Google OAuth with automatic `profiles` row generation on sign-up.
 - [x] Email-verified check in `requireUser()`; block sign-in for `suspended` and `pending_deletion` accounts.
 - [x] Bot protection: rate limits on auth/API endpoints and disposable-email blocklist on sign-in.
-- [ ] Cloudflare Turnstile widget UI on sign-in.
+- [x] Cloudflare Turnstile widget UI on sign-in.
 - [x] Terms of Service and age confirmation (minimum age 16) recorded in `consent_records`.
 - [x] Central authorization service `src/services/authz.ts` implementing `can(actor, action, target)`.
 - [x] Real entitlement engine `src/services/entitlements.ts` returning `{ role, planId, limits, features, showAds }`.
 - [x] Staff AAL2 enforcement check on `/admin` (when `ADMIN_MFA_REQUIRED=true`).
-- [ ] Staff TOTP MFA enrollment UI.
+- [x] Staff TOTP MFA enrollment UI.
 - [x] Self-serve account deletion (sets `pending_deletion`, 14-day recovery window) and async data export job.
 
 **Files:** `src/services/{authz,entitlements,accountService,exportService}.ts`, `src/app/(auth)/*`, `src/app/(app)/settings/*`, `scripts/bootstrap-owner.ts`, `src/middleware.ts`.
@@ -517,7 +517,7 @@ create policy "refs_own_prefix" on storage.objects for all
 - [x] Storage quota enforcement in `assetService`.
 - [x] Prompt-extraction attack tests against Engine (attempts to leak system prompts via image text or hints).
 - [x] SSRF review: verify zero outbound calls to user-supplied URLs.
-- [ ] Admin panel penetration checklist and OWASP ZAP baseline scan.
+- [x] Admin panel penetration checklist and OWASP ZAP baseline scan.
 
 **DoD:** no high findings; zero system prompt text in any response, log, or error across tests.
 
@@ -532,7 +532,7 @@ create policy "refs_own_prefix" on storage.objects for all
 - [x] Legal documents drafted in `docs/legal/`: Terms of Service, Privacy Policy, Cookie Policy, DMCA Takedown.
 - [x] Logging with user-id hashing and redaction.
 - [x] Owner runbook: incident response, manual suspension, AI kill switch, restore drill.
-- [ ] Launch readiness checklist and load test (500 concurrent users).
+- [x] Launch readiness checklist and load test (500 concurrent users).
 
 **DoD:** clean-room user can register, use free tier with ads, upgrade, cancel, and delete account; owner can run all runbook procedures.
 
