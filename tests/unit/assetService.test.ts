@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { verifyImageMagicBytes, AssetService } from '@/services/assetService';
+import {
+  verifyImageMagicBytes,
+  stripJpegExif,
+  parseImageDimensions,
+  AssetService,
+} from '@/services/assetService';
 import { ValidationError } from '@/lib/errors';
 
 describe('verifyImageMagicBytes', () => {
@@ -120,6 +125,143 @@ describe('AssetService', () => {
 
     expect(() => service.validateUpload(giantPng, 'image/png')).toThrow(ValidationError);
     expect(() => service.validateUpload(giantPng, 'image/png')).toThrow(/exceeds the maximum allowed limit/);
+  });
+
+  it('correctly strips EXIF when preceded by 0xFF fill/padding bytes', () => {
+    const exifData = Buffer.from('Exif\0\0');
+    const app1Length = 2 + exifData.length;
+    const jpegWithFillExif = Buffer.concat([
+      Buffer.from([0xff, 0xd8]), // SOI
+      Buffer.from([0xff, 0xff, 0xe1, (app1Length >> 8) & 0xff, app1Length & 0xff]), // Fill byte + APP1
+      exifData,
+      Buffer.from([0xff, 0xc0, 0x00, 0x11, 0x08, 0x00, 0xc8, 0x00, 0x64, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01]),
+      Buffer.from([0xff, 0xd9]),
+    ]);
+
+    const stripped = stripJpegExif(jpegWithFillExif);
+    expect(stripped.includes(Buffer.from([0xff, 0xe1]))).toBe(false);
+
+    const dims = parseImageDimensions(stripped, 'image/jpeg');
+    expect(dims).toEqual({ width: 100, height: 200 });
+  });
+
+  it('strips multiple consecutive and non-consecutive APP1 segments (EXIF + XMP)', () => {
+    const exifData = Buffer.from('Exif\0\0');
+    const app1ExifLen = 2 + exifData.length;
+    const xmpData = Buffer.from('http://ns.adobe.com/xap/1.0/\0');
+    const app1XmpLen = 2 + xmpData.length;
+
+    const jpegWithMultiApp1 = Buffer.concat([
+      Buffer.from([0xff, 0xd8]),
+      Buffer.from([0xff, 0xe1, (app1ExifLen >> 8) & 0xff, app1ExifLen & 0xff]),
+      exifData,
+      Buffer.from([0xff, 0xdb, 0x00, 0x04, 0x00, 0x00]), // DQT
+      Buffer.from([0xff, 0xe1, (app1XmpLen >> 8) & 0xff, app1XmpLen & 0xff]),
+      xmpData,
+      Buffer.from([0xff, 0xc0, 0x00, 0x11, 0x08, 0x00, 0xc8, 0x00, 0x64, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01]),
+      Buffer.from([0xff, 0xd9]),
+    ]);
+
+    const stripped = stripJpegExif(jpegWithMultiApp1);
+    expect(stripped.includes(Buffer.from([0xff, 0xe1]))).toBe(false);
+  });
+
+  it('rejects oversized JPEG images (>8192px)', () => {
+    const giantJpeg = Buffer.concat([
+      Buffer.from([0xff, 0xd8]),
+      Buffer.from([0xff, 0xc0, 0x00, 0x11, 0x08, 0x00, 0xc8, 0x27, 0x10, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01]), // 10000x200
+      Buffer.from([0xff, 0xd9]),
+    ]);
+
+    expect(() => service.validateUpload(giantJpeg, 'image/jpeg')).toThrow(ValidationError);
+    expect(() => service.validateUpload(giantJpeg, 'image/jpeg')).toThrow(/exceeds the maximum allowed limit/);
+  });
+
+  it('parses dimensions and enforces 8192px limit across VP8, VP8L, and VP8X WebP formats', () => {
+    // 1. Lossy VP8
+    const vp8Header = Buffer.concat([
+      Buffer.from([0x52, 0x49, 0x46, 0x46, 0x20, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]),
+      Buffer.from([0x56, 0x50, 0x38, 0x20, 0x10, 0x00, 0x00, 0x00]),
+      Buffer.from([0x00, 0x00, 0x00]),
+      Buffer.from([0x9d, 0x01, 0x2a]),
+      Buffer.from([0x64, 0x00]), // width = 100
+      Buffer.from([0xc8, 0x00]), // height = 200
+    ]);
+    expect(parseImageDimensions(vp8Header, 'image/webp')).toEqual({ width: 100, height: 200 });
+
+    const giantVp8 = Buffer.concat([
+      Buffer.from([0x52, 0x49, 0x46, 0x46, 0x20, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]),
+      Buffer.from([0x56, 0x50, 0x38, 0x20, 0x10, 0x00, 0x00, 0x00]),
+      Buffer.from([0x00, 0x00, 0x00, 0x9d, 0x01, 0x2a]),
+      Buffer.from([0x00, 0x25]), // width = 9472 (> 8192)
+      Buffer.from([0xc8, 0x00]),
+    ]);
+    expect(() => service.validateUpload(giantVp8, 'image/webp')).toThrow(ValidationError);
+
+    // 2. Lossless VP8L
+    const vp8lHeader = Buffer.concat([
+      Buffer.from([0x52, 0x49, 0x46, 0x46, 0x20, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]),
+      Buffer.from([0x56, 0x50, 0x38, 0x4c, 0x10, 0x00, 0x00, 0x00]),
+      Buffer.from([0x2f]), // 0x2F signature
+      Buffer.from([0x63, 0xc0, 0x31, 0x00]), // 100x200
+    ]);
+    expect(parseImageDimensions(vp8lHeader, 'image/webp')).toEqual({ width: 100, height: 200 });
+
+    const giantVp8l = Buffer.concat([
+      Buffer.from([0x52, 0x49, 0x46, 0x46, 0x20, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]),
+      Buffer.from([0x56, 0x50, 0x38, 0x4c, 0x10, 0x00, 0x00, 0x00]),
+      Buffer.from([0x2f]),
+      Buffer.from([0xff, 0x3f, 0x00, 0x00]), // 16384x1
+    ]);
+    expect(() => service.validateUpload(giantVp8l, 'image/webp')).toThrow(ValidationError);
+
+    // 3. Extended VP8X
+    const vp8xHeader = Buffer.concat([
+      Buffer.from([0x52, 0x49, 0x46, 0x46, 0x20, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]),
+      Buffer.from([0x56, 0x50, 0x38, 0x58, 0x0a, 0x00, 0x00, 0x00]),
+      Buffer.from([0x00, 0x00, 0x00, 0x00]),
+      Buffer.from([0x63, 0x00, 0x00]), // 100
+      Buffer.from([0xc7, 0x00, 0x00]), // 200
+    ]);
+    expect(parseImageDimensions(vp8xHeader, 'image/webp')).toEqual({ width: 100, height: 200 });
+
+    const giantVp8x = Buffer.concat([
+      Buffer.from([0x52, 0x49, 0x46, 0x46, 0x20, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]),
+      Buffer.from([0x56, 0x50, 0x38, 0x58, 0x0a, 0x00, 0x00, 0x00]),
+      Buffer.from([0x00, 0x00, 0x00, 0x00]),
+      Buffer.from([0x0f, 0x27, 0x00]), // 10000 width
+      Buffer.from([0xc7, 0x00, 0x00]),
+    ]);
+    expect(() => service.validateUpload(giantVp8x, 'image/webp')).toThrow(ValidationError);
+  });
+
+  it('gracefully handles corrupt or truncated marker segments without crashing', () => {
+    // 1. Corrupt length field < 2
+    const corruptJpeg = Buffer.concat([
+      Buffer.from([0xff, 0xd8]),
+      Buffer.from([0xff, 0xe0, 0x00, 0x00]),
+      Buffer.from([0xff, 0xd9]),
+    ]);
+    const stripped = stripJpegExif(corruptJpeg);
+    expect(stripped.length).toBeGreaterThanOrEqual(2);
+
+    // 2. Standalone RST markers before SOF
+    const jpegWithRst = Buffer.concat([
+      Buffer.from([0xff, 0xd8]),
+      Buffer.from([0xff, 0xd0]), // RST0
+      Buffer.from([0xff, 0xc0, 0x00, 0x11, 0x08, 0x00, 0xc8, 0x00, 0x64, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01]),
+      Buffer.from([0xff, 0xd9]),
+    ]);
+    expect(parseImageDimensions(jpegWithRst, 'image/jpeg')).toEqual({ width: 100, height: 200 });
+
+    // 3. Corrupt WebP VP8L signature returns null
+    const corruptVp8l = Buffer.concat([
+      Buffer.from([0x52, 0x49, 0x46, 0x46, 0x20, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]),
+      Buffer.from([0x56, 0x50, 0x38, 0x4c, 0x10, 0x00, 0x00, 0x00]),
+      Buffer.from([0x00]), // bad signature
+      Buffer.from([0x63, 0xc0, 0x31, 0x00]),
+    ]);
+    expect(parseImageDimensions(corruptVp8l, 'image/webp')).toBeNull();
   });
 });
 
