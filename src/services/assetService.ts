@@ -93,7 +93,7 @@ export function stripJpegExif(buffer: Buffer): Buffer {
     return buffer;
   }
 
-  const chunks: Buffer[] = [buffer.slice(0, 2)]; // SOI
+  const chunks: Buffer[] = [buffer.slice(0, 2)]; // SOI (FF D8)
   let offset = 2;
 
   while (offset < buffer.length) {
@@ -103,44 +103,71 @@ export function stripJpegExif(buffer: Buffer): Buffer {
       break;
     }
 
-    const marker = buffer[offset + 1];
-    if (marker === undefined) break;
+    const markerStart = offset;
 
-    // EOI (End of Image)
-    if (marker === 0xd9) {
-      chunks.push(buffer.slice(offset));
+    // In ITU-T T.81, any marker may be preceded by any number of 0xFF fill bytes
+    while (offset < buffer.length && buffer[offset] === 0xff) {
+      offset++;
+    }
+
+    if (offset >= buffer.length) {
+      chunks.push(buffer.slice(markerStart));
       break;
     }
 
-    // Standalone markers without payload
-    if (marker === 0xd8 || (marker >= 0xd0 && marker <= 0xd7)) {
-      chunks.push(buffer.slice(offset, offset + 2));
-      offset += 2;
+    const marker = buffer[offset];
+    if (marker === undefined) break;
+
+    // 0x00 is byte-stuffing (escaped 0xFF inside entropy data), not a marker.
+    if (marker === 0x00) {
+      chunks.push(buffer.slice(markerStart, offset + 1));
+      offset += 1;
       continue;
     }
 
-    if (offset + 3 >= buffer.length) {
-      chunks.push(buffer.slice(offset));
+    // EOI (End of Image)
+    if (marker === 0xd9) {
+      chunks.push(buffer.slice(markerStart));
       break;
     }
 
-    const segmentLength = buffer.readUInt16BE(offset + 2);
-    const segmentEnd = offset + 2 + segmentLength;
+    // Standalone markers without payload (SOI 0xD8, RST0..RST7 0xD0..0xD7, TEM 0x01)
+    if (marker === 0xd8 || (marker >= 0xd0 && marker <= 0xd7) || marker === 0x01) {
+      chunks.push(buffer.slice(markerStart, offset + 1));
+      offset += 1;
+      continue;
+    }
 
-    // Check if marker is APP1 (0xE1 = EXIF metadata)
+    // SOS (Start of Scan 0xDA): payload followed by raw entropy data until EOI
+    if (marker === 0xda) {
+      chunks.push(buffer.slice(markerStart));
+      break;
+    }
+
+    // Need at least 2 bytes for the segment length field
+    if (offset + 2 >= buffer.length) {
+      chunks.push(buffer.slice(markerStart));
+      break;
+    }
+
+    const segmentLength = buffer.readUInt16BE(offset + 1);
+    // Segment length includes the 2 length bytes; minimum valid length is 2
+    if (segmentLength < 2) {
+      chunks.push(buffer.slice(markerStart));
+      break;
+    }
+
+    const segmentEnd = offset + 1 + segmentLength;
+
+    // Check if marker is APP1 (0xE1 = EXIF / XMP metadata)
     if (marker === 0xe1) {
-      // Skip this EXIF chunk completely
+      // Skip this EXIF chunk completely (including any leading 0xFF fill bytes)
       offset = segmentEnd;
       continue;
     }
 
-    // If marker is SOS (Start of Scan 0xDA), payload follows, then raw entropy data until EOI
-    if (marker === 0xda) {
-      chunks.push(buffer.slice(offset));
-      break;
-    }
-
-    chunks.push(buffer.slice(offset, segmentEnd));
+    const safeEnd = Math.min(segmentEnd, buffer.length);
+    chunks.push(buffer.slice(markerStart, safeEnd));
     offset = segmentEnd;
   }
 
@@ -164,38 +191,90 @@ export function parseImageDimensions(
       }
     } else if (mimeType === 'image/jpeg') {
       let offset = 2;
-      while (offset < buffer.length - 8) {
+      while (offset < buffer.length) {
         if (buffer[offset] !== 0xff) {
           offset++;
           continue;
         }
-        const marker = buffer[offset + 1];
+
+        // Skip consecutive 0xFF fill bytes
+        while (offset < buffer.length && buffer[offset] === 0xff) {
+          offset++;
+        }
+
+        if (offset >= buffer.length) break;
+
+        const marker = buffer[offset];
         if (marker === undefined) break;
-        // SOF markers: Baseline (0xC0), Extended (0xC1), Progressive (0xC2), Lossless (0xC3)
+
+        // SOF markers:
+        // Baseline (0xC0), Extended (0xC1), Progressive (0xC2), Lossless (0xC3)
+        // Differential Sequential (0xC5), Differential Progressive (0xC6), Differential Lossless (0xC7)
+        // Extended Arithmetic (0xC9), Progressive Arithmetic (0xCA), Lossless Arithmetic (0xCB)
+        // Differential Sequential Arithmetic (0xCD), Differential Progressive Arithmetic (0xCE), Differential Lossless Arithmetic (0xCF)
         if (
           (marker >= 0xc0 && marker <= 0xc3) ||
           (marker >= 0xc5 && marker <= 0xc7) ||
           (marker >= 0xc9 && marker <= 0xcb) ||
           (marker >= 0xcd && marker <= 0xcf)
         ) {
-          const height = buffer.readUInt16BE(offset + 5);
-          const width = buffer.readUInt16BE(offset + 7);
-          return { width, height };
+          // offset is the marker byte itself.
+          // offset + 1, +2: segment length
+          // offset + 3: data precision
+          // offset + 4, +5: height (uint16)
+          // offset + 6, +7: width (uint16)
+          if (offset + 7 < buffer.length) {
+            const height = buffer.readUInt16BE(offset + 4);
+            const width = buffer.readUInt16BE(offset + 6);
+            return { width, height };
+          }
+          return null;
         }
-        if (marker === 0xda) break; // SOS
-        if (offset + 3 >= buffer.length) break;
-        const length = buffer.readUInt16BE(offset + 2);
-        offset += 2 + length;
+
+        // SOS (0xDA) or EOI (0xD9) terminates header markers
+        if (marker === 0xda || marker === 0xd9) break;
+
+        // Standalone markers without payload (RST0..RST7, SOI, TEM, byte stuffing 0x00)
+        if (
+          marker === 0xd8 ||
+          (marker >= 0xd0 && marker <= 0xd7) ||
+          marker === 0x01 ||
+          marker === 0x00
+        ) {
+          offset += 1;
+          continue;
+        }
+
+        if (offset + 2 >= buffer.length) break;
+        const length = buffer.readUInt16BE(offset + 1);
+        if (length < 2) break;
+        offset += 1 + length;
       }
     } else if (mimeType === 'image/webp') {
-      if (buffer.length >= 30) {
+      if (buffer.length >= 25) {
         const chunkType = buffer.slice(12, 16).toString('ascii');
         if (chunkType === 'VP8 ' && buffer.length >= 30) {
+          const b23 = buffer[23];
+          const b24 = buffer[24];
+          const b25 = buffer[25];
+          // Keyframe sync code 0x9D 0x01 0x2A
+          if (b23 === 0x9d && b24 === 0x01 && b25 === 0x2a) {
+            const width = buffer.readUInt16LE(26) & 0x3fff;
+            const height = buffer.readUInt16LE(28) & 0x3fff;
+            return { width, height };
+          }
           const width = buffer.readUInt16LE(26) & 0x3fff;
           const height = buffer.readUInt16LE(28) & 0x3fff;
-          return { width, height };
+          if (width > 0 && height > 0) {
+            return { width, height };
+          }
+          return null;
         }
         if (chunkType === 'VP8L' && buffer.length >= 25) {
+          const b20 = buffer[20];
+          if (b20 !== 0x2f) {
+            return null; // Invalid VP8L signature
+          }
           const b1 = buffer[21];
           const b2 = buffer[22];
           const b3 = buffer[23];
