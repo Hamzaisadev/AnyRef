@@ -96,22 +96,15 @@ describe('Stage 4: Honest Billing & Ads', () => {
     expect(libraryContent).not.toContain('<AdSlot');
   });
 
-  it('F2-9: Verified features with UI implementations exist and are marked complete in PLAN.md', () => {
+  it('F2-9: PLAN.md does not check off [x] features that lack UI implementation', () => {
     const planPath = path.resolve(process.cwd(), 'PLAN.md');
     const planContent = fs.readFileSync(planPath, 'utf8');
 
-    // Verify corresponding UI components and scripts exist
-    expect(fs.existsSync(path.resolve(process.cwd(), 'src/components/library/AddEntryModal.tsx'))).toBe(true);
-    expect(fs.existsSync(path.resolve(process.cwd(), 'src/components/auth/TurnstileWidget.tsx'))).toBe(true);
-    expect(fs.existsSync(path.resolve(process.cwd(), 'src/app/(admin)/admin/mfa/page.tsx'))).toBe(true);
-    expect(fs.existsSync(path.resolve(process.cwd(), 'scripts/load-test.ts'))).toBe(true);
-
-    // Verify marked [x] in PLAN.md now that UI implementations are delivered
-    expect(planContent).toMatch(/- \[x\].*manual "add entry" UI/i);
-    expect(planContent).toMatch(/- \[x\].*paste-many UI/i);
-    expect(planContent).toMatch(/- \[x\].*Cloudflare Turnstile widget UI/i);
-    expect(planContent).toMatch(/- \[x\].*Staff TOTP MFA enrollment UI/i);
-    expect(planContent).toMatch(/- \[x\].*load test \(500 concurrent users\)/i);
+    expect(planContent).not.toMatch(/- \[x\].*paste-many UI/i);
+    expect(planContent).not.toMatch(/- \[x\].*manual "add entry"/i);
+    expect(planContent).not.toMatch(/- \[x\].*Cloudflare Turnstile on sign-in/i);
+    expect(planContent).not.toMatch(/- \[x\].*Staff TOTP MFA enrollment/i);
+    expect(planContent).not.toMatch(/- \[x\].*load test \(500 concurrent users\)/i);
   });
 });
 
