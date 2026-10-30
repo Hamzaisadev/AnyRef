@@ -96,7 +96,7 @@ const DEFAULT_SLOTS: Slot[] = [
   {
     key: 'price_tag',
     label: 'Retail Price',
-    type: 'price',
+    type: 'short_text',
     required: false,
     brand_field: null,
     optional_block: true,

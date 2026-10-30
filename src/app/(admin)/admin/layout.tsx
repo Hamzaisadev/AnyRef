@@ -11,6 +11,8 @@ import {
   FileText,
   Shield,
   ArrowLeft,
+  Activity,
+  Radio,
 } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -96,6 +98,36 @@ export default async function AdminLayout({
             <FileText className="w-4 h-4 text-slate-400" />
             <span>Audit Log</span>
           </Link>
+
+          <div className="pt-3 mt-3 border-t border-slate-800/80">
+            <span className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+              Analytics & Observability
+            </span>
+
+            <Link
+              href="/admin/analytics"
+              className="flex items-center space-x-2.5 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+            >
+              <BarChart3 className="w-4 h-4 text-sky-400" />
+              <span>Funnel Analytics</span>
+            </Link>
+
+            <Link
+              href="/admin/observability"
+              className="flex items-center space-x-2.5 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+            >
+              <Activity className="w-4 h-4 text-indigo-400" />
+              <span>System & LLM Tracing</span>
+            </Link>
+
+            <Link
+              href="/admin/events"
+              className="flex items-center space-x-2.5 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+            >
+              <Radio className="w-4 h-4 text-emerald-400" />
+              <span>Live Event Stream</span>
+            </Link>
+          </div>
 
           {isOwner && (
             <div className="pt-4 mt-4 border-t border-slate-800/80">

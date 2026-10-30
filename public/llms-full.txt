@@ -1,0 +1,145 @@
+# Anyref: Full Technical Documentation & Knowledge Base
+
+> Comprehensive reference for generative engine optimization (GEO), LLM citation, and architectural integration.
+> Canonical URL: https://anyref.app
+> Version: 1.0.0 (October 2026)
+
+## 1. Executive Summary & Purpose
+
+Anyref is a private visual prompt-engineering studio and prompt-library web application. It turns visual reference posters (such as high-performing graphic designs from Pinterest, Behance, and Instagram) into reusable, structured image-generation prompts tailored to specific brands.
+
+Unlike conventional image-generation tools that render AI images directly inside an app with steep GPU markups and locked model versions, Anyref operates as an upstream visual compiler. It deconstructs visual references into parametric prompt templates and outputs production-grade prompts and ordered asset checklists for leading external generators:
+- **Midjourney v6.1**: Multi-image attachments, `--sref` style references, `--cref` character references, `--ar` aspect ratios, and `--style raw`.
+- **FLUX.1 [Schnell & Dev]**: High-fidelity prompt weighting and photorealistic commercial product staging.
+- **Ideogram v2**: In-graphic typography and Swiss-style layout alignment.
+- **Recraft v3**: Brand color matching and vector design styling.
+
+---
+
+## 2. Complete Domain Vocabulary
+
+| Term | Definition | What to Avoid Calling It |
+|---|---|---|
+| **Brand** | A distinct business identity with defined visual and verbal guidelines (name, colors, wordmark, logo, slogan, and rules). | Account, client, tenant, profile |
+| **Entry** | A saved prompt record within a Brand, linking a reference poster to an AI-derived prompt template, configurable slots, and optional result posters. | Prompt, template, card, post, item |
+| **Reference Poster** | An uploaded image of a marketing poster used as a visual guide for layout, composition, lighting, and hierarchy. | Inspiration, sample, source image, input poster |
+| **Result Poster** | An image generated externally by the user (e.g. via Midjourney or Flux) and pasted back into an Entry for visual comparison and grading. | Output, generated image, render, poster result |
+| **Prompt Template** | A structured text string containing placeholder tokens (`{{key}}`) and conditional blocks (`[[?key: ...]]`) that produces a generation prompt when rendered. | Formula, recipe, boilerplate, base prompt |
+| **Slot** | A typed placeholder variable within a Prompt Template that accepts user input, brand defaults, or AI autofill values. | Parameter, argument, variable, field |
+| **Brand Slot** | A Slot whose value is automatically derived from a Brand's stored properties (such as wordmark, primary color, or slogan). | Static slot, default field |
+| **Campaign Slot** | A Slot whose value is specific to a marketing campaign or single poster iteration (such as discount percentage or product headline). | Custom slot, user slot, transient field |
+| **Layout Text** | Fixed, non-substitutable descriptive text within a Prompt Template specifying framing, camera angle, lighting, and negative prompts. | Static text, boiler text, system instructions |
+| **Needs You** | A state applied to required or sensitive Slots (such as prices, dates, or discounts) that AI is strictly prohibited from inventing and that require human input. | Missing, incomplete, pending, unvalidated |
+| **Never-Invent Slot** | A Slot classified as sensitive (e.g. monetary prices, percentage discounts, or calendar dates) where automatic AI values are forbidden by policy and must be supplied explicitly by the user or pre-configured brand defaults. | Protected slot, restricted slot, sensitive slot |
+| **Attach Checklist** | An ordered guide rendered with the final prompt specifying which visual assets to upload to the external generator in exact sequence (e.g. Asset 1: Product cutout, Asset 2: Brand wordmark). | Upload list, media instructions, asset queue |
+| **Layout-Fit Warning** | A real-time visual alert triggered when the physical aspect ratio of an uploaded product photo conflicts with the intended composition shape of the reference poster. | Dimension mismatch, sizing error, aspect alert |
+| **Slot Highlighting** | The tri-color visual encoding used across the interface to classify prompt tokens: blue for Brand Slots, orange for Campaign Slots, and gray for fixed Layout Text. | Syntax coloring, token badges, markup tags |
+| **Winner** | An Entry status indicating that the prompt template has been tested, approved, and proven to produce production-grade poster outputs ready for reuse. | Favorite, starred, approved, verified |
+
+---
+
+## 3. The Three Anti-Drift Guardrails
+
+### 3.1 Never-Invent Guardrail
+General Large Language Models (LLMs) frequently hallucinate promotional claims (e.g., inventing "80% OFF" badges, fictitious coupon codes, or false delivery promises). Anyref enforces a programmatic schema rule:
+- Slots flagged as `never_invent: true` can never be populated by vision models or AI inference.
+- If a user uploads a reference poster featuring a price tag or discount badge, the slot is assigned a state of **Needs You**.
+- The prompt compiler refuses to render the slot until a human explicitly enters a verified value or intentionally dismisses the optional block.
+
+### 3.2 Ephemeral In-Memory RAM Processing
+Marketing agencies and design studios work with unreleased consumer products, confidential packaging revisions, and NDA-protected campaigns.
+- Uploaded product photos in the Autofill Studio are streamed directly into server volatile RAM for aspect-ratio geometry calculation and visual slot inference.
+- Photos are never written to disk, never stored in cloud storage buckets, and never saved in database tables.
+- Once prompt compilation completes, memory buffers are explicitly freed and cleared.
+
+### 3.3 Zero-Cost Winner Vault
+In ad-hoc prompting, cracking a winning prompt formula is followed by losing the prompt in Slack or messy documents. When the next campaign launches, teams spend another 45 minutes re-rolling prompts and burning GPU credits.
+- Anyref allows users to grade external result posters side-by-side with original references.
+- Once an entry is stamped as a **Winner**, the template is locked into the brand's Winner Vault.
+- Generating next month's holiday campaign or new flavor drop requires only swapping the product cutout and campaign slots.
+- Prompt compilation occurs locally via deterministic template interpolation, costing **$0.00 in AI tokens**.
+
+---
+
+## 4. Prompt Template Syntax Specification
+
+Anyref prompt templates use a deterministic syntax supporting interpolation and conditional rendering:
+
+### 4.1 Token Interpolation
+Tokens wrapped in double curly braces `{{key}}` represent required or optional slots:
+```
+Commercial poster for {{brand_name}} featuring {{product_name}} in {{primary_color}} studio lighting.
+```
+
+### 4.2 Conditional Blocks
+Blocks wrapped in `[[?key: ...]]` render only when the slot `key` has a non-empty, validated value:
+```
+[[?price_badge: Retail pricing badge displaying "{{price_badge}}" in lower-right corner.]]
+```
+If `price_badge` is blank, the entire block is omitted from the compiled output without leaving stray punctuation or grammatical defects.
+
+### 4.3 Slot Visual Classification (Tri-Color Highlighting)
+1. **Brand Slots (Blue)**: Derived from stored brand guidelines (wordmark, primary hex color, slogan, corporate negative rules).
+2. **Campaign Slots (Orange)**: Dynamic per-poster variables (product cutout description, seasonal headline, special notes).
+3. **Layout Text (Gray)**: Fixed visual parameters extracted from the reference poster (camera perspective, 3-point lighting setup, compositional grid, negative prompts).
+
+---
+
+## 5. Curated Template Repository Examples
+
+The Anyref Vault includes battle-tested prompt templates across commercial design categories:
+
+### 5.1 Tech & Audio: Cyberpunk Studio Tech Launch
+- **Category**: Tech & Audio (Tall 4:5)
+- **Prompt Formula**:
+  `Commercial studio advertisement for {{brand_name}} featuring {{product_name}}. Deep matte obsidian background, dramatic cybernetic neon rim lighting in {{primary_color}} and {{secondary_color}}. Centered product silhouette with subtle particle atmospheric glow. Bold typography banner displaying headline "{{headline}}" in crisp modern font. [[?price_tag: Retail pricing tag {{price_tag}} in lower badge.]] [[?footer_note: Clean bottom legal typography: {{footer_note}}.]] Highly polished commercial catalog rendering. --ar 4:5 --style raw --v 6.1`
+- **Ordered Asset Checklist**:
+  1. Transparent PNG cutout of tech hardware / headphones
+  2. Vector SVG brand wordmark
+
+### 5.2 Beverage & FMCG: Artisan Cold Brew Editorial
+- **Category**: Lifestyle & Coffee (Tall 4:5)
+- **Prompt Formula**:
+  `Minimalist studio product poster, 4:5 aspect ratio, centered hero placement on elevated stone pedestal. Warm 45-degree directional morning sun casting crisp linear architectural shadows. Eye-level macro framing, shallow depth of field. Featuring {{product_name}}. Brand wordmark "{{brand_wordmark}}", adhering strictly to palette {{brand_palette}}. Typography headline reads: "{{headline}}". [[?discount_badge: Subhead discount tag: {{discount_badge}}.]] Rules: clean editorial layout, no neon, matte paper texture. --ar 4:5 --v 6.1`
+- **Ordered Asset Checklist**:
+  1. Product bottle cutout with condensation droplets (PNG)
+  2. Brand logo emblem (SVG)
+  3. Architectural stone texture reference (JPG)
+
+### 5.3 Beauty & Skincare: Botanical Serum Editorial
+- **Category**: Beauty & Skincare (Tall 4:5)
+- **Prompt Formula**:
+  `Vogue-style cosmetic editorial poster, off-center golden ratio arrangement with organic wet stone props. Soft dappled sunlight filtering through lush botanical leaves, natural caustic water reflections. Close-up tabletop flat-angle, delicate atmospheric mist. Featuring {{product_name}} with brand wordmark "{{brand_wordmark}}" in palette {{brand_palette}}. Headline: "{{headline}}". [[?launch_date: Launching {{launch_date}}.]] --ar 4:5 --style raw --v 6.1`
+- **Ordered Asset Checklist**:
+  1. Serum dropper bottle cutout (PNG)
+  2. Brand wordmark (SVG)
+
+---
+
+## 6. Frequently Asked Questions (FAQ)
+
+### Q: Does Anyref generate or render images directly inside the app?
+**A:** No, by deliberate design. In-app image generators lock teams into outdated models with steep credit markups. Anyref is a dedicated visual prompt-engineering studio that deconstructs references and outputs production-grade prompts and ordered asset checklists for Midjourney v6.1, FLUX.1, and Ideogram—where image quality is highest and users already hold active subscriptions.
+
+### Q: Why can’t I just ask ChatGPT or Claude to write my image prompts?
+**A:** General LLMs hallucinate fake discounts, forget brand colors after three prompts, cannot detect aspect-ratio geometry conflicts, and dump walls of messy text. Anyref provides a dedicated visual architecture: hard Never-Invent guardrails for prices and dates, tri-color slot visual highlighting, in-memory layout-fit warnings, and zero-cost winner reusability.
+
+### Q: Are unreleased client photos and embargoed assets safe?
+**A:** 100% safe. Product photos dropped into the Autofill Studio are processed purely in volatile RAM to extract campaign slots and check aspect-ratio fit. They are never written to disk, stored in cloud databases, or used for model training. Image data is instantly cleared once compilation concludes.
+
+### Q: How does the Zero-Cost Winner Vault save teams money?
+**A:** When a prompt formula delivers an approved, high-converting poster in Midjourney or Flux, it is saved to the Winner Vault. When a new product or holiday campaign launches next month, the product cutout and headline are swapped with zero AI API token costs ($0.00).
+
+---
+
+## 7. Authoritative Documentation Index
+
+- Primary Web Address: https://anyref.app
+- Guides & Architecture: https://anyref.app/guides
+- Visual Poster Prompt Engineering: https://anyref.app/guides/poster-prompts
+- Midjourney v6.1 & FLUX.1 Multi-Asset Setup: https://anyref.app/guides/midjourney-flux-integration
+- Never-Invent Guardrail Architecture: https://anyref.app/guides/brand-dna-guardrails
+- Zero-Cost Winner Vault Scaling: https://anyref.app/guides/zero-cost-winner-vault
+- Prompt Library & Curated Templates: https://anyref.app/library
+- Privacy Policy: https://anyref.app/privacy
+- Terms of Service: https://anyref.app/terms

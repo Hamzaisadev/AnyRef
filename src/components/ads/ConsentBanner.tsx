@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShieldCheck, X } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
+import { TELEMETRY_EVENTS, trackClientEvent } from '@/lib/telemetry';
 
 export function ConsentBanner() {
   const [visible, setVisible] = useState(false);
@@ -11,6 +12,9 @@ export function ConsentBanner() {
     const consent = localStorage.getItem('anyref_cookie_consent');
     if (!consent) {
       setVisible(true);
+      trackClientEvent(TELEMETRY_EVENTS.CONSENT_BANNER_VIEWED, {
+        consent_version: '2026-v2',
+      });
     }
   }, []);
 
@@ -18,12 +22,44 @@ export function ConsentBanner() {
     localStorage.setItem('anyref_cookie_consent', 'all');
     localStorage.setItem('anyref_ad_consent', 'granted');
     setVisible(false);
+
+    // Consent Mode v2 update for GA4 / GTM
+    if (typeof window !== 'undefined' && (window as unknown as { gtag?: Function }).gtag) {
+      (window as unknown as { gtag: Function }).gtag('consent', 'update', {
+        analytics_storage: 'granted',
+        ad_storage: 'granted',
+        ad_user_data: 'granted',
+        ad_personalization: 'granted',
+      });
+    }
+
+    trackClientEvent(TELEMETRY_EVENTS.CONSENT_STATE_UPDATED, {
+      analytics_granted: true,
+      ads_granted: true,
+      consent_type: 'all',
+    });
   }
 
   function handleEssentialOnly() {
     localStorage.setItem('anyref_cookie_consent', 'essential');
     localStorage.setItem('anyref_ad_consent', 'denied');
     setVisible(false);
+
+    // Consent Mode v2 update for GA4 / GTM
+    if (typeof window !== 'undefined' && (window as unknown as { gtag?: Function }).gtag) {
+      (window as unknown as { gtag: Function }).gtag('consent', 'update', {
+        analytics_storage: 'denied',
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+      });
+    }
+
+    trackClientEvent(TELEMETRY_EVENTS.CONSENT_STATE_UPDATED, {
+      analytics_granted: false,
+      ads_granted: false,
+      consent_type: 'essential',
+    });
   }
 
   if (!visible) return null;

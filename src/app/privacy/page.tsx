@@ -4,11 +4,36 @@ import { ArrowLeft, Shield } from 'lucide-react';
 export const metadata = {
   title: 'Privacy Policy | Anyref',
   description: 'Anyref data privacy practices, GDPR compliance disclosures, and sub-processor documentation.',
+  alternates: {
+    canonical: 'https://anyref.app/privacy',
+  },
+};
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: 'https://anyref.app',
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'Privacy Policy',
+      item: 'https://anyref.app/privacy',
+    },
+  ],
 };
 
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-paper text-ink antialiased">
+      <script type="application/ld+json">
+        {JSON.stringify(breadcrumbSchema)}
+      </script>
       <div className="max-w-3xl mx-auto px-6 py-12 space-y-8">
         <Link
           href="/"

@@ -15,12 +15,19 @@ import {
   Sliders,
   Copy,
   Terminal,
+  BookmarkPlus,
+  FileSpreadsheet,
+  FileJson,
+  Download,
+  ExternalLink,
 } from 'lucide-react';
 import type { Entry } from '@/domain/entry';
 import { buildInitialAutofillValues } from '@/domain/slot';
 import type { SanitizedAutofillResult } from '@/services/autofillService';
 import { useBrand } from '@/context/BrandContext';
 import { renderPrompt } from '@/domain/renderPrompt';
+import { compilePrompt } from '@/domain/promptCompiler';
+import { buildBatchCsv, buildComfyUiBatchQueue } from '@/domain/batchExport';
 
 export default function AutofillStudioPage() {
   const { activeBrand } = useBrand();
@@ -38,6 +45,11 @@ export default function AutofillStudioPage() {
   const [editableValues, setEditableValues] = useState<Record<string, string>>({});
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+
+  // Batch Persistence & Export Suite State
+  const [savingDrafts, setSavingDrafts] = useState(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
+  const [savedDraftsCount, setSavedDraftsCount] = useState(0);
 
   const photo = photos[0] ?? null;
 
@@ -92,6 +104,7 @@ export default function AutofillStudioPage() {
     setResult(null);
     setBatchResults([]);
     setActiveBatchIndex(0);
+    setSaveSuccessMsg('');
     if (allFiles.length > batchMax) {
       setError(`Your current plan allows up to ${batchMax} product photo${batchMax === 1 ? '' : 's'} per batch.`);
     } else {
@@ -153,6 +166,7 @@ export default function AutofillStudioPage() {
 
     setLoading(true);
     setError('');
+    setSaveSuccessMsg('');
 
     try {
       const formData = new FormData();
@@ -202,6 +216,132 @@ export default function AutofillStudioPage() {
     setTimeout(() => setCopiedPrompt(false), 2000);
   }
 
+  // --- Feature 3: Persistence & Export Handlers ---
+
+  function handleExportCsv() {
+    const currentBatch = batchResults.length > 0 ? batchResults : result ? [result] : [];
+    if (!selectedEntry || currentBatch.length === 0) return;
+
+    const csvContent = buildBatchCsv(
+      selectedEntry,
+      currentBatch,
+      activeBrand,
+      activeBatchIndex,
+      editableValues
+    );
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `anyref-autofill-batch-${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function handleExportComfyUiQueue() {
+    const currentBatch = batchResults.length > 0 ? batchResults : result ? [result] : [];
+    if (!selectedEntry || currentBatch.length === 0) return;
+
+    const payload = buildComfyUiBatchQueue(
+      selectedEntry,
+      currentBatch,
+      activeBrand,
+      activeBatchIndex,
+      editableValues
+    );
+
+    const jsonStr = JSON.stringify(payload, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `comfyui-batch-queue-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleSaveAllAsDrafts() {
+    const currentBatch = batchResults.length > 0 ? batchResults : result ? [result] : [];
+    if (!selectedEntry || currentBatch.length === 0) return;
+
+    if (!activeBrand?.id) {
+      setError('Please select an active brand in the top navigation before saving drafts.');
+      return;
+    }
+
+    setSavingDrafts(true);
+    setSaveSuccessMsg('');
+    setError('');
+
+    try {
+      let savedCount = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < currentBatch.length; i++) {
+        const item = currentBatch[i]!;
+        const values =
+          i === activeBatchIndex
+            ? editableValues
+            : buildInitialAutofillValues(selectedEntry.slots, activeBrand, item);
+
+        // Pre-seed the slot defaults so the draft has all extracted variables
+        const updatedSlots = selectedEntry.slots.map((slot) => {
+          const val = values[slot.key];
+          return {
+            ...slot,
+            default: val !== undefined && val !== '' ? val : slot.default,
+          };
+        });
+
+        const shapeVal =
+          item.productShape === 'wide' || item.productShape === 'tall' || item.productShape === 'square'
+            ? item.productShape
+            : selectedEntry.intended_product_shape || null;
+
+        const res = await fetch('/api/entries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            brand_id: activeBrand.id,
+            prompt_template: selectedEntry.prompt_template,
+            slots: updatedSlots,
+            status: 'draft',
+            poster_type: selectedEntry.poster_type || null,
+            intended_product_shape: shapeVal,
+            note: `Batch autofill draft #${i + 1} for ${item.product_guess}`,
+            parent_entry_id: selectedEntry.id,
+          }),
+        });
+
+        if (res.ok) {
+          savedCount++;
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          errors.push(`Item #${i + 1}: ${errData.error?.message || 'Failed to save'}`);
+        }
+      }
+
+      if (savedCount > 0) {
+        setSavedDraftsCount(savedCount);
+        setSaveSuccessMsg(
+          `Successfully saved ${savedCount} draft${savedCount > 1 ? 's' : ''} to your Library!`
+        );
+      }
+      if (errors.length > 0) {
+        setError(`Some drafts failed to save: ${errors.join(', ')}`);
+      }
+    } catch {
+      setError('Network communication failed while saving drafts.');
+    } finally {
+      setSavingDrafts(false);
+    }
+  }
+
   const queryParams = new URLSearchParams();
   for (const [k, v] of Object.entries(editableValues)) {
     if (v.trim()) queryParams.set(k, v.trim());
@@ -209,6 +349,8 @@ export default function AutofillStudioPage() {
   const workbenchUrl = selectedEntryId
     ? `/entries/${selectedEntryId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
     : '#';
+
+  const currentBatchItems = batchResults.length > 0 ? batchResults : result ? [result] : [];
 
   return (
     <div className="space-y-8">
@@ -222,7 +364,7 @@ export default function AutofillStudioPage() {
           Smart Autofill Studio
         </h1>
         <p className="text-layout-layer text-sm sm:text-base mt-1 max-w-2xl leading-relaxed">
-          Upload a raw product photo. Gemini detects silhouette, validates layout-fit compatibility with your reference, and auto-populates slots without storing image files.
+          Upload raw product photos. Gemini detects silhouette, validates layout-fit compatibility with your reference, and auto-populates slots without storing image files.
         </p>
       </div>
 
@@ -234,6 +376,26 @@ export default function AutofillStudioPage() {
         >
           <AlertTriangle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
+        </div>
+      )}
+
+      {saveSuccessMsg && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-success/10 border border-success/30 text-success text-sm rounded-xl font-medium animate-in fade-in"
+        >
+          <div className="flex items-center space-x-2.5">
+            <Check className="w-5 h-5 shrink-0" />
+            <span>{saveSuccessMsg}</span>
+          </div>
+          <Link
+            href="/library"
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-success text-white rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity self-start sm:self-auto cursor-pointer shadow-2xs"
+          >
+            <span>Open in Library</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       )}
 
@@ -334,7 +496,7 @@ export default function AutofillStudioPage() {
           <button
             type="submit"
             disabled={loading || !photo || !selectedEntryId}
-            className="w-full py-3.5 bg-primary text-primary-fg font-semibold rounded-xl hover:opacity-90 shadow-xs transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 text-sm flex items-center justify-center space-x-2 active:scale-[0.98] min-h-[48px]"
+            className="w-full py-3.5 bg-primary text-primary-fg font-semibold rounded-xl hover:opacity-90 shadow-xs transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 text-sm flex items-center justify-center space-x-2 active:scale-[0.98] min-h-[48px] cursor-pointer"
           >
             {loading ? (
               <>
@@ -350,7 +512,7 @@ export default function AutofillStudioPage() {
           </button>
         </form>
 
-        {/* Right: Review & Layout-Fit Warnings (7 cols) */}
+        {/* Right: Review & Layout-Fit Warnings & Export Suite (7 cols) */}
         <div className="lg:col-span-7 bg-surface p-6 sm:p-7 rounded-2xl border border-border-subtle shadow-xs space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-tight font-bold text-lg text-ink flex items-center space-x-2">
@@ -367,7 +529,7 @@ export default function AutofillStudioPage() {
                     key={idx}
                     type="button"
                     onClick={() => selectBatchResult(idx)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                       activeBatchIndex === idx
                         ? 'bg-primary text-primary-fg'
                         : 'bg-surface-muted text-layout-layer hover:text-ink border border-border-subtle'
@@ -379,6 +541,62 @@ export default function AutofillStudioPage() {
               </div>
             )}
           </div>
+
+          {/* Batch Persistence & Export Suite Toolbar */}
+          {currentBatchItems.length > 0 && (
+            <div className="p-4 rounded-xl bg-surface-muted border border-border-subtle space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-ink flex items-center space-x-1.5">
+                  <BookmarkPlus className="w-3.5 h-3.5 text-primary" />
+                  <span>Batch Actions &amp; Export Suite</span>
+                </span>
+                <span className="text-[11px] font-mono text-layout-layer">
+                  {currentBatchItems.length} item{currentBatchItems.length > 1 ? 's' : ''} extracted
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveAllAsDrafts}
+                  disabled={savingDrafts}
+                  className="flex-1 min-w-[170px] inline-flex items-center justify-center space-x-2 px-3.5 py-2 bg-primary text-primary-fg rounded-xl text-xs font-semibold hover:opacity-90 transition-all shadow-2xs active:scale-[0.98] disabled:opacity-50 cursor-pointer min-h-[38px]"
+                >
+                  {savingDrafts ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving Drafts...</span>
+                    </>
+                  ) : (
+                    <>
+                      <BookmarkPlus className="w-3.5 h-3.5" />
+                      <span>Save All as Drafts to Library</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportCsv}
+                  className="inline-flex items-center justify-center space-x-1.5 px-3 py-2 bg-surface hover:bg-surface-hover border border-border-subtle rounded-xl text-xs font-semibold text-ink transition-colors shadow-2xs cursor-pointer min-h-[38px]"
+                  title="Export extracted slots as CSV"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-success" />
+                  <span>Export CSV</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportComfyUiQueue}
+                  className="inline-flex items-center justify-center space-x-1.5 px-3 py-2 bg-surface hover:bg-surface-hover border border-border-subtle rounded-xl text-xs font-semibold text-ink transition-colors shadow-2xs cursor-pointer min-h-[38px]"
+                  title="Export ComfyUI prompt queue JSON"
+                >
+                  <FileJson className="w-3.5 h-3.5 text-primary" />
+                  <span>ComfyUI Queue JSON</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {loading ? (
             <div className="py-24 text-center space-y-4">

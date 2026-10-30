@@ -1,4 +1,5 @@
 import { Slot } from './slot';
+import { LEGACY_KEYWORDS } from './promptCompiler';
 
 export interface AttachItem {
   order: number;
@@ -109,6 +110,26 @@ export function renderPrompt(
       order: slot.attachment_order ?? index + 1,
       label: slot.label,
     }));
+
+  // 6. Quality and prompt health warnings
+  if (rendered.length > 2000) {
+    warnings.push(
+      `Prompt is ${rendered.length} characters long. Many diffusion models truncate or degrade past 1500-2000 characters.`
+    );
+  }
+
+  const detectedLegacy = LEGACY_KEYWORDS.filter((kw) =>
+    new RegExp(`\\b${kw}\\b`, 'i').test(rendered)
+  );
+  if (detectedLegacy.length > 0) {
+    warnings.push(
+      `Contains legacy buzzwords (${detectedLegacy.join(', ')}). Modern diffusion models (Flux.1, Midjourney v6) produce cleaner results with natural descriptive terms instead of buzzwords.`
+    );
+  }
+
+  if (missingRequired.length > 0) {
+    warnings.push(`Missing required slot inputs: ${missingRequired.join(', ')}`);
+  }
 
   return {
     text: rendered,

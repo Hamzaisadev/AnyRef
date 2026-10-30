@@ -36,6 +36,17 @@
   }
 }
 
+.dark {
+  --ink: #F8FAFC;
+  --paper: #090A10;
+  --surface: #12131F;
+  --surface-hover: #191B2C;
+  --surface-muted: #1A1C2E;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --layout-layer: #94A3B8;
+}
+
 body {
   color: var(--ink);
   background-color: var(--paper);

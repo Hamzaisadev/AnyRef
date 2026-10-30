@@ -4,11 +4,36 @@ import { ArrowLeft, Shield } from 'lucide-react';
 export const metadata = {
   title: 'Terms of Service | Anyref',
   description: 'Anyref platform terms of service, acceptable use guidelines, and subscriber policies.',
+  alternates: {
+    canonical: 'https://anyref.app/terms',
+  },
+};
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: 'https://anyref.app',
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'Terms of Service',
+      item: 'https://anyref.app/terms',
+    },
+  ],
 };
 
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-paper text-ink antialiased">
+      <script type="application/ld+json">
+        {JSON.stringify(breadcrumbSchema)}
+      </script>
       <div className="max-w-3xl mx-auto px-6 py-12 space-y-8">
         <Link
           href="/"

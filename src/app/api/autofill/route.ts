@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const hint = formData.get('hint');
 
     const entryId = EntryIdSchema.parse(rawEntryId);
-    const photoFiles = photoEntries.filter((f): f is Blob => f instanceof Blob);
+    const photoFiles = photoEntries.filter((f): f is File => typeof f !== 'string');
 
     if (photoFiles.length === 0) {
       throw new ValidationError('Missing required file: product_photo image');

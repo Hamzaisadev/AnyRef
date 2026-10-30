@@ -1,0 +1,17 @@
+{
+  "name": "Anyref — Visual Prompt Studio",
+  "short_name": "Anyref",
+  "description": "Turn Pinterest references into reusable, brand-consistent image generation prompts for Midjourney and Flux.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090A10",
+  "theme_color": "#4B2BFF",
+  "icons": [
+    {
+      "src": "/brand/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
