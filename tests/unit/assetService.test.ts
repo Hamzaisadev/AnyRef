@@ -89,4 +89,37 @@ describe('AssetService', () => {
     expect(result.mimeType).toBe('image/png');
     expect(result.signedUrl).toBeDefined();
   });
+
+  it('correctly strips EXIF APP1 metadata segment from JPEG images', () => {
+    // SOI (FF D8) + APP1 (FF E1, length 8, 'Exif\0\0') + DQT (FF DB, length 4, 00 00) + SOF0 (FF C0, length 11, 8bit, 100x200, 3 components) + EOI (FF D9)
+    const exifData = Buffer.from('Exif\0\0');
+    const app1Length = 2 + exifData.length;
+    const app1Header = Buffer.from([0xff, 0xe1, (app1Length >> 8) & 0xff, app1Length & 0xff]);
+
+    const jpegWithExif = Buffer.concat([
+      Buffer.from([0xff, 0xd8]), // SOI
+      app1Header,
+      exifData,
+      Buffer.from([0xff, 0xc0, 0x00, 0x11, 0x08, 0x00, 0xc8, 0x00, 0x64, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01]), // 100x200
+      Buffer.from([0xff, 0xd9]), // EOI
+    ]);
+
+    const validated = service.validateUpload(jpegWithExif, 'image/jpeg');
+    // Buffer should no longer contain APP1 marker
+    expect(validated.buffer.includes(Buffer.from([0xff, 0xe1]))).toBe(false);
+    expect(validated.width).toBe(100);
+    expect(validated.height).toBe(200);
+  });
+
+  it('rejects images with pixel dimensions exceeding MAX_IMAGE_DIMENSION_PX (8192x8192)', () => {
+    // PNG header with 10,000 x 500 dimensions (bytes 16-19: 0x00 0x00 0x27 0x10, bytes 20-23: 0x00 0x00 0x01 0xf4)
+    const giantPng = Buffer.concat([
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52]),
+      Buffer.from([0x00, 0x00, 0x27, 0x10, 0x00, 0x00, 0x01, 0xf4, 0x08, 0x06, 0x00, 0x00, 0x00]),
+    ]);
+
+    expect(() => service.validateUpload(giantPng, 'image/png')).toThrow(ValidationError);
+    expect(() => service.validateUpload(giantPng, 'image/png')).toThrow(/exceeds the maximum allowed limit/);
+  });
 });
+

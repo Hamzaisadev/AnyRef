@@ -7,6 +7,7 @@ import { Mail, CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-rea
 import { createBrowserClientInstance } from '@/lib/supabaseBrowser';
 import { isDisposableEmail } from '@/lib/disposableEmail';
 import { sanitizeRedirectPath } from '@/lib/sanitizeRedirect';
+import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 
 function LoginFormContent() {
   const searchParams = useSearchParams();
@@ -16,6 +17,7 @@ function LoginFormContent() {
   const [email, setEmail] = useState('');
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -267,9 +269,17 @@ function LoginFormContent() {
                 </label>
               </div>
 
+              {/* Bot Protection Widget */}
+              <TurnstileWidget
+                onVerify={(token) => setTurnstileToken(token)}
+                onError={(err) => {
+                  setErrorMessage(err || 'Bot protection challenge failed. Please refresh.');
+                }}
+              />
+
               <button
                 type="submit"
-                disabled={status === 'loading'}
+                disabled={status === 'loading' || (Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) && !turnstileToken)}
                 className="w-full py-3 px-4 bg-primary text-primary-fg font-semibold rounded-xl hover:bg-primary/95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 disabled:opacity-50 text-sm shadow-sm flex items-center justify-center space-x-2 active:scale-[0.98] min-h-[44px]"
               >
                 {status === 'loading' ? (

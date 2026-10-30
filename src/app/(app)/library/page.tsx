@@ -32,12 +32,16 @@ import { useBrand } from '@/context/BrandContext';
 import { renderPrompt } from '@/domain/renderPrompt';
 import { CURATED_TEMPLATES, type CuratedTemplate } from '@/domain/curatedTemplates';
 import { resolveBrandSlotValue, type Slot } from '@/domain/slot';
+import { AddEntryModal } from '@/components/library/AddEntryModal';
 
 export default function LibraryPage() {
   const router = useRouter();
   const { brands, activeBrandId } = useBrand();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Modal for Manual Add / Bulk Import
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // Tabs: My Templates vs Curated Vault
   const [activeTab, setActiveTab] = useState<'my_templates' | 'curated_vault'>('my_templates');
@@ -235,13 +239,24 @@ export default function LibraryPage() {
           </p>
         </div>
 
-        <Link
-          href="/workspace/generate"
-          className="inline-flex items-center space-x-2 px-5 py-2.5 bg-primary text-primary-fg text-xs sm:text-sm font-semibold rounded-xl hover:opacity-90 transition-all shadow-xs active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary min-h-[40px] cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Deconstruct New Poster</span>
-        </Link>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center space-x-2 px-4 py-2.5 bg-surface border border-border-subtle text-ink text-xs sm:text-sm font-semibold rounded-xl hover:bg-surface-hover transition-all shadow-2xs active:scale-[0.98] min-h-[40px] cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-primary" />
+            <span>Add Manually / Import</span>
+          </button>
+
+          <Link
+            href="/workspace/generate"
+            className="inline-flex items-center space-x-2 px-5 py-2.5 bg-primary text-primary-fg text-xs sm:text-sm font-semibold rounded-xl hover:opacity-90 transition-all shadow-xs active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary min-h-[40px] cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-accent" />
+            <span>Deconstruct Poster</span>
+          </Link>
+        </div>
       </div>
 
       {cloneError && (
@@ -680,6 +695,19 @@ export default function LibraryPage() {
           </div>
         </div>
       )}
+
+      {/* ========================================================
+          MODAL: MANUAL ADD ENTRY & BULK IMPORT
+          ======================================================== */}
+      <AddEntryModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        activeBrandId={activeBrandId}
+        onSuccess={async () => {
+          await fetchEntries();
+          setActiveTab('my_templates');
+        }}
+      />
     </div>
   );
 }
