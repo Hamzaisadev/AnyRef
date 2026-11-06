@@ -27,6 +27,7 @@ import {
   AlertTriangle,
   FileJson,
   Upload,
+  ExternalLink,
   Cpu,
   Palette,
   Maximize2,
@@ -37,6 +38,7 @@ import { type Slot, resolveBrandSlotValue } from '@/domain/slot';
 import { renderPrompt, RenderResult } from '@/domain/renderPrompt';
 import {
   compilePrompt,
+  compileAllTargets,
   type TargetModel,
   type AspectRatio,
   type CompiledPrompt,
@@ -52,25 +54,15 @@ interface PageProps {
  * Copies an image directly to the system clipboard using navigator.clipboard.write.
  * Converts to image/png via canvas to satisfy strict browser MIME type support.
  */
-export type CopyAssetResult = 'image' | 'url' | 'failed';
-
-/**
- * Copies an image directly to the system clipboard using navigator.clipboard.write.
- * Converts to image/png via canvas to satisfy strict browser MIME type support.
- */
-async function copyImageToClipboard(imageUrl: string): Promise<CopyAssetResult> {
+async function copyImageToClipboard(imageUrl: string): Promise<boolean> {
   try {
-    if (typeof window === 'undefined' || !navigator.clipboard) {
-      return 'failed';
-    }
-
     const res = await fetch(imageUrl);
     const blob = await res.blob();
 
-    if (blob.type === 'image/png' && typeof ClipboardItem !== 'undefined' && navigator.clipboard.write) {
+    if (blob.type === 'image/png') {
       const item = new ClipboardItem({ 'image/png': blob });
       await navigator.clipboard.write([item]);
-      return 'image';
+      return true;
     }
 
     // Convert JPEG/WebP/SVG to PNG for clipboard compliance
@@ -97,27 +89,13 @@ async function copyImageToClipboard(imageUrl: string): Promise<CopyAssetResult> 
     );
     if (!pngBlob) throw new Error('Canvas conversion to PNG failed');
 
-    if (typeof ClipboardItem !== 'undefined' && navigator.clipboard.write) {
-      const item = new ClipboardItem({ 'image/png': pngBlob });
-      await navigator.clipboard.write([item]);
-      return 'image';
-    }
-    throw new Error('ClipboardItem write unavailable');
+    const item = new ClipboardItem({ 'image/png': pngBlob });
+    await navigator.clipboard.write([item]);
+    return true;
   } catch {
-    // If it's a blob: or data: URL, do not copy an unusable ephemeral link to clipboard
-    if (imageUrl.startsWith('blob:') || imageUrl.startsWith('data:')) {
-      return 'failed';
-    }
-    // Graceful fallback for web URLs: copy direct URL so caller has asset link
-    if (navigator.clipboard?.writeText) {
-      try {
-        await navigator.clipboard.writeText(imageUrl);
-        return 'url';
-      } catch {
-        return 'failed';
-      }
-    }
-    return 'failed';
+    // Graceful fallback: copy direct image URL so caller has asset link
+    await navigator.clipboard.writeText(imageUrl);
+    return false;
   }
 }
 
@@ -164,13 +142,10 @@ function WorkbenchContent({ id }: { id: string }) {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('4:5');
   const [rawMode, setRawMode] = useState<boolean>(true);
   const [stylizeVal, setStylizeVal] = useState<number>(100);
-  const [cfgScale, setCfgScale] = useState<number>(7.0);
-  const [stepsVal, setStepsVal] = useState<number>(30);
 
   // Asset Drawer State
   const [isAssetDrawerOpen, setIsAssetDrawerOpen] = useState(true);
   const [assetCopiedId, setAssetCopiedId] = useState<string | null>(null);
-  const [assetCopyStatus, setAssetCopyStatus] = useState<{ id: string; type: CopyAssetResult } | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [localCutouts, setLocalCutouts] = useState<{ id: string; name: string; url: string }[]>([]);
   const cutoutInputRef = useRef<HTMLInputElement>(null);
@@ -260,25 +235,12 @@ function WorkbenchContent({ id }: { id: string }) {
     ? renderPrompt(entry.prompt_template, entry.slots, slotValues)
     : { text: '', missingRequired: [], warnings: [], attachChecklist: [] };
 
-  // Cleanup object URLs for local cutouts on unmount
-  useEffect(() => {
-    return () => {
-      for (const cutout of localCutouts) {
-        if (cutout.url.startsWith('blob:')) {
-          URL.revokeObjectURL(cutout.url);
-        }
-      }
-    };
-  }, [localCutouts]);
-
   // Multi-Model Compilation
   const compiledPrompt: CompiledPrompt = compilePrompt(renderResult.text, targetModel, {
     aspectRatio,
     negativePrompt: brand?.never_do_rules || undefined,
     rawMode,
     stylize: stylizeVal,
-    cfgScale,
-    steps: stepsVal,
   });
 
   // Combined warnings from renderer + target compiler
@@ -301,13 +263,9 @@ function WorkbenchContent({ id }: { id: string }) {
   }
 
   async function handleCopyAsset(url: string, assetId: string) {
-    const res = await copyImageToClipboard(url);
-    setAssetCopyStatus({ id: assetId, type: res });
+    const success = await copyImageToClipboard(url);
     setAssetCopiedId(assetId);
-    setTimeout(() => {
-      setAssetCopyStatus(null);
-      setAssetCopiedId(null);
-    }, 2500);
+    setTimeout(() => setAssetCopiedId(null), 2500);
   }
 
   function handleCutoutUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -321,16 +279,6 @@ function WorkbenchContent({ id }: { id: string }) {
       };
       setLocalCutouts((prev) => [newCutout, ...prev]);
     }
-  }
-
-  function handleRemoveCutout(idToRemove: string) {
-    setLocalCutouts((prev) => {
-      const target = prev.find((c) => c.id === idToRemove);
-      if (target && target.url.startsWith('blob:')) {
-        URL.revokeObjectURL(target.url);
-      }
-      return prev.filter((c) => c.id !== idToRemove);
-    });
   }
 
   async function handleRemix() {
@@ -644,16 +592,10 @@ function WorkbenchContent({ id }: { id: string }) {
                         onClick={() => handleCopyAsset(brand.logo_path!, 'brand-logo')}
                         className="flex-1 inline-flex items-center justify-center space-x-1.5 px-2.5 py-1.5 bg-primary text-primary-fg rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-2xs"
                       >
-                        {assetCopyStatus?.id === 'brand-logo' ? (
+                        {assetCopiedId === 'brand-logo' ? (
                           <>
                             <Check className="w-3.5 h-3.5" />
-                            <span>
-                              {assetCopyStatus.type === 'image'
-                                ? 'Copied Image!'
-                                : assetCopyStatus.type === 'url'
-                                ? 'Copied Link!'
-                                : 'Copy Failed'}
-                            </span>
+                            <span>Copied Image!</span>
                           </>
                         ) : (
                           <>
@@ -741,16 +683,10 @@ function WorkbenchContent({ id }: { id: string }) {
                         onClick={() => handleCopyAsset(entry.reference_path!, 'reference-poster')}
                         className="flex-1 inline-flex items-center justify-center space-x-1.5 px-2.5 py-1.5 bg-primary text-primary-fg rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-2xs"
                       >
-                        {assetCopyStatus?.id === 'reference-poster' ? (
+                        {assetCopiedId === 'reference-poster' ? (
                           <>
                             <Check className="w-3.5 h-3.5" />
-                            <span>
-                              {assetCopyStatus.type === 'image'
-                                ? 'Copied Image!'
-                                : assetCopyStatus.type === 'url'
-                                ? 'Copied Link!'
-                                : 'Copy Failed'}
-                            </span>
+                            <span>Copied Image!</span>
                           </>
                         ) : (
                           <>
@@ -890,16 +826,10 @@ function WorkbenchContent({ id }: { id: string }) {
                         onClick={() => handleCopyAsset(localCutouts[0]!.url, 'local-cutout')}
                         className="flex-1 inline-flex items-center justify-center space-x-1.5 px-2.5 py-1.5 bg-primary text-primary-fg rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-2xs"
                       >
-                        {assetCopyStatus?.id === 'local-cutout' ? (
+                        {assetCopiedId === 'local-cutout' ? (
                           <>
                             <Check className="w-3.5 h-3.5" />
-                            <span>
-                              {assetCopyStatus.type === 'image'
-                                ? 'Copied Image!'
-                                : assetCopyStatus.type === 'url'
-                                ? 'Copied Link!'
-                                : 'Copy Failed'}
-                            </span>
+                            <span>Copied Image!</span>
                           </>
                         ) : (
                           <>
@@ -916,15 +846,6 @@ function WorkbenchContent({ id }: { id: string }) {
                         aria-label="Download cutout"
                       >
                         <Download className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCutout(localCutouts[0]!.id)}
-                        className="p-1.5 rounded-lg border border-border-subtle hover:bg-danger/10 hover:text-danger text-layout-layer transition-colors cursor-pointer"
-                        title="Remove cutout"
-                        aria-label="Remove cutout"
-                      >
-                        <X className="w-3.5 h-3.5" />
                       </button>
                     </>
                   ) : (
@@ -1123,38 +1044,6 @@ function WorkbenchContent({ id }: { id: string }) {
                     className="w-24 accent-primary cursor-pointer"
                   />
                   <span className="font-mono text-xs w-8">{stylizeVal}</span>
-                </div>
-              </div>
-            )}
-
-            {targetModel === 'sd_comfyui' && (
-              <div className="flex flex-wrap items-center justify-between gap-4 p-3 bg-surface-muted rounded-xl border border-border-subtle text-xs">
-                <div className="flex items-center space-x-2 font-medium text-ink">
-                  <span>CFG Scale:</span>
-                  <input
-                    type="range"
-                    min="1"
-                    max="20"
-                    step="0.5"
-                    value={cfgScale}
-                    onChange={(e) => setCfgScale(Number(e.target.value))}
-                    className="w-24 accent-primary cursor-pointer"
-                  />
-                  <span className="font-mono text-xs w-8">{cfgScale.toFixed(1)}</span>
-                </div>
-
-                <div className="flex items-center space-x-2 font-medium text-ink">
-                  <span>Sampling Steps:</span>
-                  <input
-                    type="range"
-                    min="10"
-                    max="60"
-                    step="1"
-                    value={stepsVal}
-                    onChange={(e) => setStepsVal(Number(e.target.value))}
-                    className="w-24 accent-primary cursor-pointer"
-                  />
-                  <span className="font-mono text-xs w-8">{stepsVal}</span>
                 </div>
               </div>
             )}

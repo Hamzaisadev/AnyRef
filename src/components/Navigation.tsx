@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Layers, Wand2, Sparkles, Palette, LogOut, Settings } from 'lucide-react';
+import { Layers, Wand2, Sparkles, Palette, LogOut, Settings, Zap, Tag } from 'lucide-react';
 import { BrandSwitcher } from './BrandSwitcher';
 import { useBrand } from '@/context/BrandContext';
 import type { Brand } from '@/domain/brand';
@@ -26,6 +26,7 @@ export function Navigation({ brands: propBrands, activeBrandId: propActiveBrandI
   const activeBrand = context?.activeBrand;
 
   const navLinks = [
+    { href: '/workspace/studio', label: 'Studio', icon: Zap },
     { href: '/library', label: 'Library', icon: Layers },
     { href: '/workspace/generate', label: 'Deconstruct', icon: Wand2 },
     { href: '/workspace/autofill', label: 'Autofill', icon: Sparkles },

@@ -56,3 +56,39 @@ export const BrandDraftOutput = z.object({
 });
 export type BrandDraftOutput = z.infer<typeof BrandDraftOutput>;
 
+// --- Dual-Drop Studio Schemas ---
+
+export const StudioMarketingCopy = z.object({
+  headline: z.string().min(1).max(120),
+  offer: z.string().min(1).max(100),
+  cta: z.string().min(1).max(60),
+  accentColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default('#4B2BFF'),
+  brandName: z.string().max(80).default(''),
+  productDescription: z.string().max(400).default(''),
+});
+export type StudioMarketingCopy = z.infer<typeof StudioMarketingCopy>;
+
+export const StudioEnginePrompts = z.object({
+  midjourney: z.string().min(20).max(6000),
+  flux: z.string().min(20).max(6000),
+  ideogram: z.string().min(20).max(6000),
+});
+export type StudioEnginePrompts = z.infer<typeof StudioEnginePrompts>;
+
+export const StudioVisualAnalysis = z.object({
+  referenceStyle: z.string().max(500),
+  productIdentified: z.string().max(200),
+  suggestedAspectRatio: z.enum(['9:16', '1:1', '16:9', '4:5', '3:4']).default('9:16'),
+  palette: z.array(z.string().regex(/^#[0-9A-Fa-f]{6}$/)).default([]),
+});
+export type StudioVisualAnalysis = z.infer<typeof StudioVisualAnalysis>;
+
+export const StudioGenerateOutput = z.object({
+  marketingCopy: StudioMarketingCopy,
+  readyPrompt: z.string().min(50).max(6000),
+  enginePrompts: StudioEnginePrompts,
+  visualAnalysis: StudioVisualAnalysis,
+  promptTemplate: z.string().min(50).max(6000),
+});
+export type StudioGenerateOutput = z.infer<typeof StudioGenerateOutput>;
+

@@ -1,6 +1,6 @@
 import type { Brand } from '../domain/brand';
 import type { Slot } from '../domain/slot';
-import type { GenerateOutput, AutofillOutput, BrandDraftOutput } from './schemas';
+import type { GenerateOutput, AutofillOutput, BrandDraftOutput, StudioGenerateOutput } from './schemas';
 
 export interface AiUsage {
   inputTokens: number;
@@ -17,6 +17,10 @@ export type AutofillResult = AutofillOutput & {
 };
 
 export type BrandDraftResult = BrandDraftOutput & {
+  usage?: AiUsage;
+};
+
+export type StudioGenerateResult = StudioGenerateOutput & {
   usage?: AiUsage;
 };
 
@@ -43,10 +47,24 @@ export interface BrandDraftInput {
   systemPrompt?: string;
 }
 
+export interface StudioGenerateInput {
+  referenceBuffer: Buffer;
+  referenceMimeType: string;
+  productBuffer: Buffer;
+  productMimeType: string;
+  brand?: Brand | null;
+  aspectRatio?: string;
+  targetEngine?: 'midjourney' | 'flux' | 'ideogram' | 'universal';
+  hint?: string;
+  systemPrompt?: string;
+}
+
 export interface AiProvider {
   name: string;
   generateTemplate(input: GenerateInput): Promise<GenerateResult>;
   autofillSlots(input: AutofillInput): Promise<AutofillResult>;
   draftBrand(input: BrandDraftInput): Promise<BrandDraftResult>;
+  generateStudio?(input: StudioGenerateInput): Promise<StudioGenerateResult>;
 }
+
 
