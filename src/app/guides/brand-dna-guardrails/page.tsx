@@ -35,6 +35,22 @@ export const metadata: Metadata = {
       'Learn how programmatic Never-Invent guardrails and ephemeral RAM processing protect brand consistency and commercial compliance.',
     url: 'https://anyref.app/guides/brand-dna-guardrails',
     type: 'article',
+    images: [
+      {
+        url: '/brand/og/og-brand-guardrails.svg',
+        width: 1200,
+        height: 630,
+        alt: 'The Never-Invent Architecture Guide Banner',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Eliminating Brand Drift & Hallucination: Never-Invent Architecture | Anyref',
+    description:
+      'Programmatic Needs You states, zero fake discounts, and ephemeral RAM security for enterprise teams.',
+    images: ['/brand/og/og-brand-guardrails.svg'],
+    creator: '@anyrefapp',
   },
 };
 
@@ -44,6 +60,7 @@ const articleSchema = {
   headline: 'Eliminating Brand Drift & Hallucination: The Never-Invent Guardrail Architecture',
   description:
     'Technical deep dive on programmatic Never-Invent guardrails, mandatory "Needs You" human verification states, and ephemeral RAM processing for confidential brand assets.',
+  image: 'https://anyref.app/brand/og/og-brand-guardrails.svg',
   author: {
     '@type': 'Organization',
     name: 'Anyref Engineering & Visual Research Team',

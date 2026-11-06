@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" fill="none">
+  <!-- Background with subtle Cyber-Editorial Grid & Radial Glow -->
+  <rect width="1200" height="630" fill="#090A10"/>
+  <defs>
+    <radialGradient id="glow-hub" cx="80%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#4B2BFF" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#090A10" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow-cyan" cx="20%" cy="80%" r="50%">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#090A10" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#glow-hub)"/>
+  <rect width="1200" height="630" fill="url(#glow-cyan)"/>
+  
+  <!-- Subtle Grid lines -->
+  <path d="M0 100h1200M0 200h1200M0 300h1200M0 400h1200M0 500h1200" stroke="#FFFFFF" stroke-opacity="0.03" stroke-width="1"/>
+  <path d="M200 0v630M400 0v630M600 0v630M800 0v630M1000 0v630" stroke="#FFFFFF" stroke-opacity="0.03" stroke-width="1"/>
+
+  <!-- Brand Wordmark & Logo Mark Header -->
+  <g transform="translate(100, 80)">
+    <rect x="0" y="0" width="48" height="48" rx="12" fill="#4B2BFF" fill-opacity="0.2" stroke="#4B2BFF" stroke-width="2"/>
+    <path d="M16 16h-4v16h4M32 16h4v16h-4" stroke="#F8FAFC" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="24" cy="24" r="3.5" fill="#FF8A3D"/>
+    <text x="64" y="34" font-family="'Inter Tight', sans-serif" font-weight="800" font-size="32" fill="#FFFFFF" letter-spacing="-0.03em">anyref</text>
+    <text x="175" y="34" font-family="'JetBrains Mono', monospace" font-size="14" fill="#94A3B8" letter-spacing="0.1em">/ GUIDES &amp; DOCS</text>
+  </g>
+
+  <!-- Category Badge -->
+  <g transform="translate(100, 180)">
+    <rect width="250" height="36" rx="18" fill="#06B6D4" fill-opacity="0.15" stroke="#06B6D4" stroke-opacity="0.4" stroke-width="1"/>
+    <text x="125" y="23" font-family="'JetBrains Mono', monospace" font-weight="700" font-size="12" fill="#22D3EE" text-anchor="middle" letter-spacing="0.1em">KNOWLEDGE BASE // V1.0</text>
+  </g>
+
+  <!-- Main Headline -->
+  <text x="100" y="285" font-family="'Inter Tight', sans-serif" font-weight="900" font-size="52" fill="#FFFFFF" letter-spacing="-0.03em">
+    AI Prompt Engineering
+  </text>
+  <text x="100" y="350" font-family="'Inter Tight', sans-serif" font-weight="900" font-size="52" fill="#22D3EE" letter-spacing="-0.03em">
+    Guides &amp; Architecture Hub
+  </text>
+
+  <!-- Subtitle Summary -->
+  <text x="100" y="420" font-family="'Inter', sans-serif" font-weight="400" font-size="22" fill="#94A3B8">
+    Deconstruct poster references into parametric, brand-consistent image prompts
+  </text>
+  <text x="100" y="455" font-family="'Inter', sans-serif" font-weight="400" font-size="22" fill="#94A3B8">
+    for Midjourney v6.1, FLUX.1, and Ideogram with zero brand drift.
+  </text>
+
+  <!-- Footer Indicator Pills -->
+  <g transform="translate(100, 520)">
+    <rect x="0" y="0" width="180" height="34" rx="8" fill="#FFFFFF" fill-opacity="0.05" stroke="#FFFFFF" stroke-opacity="0.1"/>
+    <circle cx="20" cy="17" r="4" fill="#2B7BFF"/>
+    <text x="35" y="22" font-family="'JetBrains Mono', monospace" font-size="12" fill="#CBD5E1">Brand Slots</text>
+
+    <rect x="200" y="0" width="190" height="34" rx="8" fill="#FFFFFF" fill-opacity="0.05" stroke="#FFFFFF" stroke-opacity="0.1"/>
+    <circle cx="220" cy="17" r="4" fill="#FF8A3D"/>
+    <text x="235" y="22" font-family="'JetBrains Mono', monospace" font-size="12" fill="#CBD5E1">Campaign Slots</text>
+
+    <rect x="410" y="0" width="180" height="34" rx="8" fill="#FFFFFF" fill-opacity="0.05" stroke="#FFFFFF" stroke-opacity="0.1"/>
+    <circle cx="430" cy="17" r="4" fill="#64748B"/>
+    <text x="445" y="22" font-family="'JetBrains Mono', monospace" font-size="12" fill="#CBD5E1">Layout Text</text>
+  </g>
+</svg>

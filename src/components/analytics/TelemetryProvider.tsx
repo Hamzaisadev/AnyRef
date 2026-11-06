@@ -65,6 +65,36 @@ export function TelemetryProvider() {
           utm_term: params.get('utm_term') || '',
         });
       }
+
+      // 4. PostHog Session Replay Masking Configuration
+      const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+      const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
+
+      const winWithPh = window as unknown as {
+        posthog?: {
+          init: (key: string, options: Record<string, unknown>) => void;
+        };
+      };
+
+      if (posthogKey && winWithPh.posthog && typeof winWithPh.posthog.init === 'function') {
+        winWithPh.posthog.init(posthogKey, {
+          api_host: posthogHost,
+          autocapture: false, // Explicit events preferred per taxonomy
+          capture_pageview: true,
+          capture_pageleave: true,
+          session_recording: {
+            maskAllInputs: true, // Strict masking of brand tokens and confidential slots
+            maskInputOptions: {
+              password: true,
+              text: true,
+              color: false,
+              date: true,
+            },
+            maskTextSelector: '.ph-mask, [data-ph-mask], .slot-sensitive',
+            blockSelector: '.ph-no-capture, [data-ph-block]',
+          },
+        });
+      }
     }
   }, []);
 

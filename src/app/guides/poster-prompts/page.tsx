@@ -35,6 +35,22 @@ export const metadata: Metadata = {
       'Learn how to reverse-engineer high-converting poster layouts into reusable parametric prompt templates with dynamic slot interpolation.',
     url: 'https://anyref.app/guides/poster-prompts',
     type: 'article',
+    images: [
+      {
+        url: '/brand/og/og-poster-prompts.svg',
+        width: 1200,
+        height: 630,
+        alt: 'Mastering Visual Poster Prompt Engineering Guide Banner',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AI Poster Prompt Engineering Guide | Deconstruct References | Anyref',
+    description:
+      'Deconstruct graphic design reference posters into parametric templates with dynamic slots and isolated lighting parameters.',
+    images: ['/brand/og/og-poster-prompts.svg'],
+    creator: '@anyrefapp',
   },
 };
 
@@ -44,6 +60,7 @@ const articleSchema = {
   headline: 'Mastering Visual Poster Prompt Engineering: Reverse-Engineering References into Parametric Templates',
   description:
     'In-depth architectural guide on deconstructing visual poster references from Pinterest and Behance into reusable parametric AI prompt templates with dynamic slot interpolation.',
+  image: 'https://anyref.app/brand/og/og-poster-prompts.svg',
   author: {
     '@type': 'Organization',
     name: 'Anyref Engineering & Visual Research Team',

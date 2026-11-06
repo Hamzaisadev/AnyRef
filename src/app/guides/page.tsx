@@ -38,6 +38,22 @@ export const metadata: Metadata = {
       'Learn how to reverse-engineer high-converting poster references into reusable AI prompt templates with zero brand drift.',
     url: 'https://anyref.app/guides',
     type: 'website',
+    images: [
+      {
+        url: '/brand/og/og-guides-hub.svg',
+        width: 1200,
+        height: 630,
+        alt: 'Anyref AI Prompt Engineering Guides & Architecture Hub',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AI Prompt Engineering Guides & Documentation | Anyref',
+    description:
+      'Master prompt deconstruction, Never-Invent guardrails, and multi-asset sequencing for Midjourney & FLUX.',
+    images: ['/brand/og/og-guides-hub.svg'],
+    creator: '@anyrefapp',
   },
 };
 

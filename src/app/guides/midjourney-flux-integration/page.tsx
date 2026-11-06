@@ -34,6 +34,22 @@ export const metadata: Metadata = {
       'Learn how to sequence multi-image uploads and apply style references for first-roll poster generation in Midjourney and FLUX.',
     url: 'https://anyref.app/guides/midjourney-flux-integration',
     type: 'article',
+    images: [
+      {
+        url: '/brand/og/og-midjourney-flux.svg',
+        width: 1200,
+        height: 630,
+        alt: 'Midjourney v6.1 & FLUX.1 Multi-Asset Prompt Guide Banner',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Midjourney v6.1 & FLUX.1 Multi-Asset Prompt Guide | Anyref',
+    description:
+      'Ordered asset checklists, --sref styling, --cref consistency, and layout-fit aspect-ratio geometry.',
+    images: ['/brand/og/og-midjourney-flux.svg'],
+    creator: '@anyrefapp',
   },
 };
 
@@ -43,6 +59,7 @@ const articleSchema = {
   headline: 'Midjourney v6.1 & FLUX.1 Multi-Asset Prompt Architecture: Ordered Checklists and Style References',
   description:
     'Comprehensive technical guide on multi-image asset sequencing, --sref styling, and aspect-ratio geometry protection in Midjourney v6.1 and FLUX.1 commercial workflows.',
+  image: 'https://anyref.app/brand/og/og-midjourney-flux.svg',
   author: {
     '@type': 'Organization',
     name: 'Anyref Engineering & Visual Research Team',

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" fill="none">
+  <rect width="1200" height="630" fill="#090A10"/>
+  <defs>
+    <radialGradient id="glow-pp" cx="85%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#4B2BFF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#090A10" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#glow-pp)"/>
+  
+  <path d="M0 100h1200M0 200h1200M0 300h1200M0 400h1200M0 500h1200" stroke="#FFFFFF" stroke-opacity="0.03" stroke-width="1"/>
+  <path d="M200 0v630M400 0v630M600 0v630M800 0v630M1000 0v630" stroke="#FFFFFF" stroke-opacity="0.03" stroke-width="1"/>
+
+  <!-- Brand Wordmark Header -->
+  <g transform="translate(100, 80)">
+    <rect x="0" y="0" width="48" height="48" rx="12" fill="#4B2BFF" fill-opacity="0.2" stroke="#4B2BFF" stroke-width="2"/>
+    <path d="M16 16h-4v16h4M32 16h4v16h-4" stroke="#F8FAFC" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="24" cy="24" r="3.5" fill="#FF8A3D"/>
+    <text x="64" y="34" font-family="'Inter Tight', sans-serif" font-weight="800" font-size="32" fill="#FFFFFF" letter-spacing="-0.03em">anyref</text>
+    <text x="175" y="34" font-family="'JetBrains Mono', monospace" font-size="14" fill="#94A3B8" letter-spacing="0.1em">/ POSTER PROMPTS</text>
+  </g>
+
+  <!-- Category Badge -->
+  <g transform="translate(100, 180)">
+    <rect width="260" height="36" rx="18" fill="#4B2BFF" fill-opacity="0.2" stroke="#4B2BFF" stroke-opacity="0.5" stroke-width="1"/>
+    <text x="130" y="23" font-family="'JetBrains Mono', monospace" font-weight="700" font-size="12" fill="#818CF8" text-anchor="middle" letter-spacing="0.1em">CORE ARCHITECTURE GUIDE</text>
+  </g>
+
+  <!-- Main Headline -->
+  <text x="100" y="285" font-family="'Inter Tight', sans-serif" font-weight="900" font-size="50" fill="#FFFFFF" letter-spacing="-0.03em">
+    Mastering Visual Poster
+  </text>
+  <text x="100" y="348" font-family="'Inter Tight', sans-serif" font-weight="900" font-size="50" fill="#818CF8" letter-spacing="-0.03em">
+    Prompt Engineering
+  </text>
+
+  <!-- Subtitle Summary -->
+  <text x="100" y="415" font-family="'Inter', sans-serif" font-weight="400" font-size="22" fill="#94A3B8">
+    Deconstruct graphic design reference posters into parametric templates with
+  </text>
+  <text x="100" y="450" font-family="'Inter', sans-serif" font-weight="400" font-size="22" fill="#94A3B8">
+    dynamic slot interpolation and isolated camera lighting parameters.
+  </text>
+
+  <!-- Code Token Snippet Mockup -->
+  <g transform="translate(100, 505)">
+    <rect x="0" y="0" width="760" height="48" rx="12" fill="#000000" fill-opacity="0.6" stroke="#FFFFFF" stroke-opacity="0.1"/>
+    <text x="24" y="30" font-family="'JetBrains Mono', monospace" font-size="13" fill="#94A3B8">
+      Studio poster for <tspan fill="#22D3EE">{{brand_name}}</tspan> with <tspan fill="#FF8A3D">{{product_name}}</tspan> <tspan fill="#64748B">--ar 4:5 --v 6.1</tspan>
+    </text>
+  </g>
+</svg>

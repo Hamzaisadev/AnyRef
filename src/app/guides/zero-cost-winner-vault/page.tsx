@@ -35,6 +35,22 @@ export const metadata: Metadata = {
       'Build an appreciating internal prompt design system. Re-use proven marketing poster formulas with zero AI API token costs.',
     url: 'https://anyref.app/guides/zero-cost-winner-vault',
     type: 'article',
+    images: [
+      {
+        url: '/brand/og/og-winner-vault.svg',
+        width: 1200,
+        height: 630,
+        alt: 'Scaling Campaign Creatives with the Zero-Cost Winner Vault Banner',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Scaling Campaign Creatives with Zero-Cost Winner Vault | Anyref Guide',
+    description:
+      'Turn winning prompts into design systems and remix campaigns for $0.00 in AI token costs.',
+    images: ['/brand/og/og-winner-vault.svg'],
+    creator: '@anyrefapp',
   },
 };
 
@@ -44,6 +60,7 @@ const articleSchema = {
   headline: 'Scaling Campaign Creatives with the Zero-Cost Winner Vault: Prompt Design Systems for Commercial Teams',
   description:
     'Comprehensive architectural guide on testing, grading, locking, and remixing proven poster prompt templates with zero AI API token costs.',
+  image: 'https://anyref.app/brand/og/og-winner-vault.svg',
   author: {
     '@type': 'Organization',
     name: 'Anyref Engineering & Visual Research Team',

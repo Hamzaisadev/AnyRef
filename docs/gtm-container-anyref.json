@@ -1,0 +1,246 @@
+{
+  "exportFormatVersion": 2,
+  "exportTime": "2026-10-31 12:00:00",
+  "containerVersion": {
+    "path": "accounts/6000000000/containers/90000000/versions/0",
+    "accountId": "6000000000",
+    "containerId": "90000000",
+    "containerVersionId": "0",
+    "container": {
+      "name": "AnyRef Production Web Container",
+      "publicId": "GTM-ANYREF",
+      "usageContext": ["WEB"]
+    },
+    "tag": [
+      {
+        "accountId": "6000000000",
+        "containerId": "90000000",
+        "tagId": "1",
+        "name": "Google Tag - GA4 Config",
+        "type": "googtag",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "tagId", "value": "{{Const - GA4 Measurement ID}}" },
+          {
+            "type": "LIST",
+            "key": "configSettingsTable",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "parameter", "value": "send_page_view" },
+                  { "type": "TEMPLATE", "key": "parameterValue", "value": "true" }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "parameter", "value": "user_id" },
+                  { "type": "TEMPLATE", "key": "parameterValue", "value": "{{DLV - user_id}}" }
+                ]
+              }
+            ]
+          }
+        ],
+        "firingTriggerId": ["2147479553"]
+      },
+      {
+        "accountId": "6000000000",
+        "containerId": "90000000",
+        "tagId": "2",
+        "name": "GA4 Event - Forward Key Funnel Events",
+        "type": "gaawe",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "measurementId", "value": "{{Const - GA4 Measurement ID}}" },
+          { "type": "TEMPLATE", "key": "eventName", "value": "{{DLV - event_name}}" },
+          {
+            "type": "LIST",
+            "key": "eventParameters",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "brand_id" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{DLV - brand_id}}" }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "entry_id" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{DLV - entry_id}}" }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "plan_id" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{DLV - plan_id}}" }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "ai_platform" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{DLV - ai_platform}}" }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "generator_target" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{DLV - generator_target}}" }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "cost_usd" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{DLV - cost_usd}}" }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "latency_ms" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{DLV - latency_ms}}" }
+                ]
+              }
+            ]
+          }
+        ],
+        "firingTriggerId": ["10"]
+      }
+    ],
+    "trigger": [
+      {
+        "accountId": "6000000000",
+        "containerId": "90000000",
+        "triggerId": "10",
+        "name": "Custom Event - AnyRef Funnel Key Events",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "MATCH_REGEX",
+            "parameter": [
+              { "type": "TEMPLATE", "key": "arg0", "value": "{{_event}}" },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "^(signup_completed|brand_created|prompt_generation_completed|prompt_copied|winner_promoted|checkout_started|checkout_completed|ai_referral_detected)$"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "variable": [
+      {
+        "accountId": "6000000000",
+        "containerId": "90000000",
+        "variableId": "100",
+        "name": "Const - GA4 Measurement ID",
+        "type": "c",
+        "parameter": [{ "type": "TEMPLATE", "key": "value", "value": "G-XXXXXXXXXX" }]
+      },
+      {
+        "accountId": "6000000000",
+        "containerId": "90000000",
+        "variableId": "101",
+        "name": "DLV - event_name",
+        "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "TEMPLATE", "key": "name", "value": "event" }
+        ]
+      },
+      {
+        "accountId": "6000000000",
+        "containerId": "90000000",
+        "variableId": "102",
+        "name": "DLV - user_id",
+        "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "TEMPLATE", "key": "name", "value": "user_id" }
+        ]
+      },
+      {
+        "accountId": "6000000000",
+        "containerId": "90000000",
+        "variableId": "103",
+        "name": "DLV - plan_id",
+        "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "TEMPLATE", "key": "name", "value": "plan_id" }
+        ]
+      },
+      {
+        "accountId": "6000000000",
+        "containerId": "90000000",
+        "variableId": "104",
+        "name": "DLV - brand_id",
+        "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "TEMPLATE", "key": "name", "value": "brand_id" }
+        ]
+      },
+      {
+        "accountId": "6000000000",
+        "containerId": "90000000",
+        "variableId": "105",
+        "name": "DLV - entry_id",
+        "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "TEMPLATE", "key": "name", "value": "entry_id" }
+        ]
+      },
+      {
+        "accountId": "6000000000",
+        "containerId": "90000000",
+        "variableId": "106",
+        "name": "DLV - cost_usd",
+        "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "TEMPLATE", "key": "name", "value": "cost_usd" }
+        ]
+      },
+      {
+        "accountId": "6000000000",
+        "containerId": "90000000",
+        "variableId": "107",
+        "name": "DLV - latency_ms",
+        "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "TEMPLATE", "key": "name", "value": "latency_ms" }
+        ]
+      },
+      {
+        "accountId": "6000000000",
+        "containerId": "90000000",
+        "variableId": "108",
+        "name": "DLV - ai_platform",
+        "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "TEMPLATE", "key": "name", "value": "ai_platform" }
+        ]
+      },
+      {
+        "accountId": "6000000000",
+        "containerId": "90000000",
+        "variableId": "109",
+        "name": "DLV - generator_target",
+        "type": "v",
+        "parameter": [
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" },
+          { "type": "TEMPLATE", "key": "name", "value": "generator_target" }
+        ]
+      }
+    ]
+  }
+}
