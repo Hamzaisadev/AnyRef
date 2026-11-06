@@ -42,3 +42,6 @@ next-env.d.ts
 /videos/
 /brag-output/
 frame.md
+/screenshots/
+/public/screenshot*.png
+/public/lighthouse-mobile.json

@@ -5,19 +5,22 @@ import { TelemetryProvider } from '@/components/analytics/TelemetryProvider';
 
 const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-inter',
+  weight: ['400', '500'],
+  variable: '--font-body',
   display: 'swap',
 });
 
 const interTight = Inter_Tight({
   subsets: ['latin'],
-  variable: '--font-inter-tight',
+  weight: ['600', '700'],
+  variable: '--font-display',
   display: 'swap',
 });
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
-  variable: '--font-jetbrains-mono',
+  weight: ['400', '500'],
+  variable: '--font-mono',
   display: 'swap',
 });
 
@@ -103,7 +106,12 @@ const organizationSchema = {
   logo: 'https://anyref.app/brand/logo.svg',
   description:
     'Private visual prompt-engineering studio and prompt-library web application that turns poster references into brand-locked AI prompts.',
-  sameAs: ['https://x.com/anyrefapp', 'https://github.com/anyref'],
+  sameAs: [
+    'https://x.com/anyrefapp',
+    'https://github.com/anyref/anyref',
+    'https://discord.gg/anyref',
+    'https://www.linkedin.com/company/anyref',
+  ],
 };
 
 const softwareApplicationSchema = {
@@ -114,11 +122,6 @@ const softwareApplicationSchema = {
   applicationCategory: 'DesignApplication',
   operatingSystem: 'All (Modern Web Browsers)',
   browserRequirements: 'Requires JavaScript. Requires HTML5.',
-  offers: {
-    '@type': 'Offer',
-    price: '0.00',
-    priceCurrency: 'USD',
-  },
   featureList: [
     'Reference Poster Deconstruction',
     'Brand DNA Injection & Automatic Slot Binding',

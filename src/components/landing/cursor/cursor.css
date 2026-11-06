@@ -1,0 +1,13 @@
+/* Custom cursor global overrides */
+html.has-custom-cursor,
+html.has-custom-cursor body,
+html.has-custom-cursor * {
+  cursor: none !important;
+}
+
+html.has-custom-cursor input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+html.has-custom-cursor textarea,
+html.has-custom-cursor [contenteditable="true"],
+html.has-custom-cursor [data-cursor="text"] {
+  cursor: text !important;
+}
