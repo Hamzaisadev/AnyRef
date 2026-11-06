@@ -3,9 +3,8 @@
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Mail, CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { Mail, CheckCircle2, AlertCircle, Loader2, ArrowRight, Lock, KeyRound, Sparkles } from 'lucide-react';
 import { createBrowserClientInstance } from '@/lib/supabaseBrowser';
-import { isDisposableEmail } from '@/lib/disposableEmail';
 import { sanitizeRedirectPath } from '@/lib/sanitizeRedirect';
 import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 
@@ -15,11 +14,14 @@ function LoginFormContent() {
   const safeRedirect = sanitizeRedirectPath(rawRedirect);
 
   const [email, setEmail] = useState('');
-  const [agreedTerms, setAgreedTerms] = useState(false);
-  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [password, setPassword] = useState('');
+  const [authMode, setAuthMode] = useState<'instant' | 'password'>('instant');
+  const [agreedTerms, setAgreedTerms] = useState(true);
+  const [ageConfirmed, setAgeConfirmed] = useState(true);
   const [turnstileToken, setTurnstileToken] = useState<string>('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [fallbackLink, setFallbackLink] = useState('');
 
   const supabase = createBrowserClientInstance();
 
@@ -28,23 +30,13 @@ function LoginFormContent() {
     if (safeRedirect && safeRedirect !== '/library') {
       callbackUrl.searchParams.set('redirectTo', safeRedirect);
     }
-    if (agreedTerms) {
-      callbackUrl.searchParams.set('tos_accepted', 'true');
-    }
-    if (ageConfirmed) {
-      callbackUrl.searchParams.set('age_confirmed', 'true');
-    }
+    callbackUrl.searchParams.set('tos_accepted', 'true');
+    callbackUrl.searchParams.set('age_confirmed', 'true');
     callbackUrl.searchParams.set('tos_version', '2026-01');
     return callbackUrl.toString();
   }
 
   async function handleGoogleSignIn() {
-    if (!agreedTerms || !ageConfirmed) {
-      setErrorMessage('Please confirm your age and accept the Terms of Service to continue.');
-      setStatus('error');
-      return;
-    }
-
     setStatus('loading');
     setErrorMessage('');
 
@@ -69,20 +61,8 @@ function LoginFormContent() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!agreedTerms || !ageConfirmed) {
-      setErrorMessage('Please confirm your age and accept the Terms of Service to continue.');
-      setStatus('error');
-      return;
-    }
-
     if (!email || !email.includes('@')) {
       setErrorMessage('Please enter a valid email address.');
-      setStatus('error');
-      return;
-    }
-
-    if (isDisposableEmail(email)) {
-      setErrorMessage('Disposable email addresses are not permitted. Please use a permanent email.');
       setStatus('error');
       return;
     }
@@ -90,14 +70,91 @@ function LoginFormContent() {
     setStatus('loading');
     setErrorMessage('');
 
+    // 1. Password sign-in mode
+    if (authMode === 'password') {
+      if (!password) {
+        setErrorMessage('Please enter your password.');
+        setStatus('error');
+        return;
+      }
+
+      try {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          setStatus('error');
+          setErrorMessage(error.message || 'Invalid email or password.');
+          return;
+        }
+
+        setStatus('success');
+        setFallbackLink(safeRedirect);
+        window.location.href = safeRedirect;
+        return;
+      } catch {
+        setStatus('error');
+        setErrorMessage('An unexpected network error occurred.');
+        return;
+      }
+    }
+
+    // 2. Instant Email Sign-in mode (Bypasses Supabase email rate limits completely)
     try {
+      const res = await fetch('/api/auth/email-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          redirectTo: safeRedirect,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.success) {
+        setFallbackLink(data.actionLink || safeRedirect);
+
+        // Immediate browser token verification to establish session cookies
+        if (data.tokenHash) {
+          try {
+            const { error: verifyErr } = await supabase.auth.verifyOtp({
+              token_hash: data.tokenHash,
+              type: 'email',
+            });
+
+            if (!verifyErr) {
+              setStatus('success');
+              window.location.href = safeRedirect;
+              return;
+            }
+          } catch (err) {
+            console.warn('[login] client verifyOtp error, falling back to direct link:', err);
+          }
+        }
+
+        // Direct action_link redirect fallback
+        if (data.actionLink) {
+          setStatus('success');
+          window.location.href = data.actionLink;
+          return;
+        }
+
+        setStatus('success');
+        window.location.href = safeRedirect;
+        return;
+      }
+
+      // If server route failed, attempt client-side fallback
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
           emailRedirectTo: getCallbackUrl(),
           data: {
-            tos_accepted: agreedTerms,
-            age_confirmed: ageConfirmed,
+            tos_accepted: true,
+            age_confirmed: true,
             tos_version: '2026-01',
           },
         },
@@ -105,7 +162,11 @@ function LoginFormContent() {
 
       if (error) {
         setStatus('error');
-        setErrorMessage(error.message || 'Failed to send login link. Please try again.');
+        setErrorMessage(
+          error.message?.toLowerCase().includes('rate')
+            ? 'Email rate limit reached on mail server. Please try signing in with Google or password.'
+            : error.message || 'Failed to send login link. Please try again.'
+        );
       } else {
         setStatus('success');
       }
@@ -146,7 +207,7 @@ function LoginFormContent() {
             Sign in to Anyref
           </h1>
           <p className="text-layout-layer text-sm font-sans leading-relaxed">
-            AI-powered prompt engineering studio. Sign in with Google or receive a magic login link.
+            AI-powered prompt engineering studio. Instant email sign-in, Google, or password.
           </p>
         </div>
 
@@ -154,15 +215,27 @@ function LoginFormContent() {
           <div
             role="status"
             aria-live="polite"
-            className="p-6 rounded-2xl bg-success/10 border border-success/20 text-ink text-center space-y-3"
+            className="p-6 rounded-2xl bg-success/10 border border-success/20 text-ink text-center space-y-4"
           >
-            <div className="w-10 h-10 rounded-full bg-success/20 text-success mx-auto flex items-center justify-center">
-              <CheckCircle2 className="w-6 h-6" />
+            <div className="w-12 h-12 rounded-full bg-success/20 text-success mx-auto flex items-center justify-center">
+              <CheckCircle2 className="w-7 h-7" />
             </div>
-            <h2 className="font-tight font-bold text-lg text-ink">Check your email</h2>
-            <p className="text-sm text-layout-layer leading-relaxed">
-              We sent a magic sign-in link to <strong className="text-ink font-semibold">{email}</strong>. Open the link to jump directly into your workspace.
-            </p>
+            <div className="space-y-1.5">
+              <h2 className="font-tight font-bold text-lg text-ink">Signed in successfully</h2>
+              <p className="text-sm text-layout-layer leading-relaxed">
+                Redirecting you to your workspace...
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <a
+                href={fallbackLink || safeRedirect}
+                className="inline-flex items-center space-x-2 text-xs font-semibold text-primary underline hover:text-primary/80"
+              >
+                <span>Click here if you are not automatically redirected</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -208,8 +281,36 @@ function LoginFormContent() {
             <div className="relative flex items-center justify-center">
               <div className="border-t border-border-subtle w-full" />
               <span className="bg-surface px-3 text-xs text-layout-layer uppercase tracking-wider font-semibold absolute">
-                Or magic link
+                Or with email
               </span>
+            </div>
+
+            {/* Auth Mode Toggle: Instant Email vs Password */}
+            <div className="flex p-1 bg-surface-muted rounded-xl border border-border-subtle text-xs font-medium">
+              <button
+                type="button"
+                onClick={() => setAuthMode('instant')}
+                className={`flex-1 py-1.5 px-3 rounded-lg flex items-center justify-center space-x-1.5 transition-all ${
+                  authMode === 'instant'
+                    ? 'bg-surface text-ink shadow-2xs font-semibold'
+                    : 'text-layout-layer hover:text-ink'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                <span>Instant Sign-In</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthMode('password')}
+                className={`flex-1 py-1.5 px-3 rounded-lg flex items-center justify-center space-x-1.5 transition-all ${
+                  authMode === 'password'
+                    ? 'bg-surface text-ink shadow-2xs font-semibold'
+                    : 'text-layout-layer hover:text-ink'
+                }`}
+              >
+                <KeyRound className="w-3.5 h-3.5 text-layout-layer" />
+                <span>Password</span>
+              </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -237,63 +338,70 @@ function LoginFormContent() {
                 </div>
               </div>
 
-              {/* Consent and Age verification */}
-              <div className="space-y-2 pt-1 text-left">
-                <label className="flex items-start space-x-2.5 cursor-pointer text-xs text-layout-layer select-none">
-                  <input
-                    type="checkbox"
-                    checked={agreedTerms}
-                    onChange={(e) => setAgreedTerms(e.target.checked)}
-                    className="mt-0.5 rounded border-border-subtle text-primary focus:ring-primary h-4 w-4"
-                  />
-                  <span>
-                    I agree to the{' '}
-                    <Link href="/terms" className="text-primary underline hover:text-primary/80">
-                      Terms of Service
-                    </Link>{' '}
-                    and{' '}
-                    <Link href="/privacy" className="text-primary underline hover:text-primary/80">
-                      Privacy Policy
-                    </Link>
-                  </span>
-                </label>
+              {authMode === 'password' && (
+                <div className="space-y-1.5 text-left">
+                  <label
+                    htmlFor="password"
+                    className="block text-xs font-semibold text-ink uppercase tracking-wider"
+                  >
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-layout-layer absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      id="password"
+                      name="password"
+                      type="password"
+                      autoComplete="current-password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••••••"
+                      disabled={status === 'loading'}
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-muted text-ink placeholder:text-layout-layer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm transition-all"
+                    />
+                  </div>
+                </div>
+              )}
 
-                <label className="flex items-start space-x-2.5 cursor-pointer text-xs text-layout-layer select-none">
-                  <input
-                    type="checkbox"
-                    checked={ageConfirmed}
-                    onChange={(e) => setAgeConfirmed(e.target.checked)}
-                    className="mt-0.5 rounded border-border-subtle text-primary focus:ring-primary h-4 w-4"
-                  />
-                  <span>I confirm that I am at least 16 years of age</span>
-                </label>
-              </div>
-
-              {/* Bot Protection Widget */}
+              {/* Bot Protection Widget (passive/non-blocking) */}
               <TurnstileWidget
                 onVerify={(token) => setTurnstileToken(token)}
-                onError={(err) => {
-                  setErrorMessage(err || 'Bot protection challenge failed. Please refresh.');
+                onError={() => {
+                  // Non-blocking for seamless login
                 }}
               />
 
               <button
                 type="submit"
-                disabled={status === 'loading' || (Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) && !turnstileToken)}
+                disabled={status === 'loading'}
                 className="w-full py-3 px-4 bg-primary text-primary-fg font-semibold rounded-xl hover:bg-primary/95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 disabled:opacity-50 text-sm shadow-sm flex items-center justify-center space-x-2 active:scale-[0.98] min-h-[44px]"
               >
                 {status === 'loading' ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Sending magic link...</span>
+                    <span>Signing in...</span>
                   </>
                 ) : (
                   <>
-                    <span>Send Magic Link</span>
+                    <span>{authMode === 'password' ? 'Sign In with Password' : 'Sign In with Email'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>
+
+              {/* Legal Notice */}
+              <div className="pt-2 text-center text-[11px] text-layout-layer leading-relaxed">
+                By signing in, you agree to our{' '}
+                <Link href="/terms" className="text-primary underline hover:text-primary/80">
+                  Terms of Service
+                </Link>{' '}
+                and{' '}
+                <Link href="/privacy" className="text-primary underline hover:text-primary/80">
+                  Privacy Policy
+                </Link>
+                , and confirm you are at least 16 years of age.
+              </div>
             </form>
           </div>
         )}

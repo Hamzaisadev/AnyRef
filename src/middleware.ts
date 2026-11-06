@@ -8,23 +8,6 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const pathname = request.nextUrl.pathname;
-
-  const isProtectedRoute =
-    pathname.startsWith('/workspace') ||
-    pathname.startsWith('/brands') ||
-    pathname.startsWith('/library') ||
-    pathname.startsWith('/entries') ||
-    pathname.startsWith('/settings') ||
-    pathname.startsWith('/admin');
-
-  const isAuthRoute = pathname === '/login';
-
-  // Fast path for public routes (e.g. /, /guides, /privacy, /terms) - no Supabase auth call needed
-  if (!isProtectedRoute && !isAuthRoute) {
-    return NextResponse.next();
-  }
-
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
@@ -50,6 +33,16 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  const pathname = request.nextUrl.pathname;
+
+  const isProtectedRoute =
+    pathname.startsWith('/workspace') ||
+    pathname.startsWith('/brands') ||
+    pathname.startsWith('/library') ||
+    pathname.startsWith('/entries') ||
+    pathname.startsWith('/settings') ||
+    pathname.startsWith('/admin');
 
   // If user is not logged in and attempts to access protected routes -> /login
   if (isProtectedRoute && !user) {
