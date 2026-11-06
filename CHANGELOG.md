@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Cost Safety, Sustainable Plans (Pro & Studio) & Monthly AI Dollar Budget**:
+  - **Per-User Monthly AI Budget Engine**:
+    - Added `monthly_ai_budget_usd` limit key to plan definitions and SQL database.
+    - Implemented `QuotaService.checkMonthlyBudget(userId, actionKind)` called before all AI generation, autofill, and brand drafting endpoints.
+    - Tracks cumulative calendar-month spend (`est_cost_usd` in `ai_usage`) starting from the 1st of each month at 00:00:00 UTC.
+    - Prevents cost overruns beyond one call by estimating the upcoming call cost from dynamic averages.
+    - Rejects exceeded users with HTTP 429 (`MONTHLY_BUDGET_EXCEEDED`), clear plan attribution, and the first-of-next-month reset date while keeping prompt editing and template reuse 100% free.
+    - Exempts staff roles (`owner`, `admin`) with unlimited allowance while preserving telemetry logging.
+  - **Database Migration `0008_pro_studio_plans_and_budget.sql`**:
+    - Adds `pro` ($19/mo, $4.00 budget) and `studio` ($49/mo, $12.00 budget) tiers.
+    - Updates `free` tier with $0.40/month budget ceiling.
+    - Deactivates legacy `plus` tier (`is_active = false`) without deleting rows to maintain referential foreign key integrity.
+    - Automatically migrates existing profiles and subscriptions from `plus` to `pro`.
+    - Initializes `show_prices = false` in `app_settings` to prevent prices from displaying in public UI before launch.
+  - **Unit Economics Model & CLI Tooling**:
+    - Added `pnpm plan:economics` (`scripts/plan-economics.ts`) calculating worst-case daily quota AI costs, budget-capped costs, net revenue after 5% + $0.50 payment fees, worst-case margins (Pro: 71.3%, Studio: 69.5%), and typical-case margins (~86%).
+    - Added `pnpm db:sync` (`scripts/db-sync.ts`) for automated database synchronization of plans, settings, and sharpened prompts.
+    - Configured `pnpm cost:benchmark` (`scripts/benchmark-cost-table.ts`) for empirical API inference benchmarking.
+  - **Automated Plan Safety & Claims Guard Test Suites**:
+    - `tests/unit/planSafety.test.ts`: Asserts all paid plans meet the 55% margin floor (`MIN_PLAN_MARGIN = 0.55`), Free tier budget $\le \$0.50$, model matches `AI_MODEL`, and warns on stale pricing table dates.
+    - `tests/unit/claimsGuard.test.ts`: CI grep test asserting zero unverified market figures ($1.42B TAM, 1.5M entities, $3.1M SOM, CAC $150, LTV:CAC 3.0x, speculative churn) leak into `src/` or `README.md`.
+    - `tests/unit/monthlyBudget.test.ts`: Verifies budget blocks, 429 status codes, tolerance margins, reset dates, and staff bypass.
+    - `tests/unit/billingPricing.test.ts`: Validates price display hiding when `show_prices` is false and plain-language allowance bullets.
+    - `tests/unit/planEconomics.test.ts`: Validates arithmetic and margin formulas against empirical benchmark ground truth.
+  - **Billing & Landing Page Alignment**:
+    - `/billing`: Displays current plan, quotas, reset date, and Free, Pro, Studio cards side-by-side with honest "Coming soon" state when `show_prices = false`.
+    - Landing page pricing: Features Free, Pro, and Studio cards with plain-language allowance descriptions (no dollar mentions or token counts).
+    - Replaced all user-facing references to "Plus" with "Pro".
+  - **Documentation & Governance**:
+    - Fenced off market sizing claims in `docs/market/market-sizing-memo.md` with internal hypothesis banner and itemized input verification table.
+    - Updated `docs/adr/0005-billing.md` with empirical cost data, fee schedules, and margin floors while maintaining provider abstraction without premature checkout.
+    - Logged Shopify App Store integration in `docs/deferred.md` as an untested channel hypothesis.
+    - Updated `PLAN.md` with Stage 7 specification and marked all unvalidated demand numbers with `[A]`.
+
+- **Email & Password Authentication**:
+  - Implemented dual-mode authentication supporting passwordless magic links and password sign-in (`src/app/api/auth/email-login/route.ts`).
+  - Added unit test suite `tests/unit/emailLogin.test.ts`.
+
+- **SEO & Social Share Cards**:
+  - Added dedicated Open Graph social preview banners (`public/brand/og/`) for all core educational guides.
+  - Implemented client-side privacy masking for PostHog telemetry sessions.
+
+- **Landing Page & Navigation Modernization**:
+  - Scaffolded redesigned landing page components (`src/components/landing/`) with custom reveal animations, magnetic buttons, and smooth scroll primitives.
+  - Upgraded global navigation with active tab indicators and direct access to Studio and Library.
+
+- **Marketing Ad Creative Playbook**:
+  - Added direct-response creative frameworks and ad hook variations for Meta, LinkedIn, and performance video channels.
+
 ### Fixed
 - **Dark Mode Surface & Contrast Overhaul**:
   - Eliminated all hardcoded `bg-white` card surfaces across all pages and components that caused white-on-white unreadable text and blinding white boxes on dark mode canvas.
