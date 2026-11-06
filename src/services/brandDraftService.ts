@@ -96,6 +96,7 @@ export class BrandDraftService {
     // 3. Quota & Circuit Breaker gate
     await QuotaService.checkCircuitBreaker({ id: user.id, role: user.role, status: user.status });
     await QuotaService.checkDailyQuota(user.id, 'brand_draft_per_day');
+    await QuotaService.checkMonthlyBudget(user.id, 'brand_draft');
 
     // 4. Load versioned or default system prompt
     const promptInfo = await getActiveSystemPrompt('brand_draft');

@@ -13,6 +13,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminAnalyticsPage() {
   const profile = await requireAdmin();
   const funnel = await AnalyticsService.getFunnelData(profile);
@@ -145,40 +147,39 @@ export default async function AdminAnalyticsPage() {
           </div>
 
           <div className="space-y-4">
-            {funnel.coreProductLoop.map((stage, idx) => (
-              <div key={stage.name} className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-5 h-5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-mono flex items-center justify-center font-bold">
-                      {idx + 1}
-                    </span>
-                    <span className="font-medium text-slate-200">{stage.name}</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="font-semibold text-white font-mono">
-                      {stage.count.toLocaleString()}
-                    </span>
-                    {idx > 0 && (
-                      <span className="text-[11px] text-slate-400 font-mono">
-                        {stage.conversionRate}% CVR ({stage.dropOffRate}% drop)
+            {funnel.coreProductLoop.map((stage, idx) => {
+              const baseCount = funnel.coreProductLoop[0]?.count ?? 1;
+              const widthPct = Math.max((stage.count / Math.max(baseCount, 1)) * 100, 4);
+              return (
+                <div key={stage.name} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center space-x-2">
+                      <span className="w-5 h-5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-mono flex items-center justify-center font-bold">
+                        {idx + 1}
                       </span>
-                    )}
+                      <span className="font-medium text-slate-200">{stage.name}</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className="font-semibold text-white font-mono">
+                        {stage.count.toLocaleString()}
+                      </span>
+                      {idx > 0 && (
+                        <span className="text-[11px] text-slate-400 font-mono">
+                          {stage.conversionRate}% CVR ({stage.dropOffRate}% drop)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="w-full h-3 bg-slate-800/80 rounded-full overflow-hidden flex">
+                    <div
+                      className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500"
+                      style={{ width: `${widthPct}%` }}
+                    />
                   </div>
                 </div>
-
-                <div className="w-full h-3 bg-slate-800/80 rounded-full overflow-hidden flex">
-                  <div
-                    className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.max(
-                        (stage.count / Math.max(funnel.coreProductLoop[0]?.count ?? 1, 1)) * 100,
-                        4
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
@@ -211,40 +212,39 @@ export default async function AdminAnalyticsPage() {
           </div>
 
           <div className="space-y-4">
-            {funnel.monetizationFunnel.map((stage, idx) => (
-              <div key={stage.name} className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-5 h-5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-mono flex items-center justify-center font-bold">
-                      {idx + 1}
-                    </span>
-                    <span className="font-medium text-slate-200">{stage.name}</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="font-semibold text-white font-mono">
-                      {stage.count.toLocaleString()}
-                    </span>
-                    {idx > 0 && (
-                      <span className="text-[11px] text-slate-400 font-mono">
-                        {stage.conversionRate}% CVR
+            {funnel.monetizationFunnel.map((stage, idx) => {
+              const baseCount = funnel.monetizationFunnel[0]?.count ?? 1;
+              const widthPct = Math.max((stage.count / Math.max(baseCount, 1)) * 100, 4);
+              return (
+                <div key={stage.name} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center space-x-2">
+                      <span className="w-5 h-5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-mono flex items-center justify-center font-bold">
+                        {idx + 1}
                       </span>
-                    )}
+                      <span className="font-medium text-slate-200">{stage.name}</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className="font-semibold text-white font-mono">
+                        {stage.count.toLocaleString()}
+                      </span>
+                      {idx > 0 && (
+                        <span className="text-[11px] text-slate-400 font-mono">
+                          {stage.conversionRate}% CVR
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="w-full h-3 bg-slate-800/80 rounded-full overflow-hidden flex">
+                    <div
+                      className="h-full bg-gradient-to-r from-purple-500 to-indigo-400 rounded-full transition-all duration-500"
+                      style={{ width: `${widthPct}%` }}
+                    />
                   </div>
                 </div>
-
-                <div className="w-full h-3 bg-slate-800/80 rounded-full overflow-hidden flex">
-                  <div
-                    className="h-full bg-gradient-to-r from-purple-500 to-indigo-400 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.max(
-                        (stage.count / Math.max(funnel.monetizationFunnel[0]?.count ?? 1, 1)) * 100,
-                        4
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">

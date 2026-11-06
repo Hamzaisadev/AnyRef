@@ -43,6 +43,7 @@ export class GenerateService {
     const { QuotaService } = await import('./quotaService');
     await QuotaService.checkCircuitBreaker();
     await QuotaService.checkDailyQuota(userId, 'generate_per_day');
+    await QuotaService.checkMonthlyBudget(userId, 'generate');
 
     const promptInfo = await getActiveSystemPrompt('generate');
     const provider = this.getProvider();

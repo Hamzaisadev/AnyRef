@@ -18,7 +18,7 @@ export interface AdminUserListItem {
 export interface OverviewMetrics {
   totalUsers: number;
   activeUsers: number;
-  plusSubscribers: number;
+  paidSubscribers: number;
   aiCallsToday: number;
   estimatedCostTodayUsd: number;
   aiCalls7d: number;
@@ -68,10 +68,10 @@ export class AdminService {
       .select('*', { count: 'exact', head: true })
       .eq('status', 'active');
 
-    const { count: plusSubscribers } = await supabase
+    const { count: paidSubscribers } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true })
-      .eq('plan_id', 'plus');
+      .neq('plan_id', 'free');
 
     // 2. Settings / toggles
     const { data: settings } = await supabase.from('app_settings').select('key, value');
@@ -113,7 +113,7 @@ export class AdminService {
     return {
       totalUsers: totalUsers || 0,
       activeUsers: activeUsers || 0,
-      plusSubscribers: plusSubscribers || 0,
+      paidSubscribers: paidSubscribers || 0,
       aiCallsToday,
       estimatedCostTodayUsd: Math.round(estimatedCostTodayUsd * 1000) / 1000,
       aiCalls7d,

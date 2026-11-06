@@ -54,6 +54,7 @@ export class AutofillService {
     const { QuotaService } = await import('./quotaService');
     await QuotaService.checkCircuitBreaker();
     await QuotaService.checkDailyQuota(userId, 'autofill_per_day');
+    await QuotaService.checkMonthlyBudget(userId, 'autofill');
 
     const promptInfo = await getActiveSystemPrompt('autofill');
     const provider = this.getProvider();

@@ -183,15 +183,16 @@ export default async function AdminOverviewPage() {
           </div>
         </div>
 
-        {/* Plus Plan Subscribers */}
+        {/* Paid Plan Subscribers */}
         <div className="p-5 rounded-2xl bg-[#0F111E] border border-slate-800/90 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium uppercase tracking-wider">Plus Subscribers</span>
+            <span className="text-xs font-medium uppercase tracking-wider">Paid Subscribers</span>
             <CreditCard className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold text-white tracking-tight">{metrics.plusSubscribers}</div>
-          <div className="text-xs text-slate-400">
-            ~${metrics.plusSubscribers * 5}/mo estimated MRR
+          <div className="text-2xl font-bold text-white tracking-tight">{metrics.paidSubscribers}</div>
+          <div className="text-xs text-slate-400 flex items-center space-x-1">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Active paid memberships</span>
           </div>
         </div>
 

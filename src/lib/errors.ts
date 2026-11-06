@@ -56,8 +56,8 @@ export class AiInvalidOutputError extends AppError {
 }
 
 export class QuotaExceededError extends AppError {
-  constructor(message: string, details?: unknown) {
-    super(message, 'QUOTA_EXCEEDED', 429, details);
+  constructor(message: string, details?: unknown, code = 'QUOTA_EXCEEDED') {
+    super(message, code, 429, details);
   }
 }
 

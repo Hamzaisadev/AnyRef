@@ -39,6 +39,8 @@ export default async function AdminPlansPage() {
     const generatePerDay = Number(formData.get('generatePerDay') || 5);
     const maxBrands = Number(formData.get('maxBrands') || 2);
     const maxEntries = Number(formData.get('maxEntries') || 50);
+    const monthlyAiBudgetRaw = formData.get('monthlyAiBudget');
+    const monthlyAiBudget = monthlyAiBudgetRaw !== null && monthlyAiBudgetRaw !== '' ? Number(monthlyAiBudgetRaw) : null;
     const showAds = formData.get('showAds') === 'on';
 
     const client = await createClient();
@@ -49,6 +51,7 @@ export default async function AdminPlansPage() {
       generate_per_day: generatePerDay,
       max_brands: maxBrands,
       max_entries: maxEntries,
+      monthly_ai_budget_usd: monthlyAiBudget,
     };
 
     await client
@@ -169,6 +172,17 @@ export default async function AdminPlansPage() {
                     type="number"
                     name="maxEntries"
                     defaultValue={plan.limits.max_entries}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-slate-400 mb-0.5">Monthly AI Budget ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="monthlyAiBudget"
+                    defaultValue={plan.limits.monthly_ai_budget_usd ?? ''}
+                    placeholder="Unlimited"
                     className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono text-xs"
                   />
                 </div>

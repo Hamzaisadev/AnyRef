@@ -140,7 +140,7 @@ export class QuotaService {
           ? 'autofill'
           : 'brand draft';
       throw new QuotaExceededError(
-        `Daily ${actionName} limit reached (${used}/${limit}). Adding ${requestedCount} item(s) would exceed your daily limit. Upgrade to Plus for higher limits or wait for reset at 00:00 UTC.`,
+        `Daily ${actionName} limit reached (${used}/${limit}). Adding ${requestedCount} item(s) would exceed your daily limit. Upgrade to Pro for higher limits or wait for reset at 00:00 UTC.`,
         { limit, used, resetAt, planId: entitlements.planId }
       );
     }
@@ -156,9 +156,92 @@ export class QuotaService {
   }
 
   /**
+   * Enforces per-user calendar-month AI dollar budget.
+   * Month window: 1st day of current calendar month at 00:00:00.000 UTC to now.
+   * Sums est_cost_usd from ai_usage.
+   * Estimates the next call's cost from recent calls of that kind (defaulting to benchmark costs:
+   * generate: $0.003493, autofill: $0.001675, brand_draft: $0.001125).
+   * If current cost + estimated next cost > budget (or if current cost >= budget),
+   * blocks with QuotaExceededError (code: 'MONTHLY_BUDGET_EXCEEDED', statusCode: 429).
+   * Staff (owner/admin) resolve to null (unlimited) and are never blocked.
+   * Template reuse and Workbench stay fully usable at the limit.
+   */
+  static async checkMonthlyBudget(
+    userId: string,
+    actionKind: 'generate' | 'autofill' | 'brand_draft' = 'generate'
+  ): Promise<void> {
+    const entitlements = await getEntitlements(userId);
+    const budget = entitlements.limits.monthly_ai_budget_usd;
+
+    // Staff unlimited bypass (null or undefined)
+    if (budget === null || budget === undefined) {
+      return;
+    }
+
+    const now = new Date();
+    // 1st of current month at 00:00:00.000 UTC
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
+    // 1st of next month at 00:00:00.000 UTC
+    const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0));
+    const resetDateFormatted = nextMonthStart.toISOString().split('T')[0];
+
+    const supabase = createAdminClient();
+    const { data: usageRows } = await supabase
+      .from('ai_usage')
+      .select('est_cost_usd')
+      .eq('user_id', userId)
+      .gte('created_at', monthStart.toISOString());
+
+    const usedCost = (usageRows || []).reduce(
+      (acc, r) => acc + Number(r.est_cost_usd || 0),
+      0
+    );
+
+    // Fallback benchmark costs from docs/spike/cost_benchmark_25_runs.json
+    const BENCHMARK_COSTS: Record<string, number> = {
+      generate: 0.003493,
+      autofill: 0.001675,
+      brand_draft: 0.001125,
+    };
+
+    let estimatedNextCost = BENCHMARK_COSTS[actionKind] ?? 0.0035;
+
+    // Query recent calls of this kind for dynamic average
+    const { data: recentCalls } = await supabase
+      .from('ai_usage')
+      .select('est_cost_usd')
+      .eq('kind', actionKind)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (recentCalls && recentCalls.length > 0) {
+      const sum = recentCalls.reduce((acc, c) => acc + Number(c.est_cost_usd || 0), 0);
+      estimatedNextCost = sum / recentCalls.length;
+    }
+
+    // Check if at or above budget, or if the next call would exceed budget
+    // Concurrency tolerance note: two concurrent calls can at most overshoot by 1 call (~$0.0035)
+    if (usedCost >= budget || (usedCost + estimatedNextCost) > budget) {
+      const planName =
+        entitlements.planId.charAt(0).toUpperCase() + entitlements.planId.slice(1);
+      throw new QuotaExceededError(
+        `You have reached your monthly AI creation allowance for your ${planName} plan. Your allowance resets on the first of next month (${resetDateFormatted}). You can continue to edit prompts in the Workbench and reuse your saved templates with zero AI cost.`,
+        {
+          budget,
+          usedCost,
+          resetAt: nextMonthStart.toISOString(),
+          planId: entitlements.planId,
+          code: 'MONTHLY_BUDGET_EXCEEDED',
+        },
+        'MONTHLY_BUDGET_EXCEEDED'
+      );
+    }
+  }
+
+  /**
    * Checks batch size against the user's plan batch_max limit.
    * For Free plan, batch_max is 1 (batch autofill is not allowed for > 1 items).
-   * Plus plan allows up to 10 items per batch.
+   * Pro plan allows up to 5 items per batch; Studio allows up to 10 items.
    * Staff have unlimited batch_max (null).
    */
   static async checkBatchQuota(userId: string, batchSize: number): Promise<void> {
@@ -170,7 +253,7 @@ export class QuotaService {
 
     if (batchSize > batchMax) {
       throw new QuotaExceededError(
-        `Batch size of ${batchSize} exceeds your plan limit (${batchMax} item${batchMax === 1 ? '' : 's'} per batch). Upgrade to Plus for batch processing up to 10 items.`,
+        `Batch size of ${batchSize} exceeds your plan limit (${batchMax} item${batchMax === 1 ? '' : 's'} per batch). Upgrade to a higher tier for batch processing.`,
         { limit: batchMax, used: batchSize, planId: entitlements.planId }
       );
     }
@@ -194,7 +277,7 @@ export class QuotaService {
     const brandCount = count || 0;
     if (brandCount >= limit) {
       throw new QuotaExceededError(
-        `Brand limit reached (${brandCount}/${limit} brands). Upgrade to Plus to manage up to 10 distinct brands.`,
+        `Brand limit reached (${brandCount}/${limit} brands). Upgrade to Pro or Studio to manage additional distinct brands.`,
         { limit, used: brandCount, planId: entitlements.planId }
       );
     }
@@ -223,7 +306,7 @@ export class QuotaService {
     const entryCount = count || 0;
     if (entryCount + countToAdd > limit) {
       throw new QuotaExceededError(
-        `Entry limit reached (${entryCount}/${limit} saved entries). Adding ${countToAdd} item(s) would exceed your plan limit. Upgrade to Plus to save up to 2,000 reference entries.`,
+        `Entry limit reached (${entryCount}/${limit} saved entries). Adding ${countToAdd} item(s) would exceed your plan limit. Upgrade to Pro or Studio to save additional reference entries.`,
         { limit, used: entryCount, planId: entitlements.planId }
       );
     }

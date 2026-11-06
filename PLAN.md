@@ -641,3 +641,43 @@ create policy "refs_own_prefix" on storage.objects for all
   - Real token counts (`input_tokens`, `output_tokens`) and cost (`est_cost_usd`) recorded for every call.
   - Migration `supabase/migrations/0006_brand_draft.sql` extends check constraints and initializes plan limits.
 
+---
+
+## 7. Cost Safety, Sustainable Plans, & Monthly AI Budget (Stage 5)
+
+**Context:** Empirical inference benchmarking on 25 real calls (`docs/spike/cost_benchmark_25_runs.json`) proved that the legacy \$5/mo Plus tier resulted in negative gross margins when power users utilized $>40\%$ of daily quotas. Phase 7 implements budget-enforced, sustainable plans and fences off unverified market claims.
+
+### 7.1 Authoritative Tiers & Budget Ceilings
+- **Database Migration:** `0008_pro_studio_plans_and_budget.sql` adds `pro` and `studio`, preserves `plus` as inactive row (retaining FK integrity), and migrates existing users to `pro`.
+- **Monthly AI Dollar Budgets (`monthly_ai_budget_usd`):**
+  - Free: \$0.40 / mo **[A]**
+  - Pro: \$4.00 / mo **[A]**
+  - Studio: \$12.00 / mo **[A]**
+  - Staff: `null` (Unlimited, recorded in `ai_usage`)
+- **Plan Pricing (Unvalidated Demand):**
+  - Pro: \$19 / mo, \$190 / yr **[A]**
+  - Studio: \$49 / mo, \$490 / yr **[A]**
+  - `show_prices` in `app_settings`: default `false` **[A]**. While false, no prices appear anywhere in UI.
+- **Payment Fee Schedule:**
+  - MoR fee model: 5% + \$0.50 fixed per transaction **[A]**.
+  - Minimum gross margin floor: `MIN_PLAN_MARGIN = 0.55` (55%).
+  - Maximum free budget ceiling: `MAX_FREE_BUDGET_USD = 0.50`.
+- **Quota Limits Table:**
+
+| Quota / Limit | Free | Pro | Studio |
+| :--- | :---: | :---: | :---: |
+| `generate_per_day` | 5 | 20 | 60 |
+| `autofill_per_day` | 5 | 40 | 120 |
+| `brand_draft_per_day` | 2 | 5 | 20 |
+| `monthly_ai_budget_usd` | \$0.40 **[A]** | \$4.00 **[A]** | \$12.00 **[A]** |
+| `max_brands` | 2 | 5 | 25 |
+| `max_entries` | 50 | 1,000 | 5,000 |
+| `max_storage_mb` | 200 | 2,000 | 10,000 |
+| `batch_max` | 1 | 5 | 10 |
+
+### 7.2 Enforcement & Verification
+- **`QuotaService.checkMonthlyBudget(userId, actionKind)`**: Sums UTC calendar month `est_cost_usd` from `ai_usage`. Checks current sum + projected next call cost against budget. Throws `QuotaExceededError('MONTHLY_BUDGET_EXCEEDED')` (HTTP 429).
+- **Plan Safety CI Test (`tests/unit/planSafety.test.ts`)**: Automatically validates margin floors, free budget ceilings, pricing table freshness, and model identity.
+- **Claims Guard CI Test (`tests/unit/claimsGuard.test.ts`)**: Prevents unverified market claims (\$1.42B TAM, 1.5M entities, \$3.1M SOM, CAC \$150, LTV:CAC 3.0x) from leaking into `src/` or `README.md`.
+
+

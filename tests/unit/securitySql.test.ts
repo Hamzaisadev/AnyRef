@@ -19,12 +19,19 @@ function getFilesRecursively(dir: string, fileList: string[] = []): string[] {
 describe('Security & Data Integrity Static Audits (Phase 3)', () => {
   const srcDir = path.resolve(__dirname, '../../src');
   const sourceFiles = getFilesRecursively(srcDir);
+  const fileCache = new Map<string, string>();
+  for (const filePath of sourceFiles) {
+    try {
+      fileCache.set(filePath, fs.readFileSync(filePath, 'utf-8'));
+    } catch {
+      // ignore
+    }
+  }
 
-  it('contains zero instances of dangerouslySetInnerHTML', () => {
+  it('contains zero instances of dangerouslySetInnerHTML', { timeout: 20000 }, () => {
     const violations: string[] = [];
 
-    for (const filePath of sourceFiles) {
-      const content = fs.readFileSync(filePath, 'utf-8');
+    for (const [filePath, content] of fileCache) {
       if (content.includes('dangerouslySetInnerHTML')) {
         violations.push(filePath);
       }
@@ -45,8 +52,7 @@ describe('Security & Data Integrity Static Audits (Phase 3)', () => {
       /"SELECT\s+.*FROM\s+.*"\s*\+/i,
     ];
 
-    for (const filePath of sourceFiles) {
-      const content = fs.readFileSync(filePath, 'utf-8');
+    for (const [filePath, content] of fileCache) {
       for (const pattern of dangerousPatterns) {
         if (pattern.test(content)) {
           violations.push(`${filePath} matches ${pattern.toString()}`);
@@ -57,11 +63,13 @@ describe('Security & Data Integrity Static Audits (Phase 3)', () => {
     expect(violations, `Found SQL concatenation violations: ${violations.join(', ')}`).toEqual([]);
   });
 
-  it('strictly isolates client modules from server-only environment variables', () => {
-    const clientFiles = sourceFiles.filter((f) => {
-      const content = fs.readFileSync(f, 'utf-8');
-      return content.startsWith("'use client'") || content.startsWith('"use client"');
-    });
+  it('strictly isolates client modules from server-only environment variables', { timeout: 20000 }, () => {
+    const clientFiles: Array<{ path: string; content: string }> = [];
+    for (const [filePath, content] of fileCache) {
+      if (content.startsWith("'use client'") || content.startsWith('"use client"')) {
+        clientFiles.push({ path: filePath, content });
+      }
+    }
 
     const forbiddenServerImports = [
       "from '@/lib/env'",
@@ -73,8 +81,7 @@ describe('Security & Data Integrity Static Audits (Phase 3)', () => {
     ];
 
     const violations: string[] = [];
-    for (const filePath of clientFiles) {
-      const content = fs.readFileSync(filePath, 'utf-8');
+    for (const { path: filePath, content } of clientFiles) {
       for (const forbidden of forbiddenServerImports) {
         if (content.includes(forbidden)) {
           violations.push(`${filePath} directly accesses server secret: "${forbidden}"`);

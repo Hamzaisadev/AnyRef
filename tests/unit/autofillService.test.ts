@@ -8,6 +8,7 @@ vi.mock('@/services/quotaService', () => ({
   QuotaService: {
     checkCircuitBreaker: vi.fn().mockResolvedValue(undefined),
     checkDailyQuota: vi.fn().mockResolvedValue({ allowed: true }),
+    checkMonthlyBudget: vi.fn().mockResolvedValue(undefined),
     recordAiUsage: vi.fn().mockResolvedValue(undefined),
   },
 }));

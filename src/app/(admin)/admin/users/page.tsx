@@ -166,15 +166,15 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                             </form>
                           )}
 
-                          {/* Grant Plus Comp */}
-                          {u.plan_id !== 'plus' && (
+                          {/* Grant Pro Comp */}
+                          {u.plan_id === 'free' && (
                             <form
                               action={async () => {
                                 'use server';
                                 await grantCompPlanAction(
                                   u.user_id,
-                                  'plus',
-                                  'Granted complimentary Plus plan by administrator'
+                                  'pro',
+                                  'Granted complimentary Pro plan by administrator'
                                 );
                               }}
                               className="inline-flex"
@@ -184,7 +184,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                                 className="px-2.5 py-1 rounded bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 border border-indigo-500/20 text-xs font-medium transition-colors flex items-center space-x-1"
                               >
                                 <Gift className="w-3.5 h-3.5" />
-                                <span>Comp Plus</span>
+                                <span>Comp Pro</span>
                               </button>
                             </form>
                           )}

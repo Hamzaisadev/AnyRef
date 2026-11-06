@@ -1,15 +1,7 @@
 import { createClient, createAdminClient } from '../lib/supabaseServer';
 import type { AppRole } from './authz';
-
-export interface PlanLimits {
-  max_brands: number | null;
-  max_entries: number | null;
-  max_storage_mb: number | null;
-  generate_per_day: number | null;
-  autofill_per_day: number | null;
-  batch_max: number | null;
-  brand_draft_per_day: number | null;
-}
+import { DEFAULT_FREE_LIMITS, type PlanLimits } from '../config/plans';
+export type { PlanLimits };
 
 export interface Entitlements {
   role: AppRole;
@@ -23,16 +15,6 @@ export interface Entitlements {
   showAds: boolean;
 }
 
-const DEFAULT_FREE_LIMITS: PlanLimits = {
-  max_brands: 2,
-  max_entries: 50,
-  max_storage_mb: 200,
-  generate_per_day: 5,
-  autofill_per_day: 5,
-  batch_max: 1,
-  brand_draft_per_day: 5,
-};
-
 const UNLIMITED_STAFF_LIMITS: PlanLimits = {
   max_brands: null,
   max_entries: null,
@@ -41,6 +23,7 @@ const UNLIMITED_STAFF_LIMITS: PlanLimits = {
   autofill_per_day: null,
   batch_max: null,
   brand_draft_per_day: null,
+  monthly_ai_budget_usd: null,
 };
 
 export async function getEntitlements(userId: string): Promise<Entitlements> {
@@ -117,7 +100,7 @@ export async function getEntitlements(userId: string): Promise<Entitlements> {
     limits: mergedLimits,
     features: {
       batch_autofill: (mergedLimits.batch_max ?? 1) > 1,
-      custom_export: planId === 'plus',
+      custom_export: planId === 'pro' || planId === 'studio' || planId === 'plus',
       unlimited_ai: false,
     },
     showAds,
