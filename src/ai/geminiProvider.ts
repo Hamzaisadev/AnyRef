@@ -9,11 +9,14 @@ import {
   AutofillResult,
   BrandDraftResult,
   StudioGenerateResult,
+  RenderImageInput,
+  RenderImageResult,
   AiUsage,
 } from './AiProvider';
 import { GenerateOutput, AutofillOutput, BrandDraftOutput, StudioGenerateOutput } from './schemas';
 import { AiInvalidOutputError, AiProviderError } from '../lib/errors';
 import { renderStudioPrompt } from '../domain/studioPrompt';
+import { RENDER_HONESTY_DIRECTIVE } from '../domain/renderGuard';
 
 export const GENERATE_OUTPUT_SCHEMA_INSTRUCTION = `
 OUTPUT FORMAT: Return a JSON object matching this EXACT schema:
@@ -737,21 +740,140 @@ export function normalizeStudioOutput(raw: any): any {
 export class GeminiProvider implements AiProvider {
   name = 'gemini';
   private model: GenerativeModel;
+  private genAI: GoogleGenerativeAI;
+  private imageModelName: string;
+  /** Lazily built: the image model cannot share the JSON responseMimeType config. */
+  private imageModel: GenerativeModel | null = null;
 
-  constructor(apiKey: string, modelName: string = process.env.AI_MODEL || 'gemini-2.0-flash') {
+  constructor(
+    apiKey: string,
+    modelName: string = process.env.AI_MODEL || 'gemini-2.0-flash',
+    imageModelName: string = process.env.AI_IMAGE_MODEL || 'gemini-3-pro-image'
+  ) {
     const trimmedModel = modelName.trim();
     if (!trimmedModel || trimmedModel.endsWith('-latest')) {
       throw new Error(
         `Invalid AI_MODEL "${modelName}": AI_MODEL is required and must not end in "-latest".`
       );
     }
-    const genAI = new GoogleGenerativeAI(apiKey);
-    this.model = genAI.getGenerativeModel({
+    const trimmedImageModel = imageModelName.trim();
+    if (!trimmedImageModel || trimmedImageModel.endsWith('-latest')) {
+      throw new Error(
+        `Invalid AI_IMAGE_MODEL "${imageModelName}": must be pinned and must not end in "-latest".`
+      );
+    }
+    this.imageModelName = trimmedImageModel;
+    this.genAI = new GoogleGenerativeAI(apiKey);
+    this.model = this.genAI.getGenerativeModel({
       model: trimmedModel,
       generationConfig: {
         responseMimeType: 'application/json',
       },
     });
+  }
+
+  /**
+   * The text models are pinned to JSON output; an image model must not be.
+   * Built on first render so prompt-only deployments never instantiate it.
+   */
+  private getImageModel(): GenerativeModel {
+    if (!this.imageModel) {
+      this.imageModel = this.genAI.getGenerativeModel({
+        model: this.imageModelName,
+        generationConfig: {
+          // Ask for both so we can surface any refusal text alongside the image.
+          responseModalities: ['TEXT', 'IMAGE'],
+        } as GenerativeModel['generationConfig'] & { responseModalities: string[] },
+      });
+    }
+    return this.imageModel;
+  }
+
+  async renderImage(input: RenderImageInput): Promise<RenderImageResult> {
+    const model = this.getImageModel();
+
+    // Attachment roles are stated explicitly so the model applies each image the way
+    // the user previously had to by hand when carrying an Attach Checklist to Midjourney.
+    const roleLabel: Record<NonNullable<RenderImageInput['attachments']>[number]['role'], string> = {
+      reference_layout:
+        'REFERENCE LAYOUT (match composition, lighting, and typographic hierarchy; do NOT copy its text or logos)',
+      product: 'PRODUCT (reproduce this exact product faithfully; do not restyle or substitute it)',
+      logo: 'BRAND LOGO (reproduce exactly as provided; never redraw, re-letter, or recolour it)',
+    };
+
+    const parts: Array<string | { inlineData: { data: string; mimeType: string } }> = [];
+
+    parts.push(
+      [
+        'Render a single finished marketing poster image.',
+        `Output aspect ratio: ${input.aspectRatio}.`,
+        '',
+        RENDER_HONESTY_DIRECTIVE,
+        '',
+        'POSTER SPECIFICATION:',
+        input.prompt,
+      ].join('\n')
+    );
+
+    for (const att of input.attachments || []) {
+      parts.push(`\nATTACHED IMAGE — ${roleLabel[att.role]}:`);
+      parts.push({
+        inlineData: {
+          data: att.buffer.toString('base64'),
+          mimeType: att.mimeType,
+        },
+      });
+    }
+
+    let response;
+    try {
+      response = await model.generateContent(parts);
+    } catch (err) {
+      throw new AiProviderError(
+        `Image render failed via ${this.imageModelName}: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+
+    const candidate = response.response.candidates?.[0];
+
+    // A blocked render still costs us nothing to surface clearly.
+    if (!candidate || candidate.finishReason === 'SAFETY' || candidate.finishReason === 'PROHIBITED_CONTENT') {
+      throw new AiProviderError(
+        'The image model declined to render this poster (content safety). Try adjusting the reference or copy.'
+      );
+    }
+
+    const imagePart = candidate.content?.parts?.find(
+      (p): p is { inlineData: { data: string; mimeType: string } } =>
+        typeof (p as { inlineData?: unknown }).inlineData === 'object' &&
+        (p as { inlineData?: { data?: string } }).inlineData?.data !== undefined
+    );
+
+    if (!imagePart) {
+      const refusalText = candidate.content?.parts
+        ?.map((p) => (typeof (p as { text?: string }).text === 'string' ? (p as { text: string }).text : ''))
+        .join(' ')
+        .trim();
+      throw new AiInvalidOutputError(
+        `Image model returned no image.${refusalText ? ` Model said: ${refusalText.slice(0, 300)}` : ''}`
+      );
+    }
+
+    const usageMeta = response.response.usageMetadata as
+      | (typeof response.response.usageMetadata & { thoughtsTokenCount?: number })
+      | undefined;
+
+    return {
+      imageBuffer: Buffer.from(imagePart.inlineData.data, 'base64'),
+      mimeType: imagePart.inlineData.mimeType || 'image/png',
+      model: this.imageModelName,
+      imageCount: 1,
+      usage: {
+        inputTokens: usageMeta?.promptTokenCount ?? 0,
+        outputTokens: usageMeta?.candidatesTokenCount ?? 0,
+        reasoningTokens: usageMeta?.thoughtsTokenCount ?? 0,
+      },
+    };
   }
 
   async generateTemplate(input: GenerateInput): Promise<GenerateResult> {

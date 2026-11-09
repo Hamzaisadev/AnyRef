@@ -30,6 +30,59 @@ export const MODEL_PRICING_CATALOG: Record<string, { inputPerMillion: number; ou
   'claude-3-5-haiku-20241022': { inputPerMillion: 0.80, outputPerMillion: 4.00 },
 };
 
+/**
+ * Per-image output pricing for image generation models ($ per image).
+ * Gemini bills generated images as output tokens at $120/1M: 1120 tokens at 1K/2K
+ * and 2000 at 4K, which resolves to the flat per-image figures below.
+ * Source: https://aistudio.google.com/docs/pricing (retrieved 2026-11-07)
+ */
+export const IMAGE_MODEL_PRICING_CATALOG: Record<string, { perImage: number; perImage4k?: number }> = {
+  'gemini-3-pro-image': { perImage: 0.134, perImage4k: 0.24 },
+  // Scheduled for shutdown 2026-06-25; kept so existing rows price correctly.
+  'gemini-3-pro-image-preview': { perImage: 0.134, perImage4k: 0.24 },
+  'nano-banana-2': { perImage: 0.067 },
+  'gemini-2.5-flash-image': { perImage: 0.039 },
+};
+
+const DEFAULT_PER_IMAGE_USD = 0.134;
+
+/**
+ * Resolves the flat per-image cost for a render.
+ * Falls back to env config, then to the Nano Banana Pro 1K/2K rate.
+ */
+export function getImagePricePerImage(
+  modelName?: string,
+  rawEnv: Record<string, unknown> = process.env
+): number {
+  const catalogEntry = modelName
+    ? IMAGE_MODEL_PRICING_CATALOG[modelName.trim().toLowerCase()]
+    : undefined;
+  if (catalogEntry) return catalogEntry.perImage;
+
+  const fromEnv = Number(rawEnv.AI_IMAGE_PRICE_PER_IMAGE_USD);
+  if (Number.isFinite(fromEnv) && fromEnv >= 0) return fromEnv;
+
+  return DEFAULT_PER_IMAGE_USD;
+}
+
+/**
+ * Computes the cost of an image render.
+ * Input tokens (prompt + attached reference images) are billed separately from the
+ * flat per-image output charge, so both are included.
+ */
+export function computeRenderCost(
+  imageCount: number,
+  inputTokens: number = 0,
+  modelName?: string,
+  rawEnv: Record<string, unknown> = process.env
+): number {
+  const perImage = getImagePricePerImage(modelName, rawEnv);
+  // Gemini 3 Pro Image text/image input is $2.00 per 1M tokens.
+  const inputCost = (inputTokens * 2.0) / 1_000_000;
+  const cost = imageCount * perImage + inputCost;
+  return Math.round(cost * 1_000_000) / 1_000_000;
+}
+
 const DEFAULT_PRICING: AiPricingConfig = {
   inputPerMillion: 0.30,
   outputPerMillion: 2.50,
