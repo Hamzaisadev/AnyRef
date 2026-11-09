@@ -23,6 +23,8 @@ const UNLIMITED_STAFF_LIMITS: PlanLimits = {
   autofill_per_day: null,
   batch_max: null,
   brand_draft_per_day: null,
+  render_per_day: null,
+  render_per_month: null,
   monthly_ai_budget_usd: null,
 };
 
