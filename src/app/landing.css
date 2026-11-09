@@ -1,0 +1,1469 @@
+/* ===========================================================================
+   Anyref landing page.
+   Scoped under .lp so the authenticated app keeps its own palette and type.
+   Concept, palette and type decisions are recorded in DESIGN.md (Phase 2).
+   =========================================================================== */
+
+.lp {
+  /* Paper and ink. The field colour is set at runtime by the colour rail. */
+  --paper: #fbf7f0;
+  --paper-2: #f2ece1;
+  --ink: #15130f;
+  /* Darkened from #6a655c (6.3:1): axe flagged 25 nodes as needing review, and body
+     copy at this size should be comfortably clear of the threshold, not near it. */
+  --muted: #514d46; /* 8.6:1 on paper */
+  --line: rgb(21 19 15 / 0.16);
+  --line-strong: rgb(21 19 15 / 0.3);
+
+  /* Set by src/motion/brand.ts; these are the first ink so SSR paints correctly.
+     Must stay in sync with INKS[0] in src/data/landing.ts. */
+  --field: #ff4d2e;
+  --field-ink: #1a0b06;
+  --field-deep: #a62612;
+  --deep-ink: #ffffff;
+
+  --f-display: var(--font-display-lp), 'Archivo', system-ui, sans-serif;
+  --f-text: var(--font-switzer), system-ui, sans-serif;
+  --f-mono: var(--font-mono), ui-monospace, monospace;
+
+  /* Fluid scale with a big jump between display and text. */
+  --t-mega: clamp(2.9rem, 0.6rem + 8.6vw, 8.5rem);
+  --t-xl: clamp(2.1rem, 1.1rem + 4.4vw, 5.2rem);
+  --t-l: clamp(1.45rem, 1.2rem + 1.5vw, 2.35rem);
+  --t-m: clamp(1.1rem, 1.03rem + 0.5vw, 1.35rem);
+  --t-body: clamp(1rem, 0.97rem + 0.18vw, 1.0625rem);
+  --t-s: 0.9375rem;
+  --t-xs: 0.8125rem;
+
+  --u: clamp(0.5rem, 0.35rem + 0.6vw, 1rem);
+  --gutter: clamp(1.25rem, 0.6rem + 1.9vw, 3rem);
+  --radius: 14px; /* matches the app's --radius-card so product and site feel related */
+
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--f-text);
+  font-size: var(--t-body);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-kerning: normal;
+}
+
+.lp ::selection {
+  background: var(--field);
+  color: var(--field-ink);
+}
+
+/* The flood: one property drives every colour-bearing surface. */
+.lp,
+.lp * {
+  --flood: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- Layout primitives --------------------------------------------------- */
+
+.lp-shell {
+  width: 100%;
+  max-width: 94rem;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* --- Type ---------------------------------------------------------------- */
+
+.lp-display {
+  font-family: var(--f-display);
+  font-weight: 800;
+  line-height: 0.82;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+  font-variation-settings: 'wdth' 112;
+  text-wrap: balance;
+}
+
+.lp-mega {
+  font-size: var(--t-mega);
+  margin-left: -0.055em; /* optical alignment for large side-bearings */
+}
+
+.lp-h2 {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: var(--t-xl);
+  line-height: 0.88;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  font-variation-settings: 'wdth' 108;
+  text-wrap: balance;
+}
+
+.lp-h3 {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: var(--t-l);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.lp-lead {
+  font-size: var(--t-m);
+  line-height: 1.45;
+  max-width: 36ch;
+}
+
+.lp-body {
+  max-width: 56ch;
+  color: var(--muted);
+}
+
+.lp-label {
+  font-family: var(--f-mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.lp-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Header -------------------------------------------------------------- */
+
+.lp-header {
+  position: fixed;
+  inset: 0 0 auto;
+  /* Above the menu overlay (z 60) so Close stays reachable while it is open. */
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gutter);
+  padding: calc(var(--u) * 1.6) var(--gutter);
+  color: var(--field-ink);
+  transition:
+    translate 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    color var(--flood);
+}
+
+/* Once past the hero the header sits on paper, so its ink flips and it takes a solid
+   band. Without the band it overprinted section headings and poster artwork. */
+html.past-hero .lp-header {
+  color: var(--ink);
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+/* Over a field section the band matches the field instead of the paper. */
+html.past-hero.on-field .lp-header {
+  color: var(--field-ink);
+  background: var(--field);
+  border-bottom-color: rgb(0 0 0 / 0.14);
+}
+html.frame-away .lp-header {
+  translate: 0 -130%;
+}
+
+/* The wordmark is a primary target, so it answers in the motion verb: the width axis
+   floods wider, which is the same gesture the hero type makes. */
+.lp .lp-wordmark {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  font-variation-settings: 'wdth' 100;
+  transition: font-variation-settings 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (hover: hover) {
+  .lp-wordmark:hover {
+    font-variation-settings: 'wdth' 125;
+  }
+}
+.lp-wordmark:focus-visible {
+  font-variation-settings: 'wdth' 125;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-wordmark {
+    transition: none;
+  }
+  .lp-wordmark:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+}
+@media (prefers-reduced-motion: reduce) and (hover: hover) {
+  .lp-wordmark:hover {
+    font-variation-settings: 'wdth' 100;
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+}
+
+.lp-nav {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 2.4);
+}
+
+.lp-nav-links {
+  display: flex;
+  gap: calc(var(--u) * 2.4);
+}
+
+/* Under 860px the inline section links give way to the Menu overlay, which carries
+   the same links rather than dropping them. */
+.lp .lp-menu-btn {
+  display: none;
+}
+@media (max-width: 860px) {
+  .lp .lp-nav-links {
+    display: none;
+  }
+  .lp .lp-signin {
+    display: none;
+  }
+  .lp .lp-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding-block: 4px;
+    font-size: var(--t-s);
+    font-weight: 600;
+    color: inherit;
+  }
+}
+
+/* The overlay is a poster, not a system sheet: display face on the field colour. */
+.lp-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--field);
+  color: var(--field-ink);
+  display: grid;
+  align-content: center;
+  padding: var(--gutter);
+  transition: background var(--flood);
+}
+.lp-menu[hidden] {
+  display: none;
+}
+
+.lp-menu__links {
+  display: grid;
+  gap: calc(var(--u) * 1.2);
+}
+
+.lp-menu__links a {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(2.2rem, 11vw, 3.6rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+}
+
+/* Nav treatment: letter roll. One treatment per role, reused everywhere.
+   The link provides the 28px tap target with padding; an inner element does the
+   clipping, so the padding never reveals the second face. */
+.lp .lp-roll {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding-block: 4px;
+  font-size: var(--t-s);
+  font-weight: 500;
+}
+/* The display face, so the width axis is available for the hover gesture. */
+.lp-roll__clip {
+  display: inline-grid;
+  grid-template-rows: 1fr;
+  overflow: clip;
+  line-height: 1.2;
+  font-family: var(--f-display);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.lp-roll__clip > span {
+  grid-area: 1 / 1;
+  /* The roll alone was sub-pixel at this size, so the second face also arrives
+     wider and heavier: the same width-axis gesture the wordmark and hero use. */
+  transition:
+    translate 0.5s cubic-bezier(0.165, 0.84, 0.44, 1),
+    font-variation-settings 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+  font-variation-settings: 'wdth' 100;
+}
+.lp-roll:hover .lp-roll__clip > span,
+.lp-roll:focus-visible .lp-roll__clip > span {
+  font-variation-settings: 'wdth' 125;
+}
+.lp-roll__clip > span + span {
+  translate: 0 115%;
+}
+@media (hover: hover) {
+  .lp-roll:hover .lp-roll__clip > span {
+    translate: 0 -115%;
+  }
+  .lp-roll:hover .lp-roll__clip > span + span {
+    translate: 0 0;
+  }
+}
+.lp-roll:focus-visible .lp-roll__clip > span {
+  translate: 0 -115%;
+}
+.lp-roll:focus-visible .lp-roll__clip > span + span {
+  translate: 0 0;
+}
+/* Reduced motion: the roll's end state looks like rest, so use an underline instead. */
+@media (prefers-reduced-motion: reduce) {
+  .lp-roll__clip > span {
+    transition: none;
+    translate: none !important;
+  }
+  .lp-roll__clip > span + span {
+    visibility: hidden;
+  }
+  .lp-roll:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+}
+@media (prefers-reduced-motion: reduce) and (hover: hover) {
+  .lp-roll:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+}
+
+/* --- Buttons: the fill floods from the pointer's side -------------------- */
+
+.lp .lp-btn {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.95em 1.6em;
+  min-height: 48px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  font-size: var(--t-s);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: color 0.3s ease;
+}
+
+.lp-btn__fill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: circle(0% at 50% 50%);
+}
+
+/* Solid: sits on the field, filled with paper, floods to the field colour. */
+.lp-btn--solid {
+  background: var(--field-ink);
+  color: var(--field);
+  border-color: var(--field-ink);
+  transition:
+    color 0.3s ease,
+    background var(--flood),
+    border-color var(--flood);
+}
+.lp-btn--solid .lp-btn__fill {
+  background: var(--field-deep);
+}
+.lp-btn--solid.is-filled,
+.lp-btn--solid:active {
+  color: var(--field-ink);
+}
+
+/* Ghost: outline at rest, floods to a solid ink fill with the label inverting.
+   The fill must never be the colour behind the button, or the whole control
+   disappears under the pointer. On the field that means ink, not currentColor. */
+.lp-btn--ghost {
+  color: inherit;
+}
+.lp-btn--ghost .lp-btn__fill {
+  background: var(--ink);
+}
+.lp-btn--ghost.is-filled,
+.lp-btn--ghost:active {
+  color: var(--paper);
+  border-color: var(--ink);
+}
+/* On a field section the ghost sits on colour, so it fills with the field's own ink
+   and the label takes the field colour back. */
+.lp-hero .lp-btn--ghost .lp-btn__fill,
+.lp-section--field .lp-btn--ghost .lp-btn__fill {
+  background: var(--field-ink);
+}
+.lp-hero .lp-btn--ghost.is-filled,
+.lp-hero .lp-btn--ghost:active,
+.lp-section--field .lp-btn--ghost.is-filled,
+.lp-section--field .lp-btn--ghost:active {
+  color: var(--field);
+  border-color: var(--field-ink);
+}
+
+/* Touch and no-JS get the fill on press; reduced motion gets it without the circle. */
+.lp-btn:active .lp-btn__fill {
+  clip-path: circle(150% at 50% 50%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-btn {
+    transition: none;
+  }
+  .lp-btn:focus-visible .lp-btn__fill {
+    clip-path: none;
+  }
+  .lp-btn--solid:focus-visible {
+    color: var(--field-ink);
+  }
+  .lp-btn--ghost:focus-visible {
+    color: var(--paper);
+  }
+  .lp-hero .lp-btn--ghost:focus-visible,
+  .lp-section--field .lp-btn--ghost:focus-visible {
+    color: var(--field);
+  }
+}
+@media (prefers-reduced-motion: reduce) and (hover: hover) {
+  .lp-btn:hover .lp-btn__fill {
+    clip-path: none;
+  }
+  .lp-btn--solid:hover {
+    color: var(--field-ink);
+  }
+  .lp-btn--ghost:hover {
+    color: var(--paper);
+  }
+  .lp-hero .lp-btn--ghost:hover,
+  .lp-section--field .lp-btn--ghost:hover {
+    color: var(--field);
+  }
+}
+
+/* Arrows nudge along their direction */
+.lp-btn svg {
+  transition: translate 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+@media (hover: hover) {
+  .lp-btn:hover svg {
+    translate: 5px 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-btn svg {
+    transition: none;
+  }
+}
+
+/* --- Hero: the colour field ---------------------------------------------- */
+
+.lp-hero {
+  position: relative;
+  background: var(--field);
+  color: var(--field-ink);
+  min-height: 100svh;
+  display: grid;
+  align-content: center;
+  padding-block: 15vh 6vh;
+  transition: background var(--flood);
+  overflow: clip;
+}
+
+.lp-hero__grid {
+  display: grid;
+  gap: calc(var(--u) * 3.5);
+  grid-template-columns: 1fr;
+  align-items: center;
+}
+
+@media (min-width: 980px) {
+  .lp-hero__grid {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    gap: calc(var(--u) * 5);
+  }
+}
+
+.lp-hero__claim {
+  display: grid;
+  gap: calc(var(--u) * 2.4);
+}
+
+/* The hero h1 is the LCP element and the biggest text on the page, so a font swap
+   there moves everything below it. Reserving three lines holds CLS near zero. */
+.lp-hero__claim > h1 {
+  min-height: calc(var(--t-mega) * 0.82 * 3);
+}
+@media (max-width: 600px) {
+  .lp-hero__claim > h1 {
+    min-height: calc(var(--t-mega) * 0.82 * 4);
+  }
+}
+
+.lp-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--u) * 1.5);
+}
+
+/* --- The colour rail (the signature) ------------------------------------- */
+
+.lp-rail {
+  display: grid;
+  gap: calc(var(--u) * 1.2);
+}
+
+.lp-rail__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 1.1);
+}
+
+.lp-chip {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 2px solid rgb(255 255 255 / 0.45);
+  position: relative;
+  transition:
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.3s ease;
+}
+
+.lp-chip::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 999px;
+  border: 2px solid var(--field-ink);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.lp-chip[aria-pressed='true']::after {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .lp-chip:hover {
+    transform: scale(1.14);
+  }
+}
+.lp-chip:focus-visible {
+  transform: scale(1.14);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-chip {
+    transition: none;
+    transform: none !important;
+  }
+}
+
+/* --- Poster stack --------------------------------------------------------- */
+
+.lp-stack {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--u) * 1.6);
+  align-items: start;
+}
+
+@media (min-width: 980px) {
+  .lp-stack {
+    gap: calc(var(--u) * 2);
+    align-items: center;
+    /* Lift the pair so it sits optically centred against the h1 instead of leaving a
+       band of empty field between the nav and the cards. */
+    margin-top: calc(var(--u) * -4.5);
+  }
+  /* The second poster drops to create a staggered rhythm rather than a tidy pair. */
+  .lp-stack > :nth-child(2) {
+    margin-top: calc(var(--u) * 6);
+  }
+}
+
+/* --- Posters: real CSS compositions, never fake screenshots -------------- */
+
+.lp-poster {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--radius);
+  padding: clamp(0.85rem, 2.2cqi, 1.3rem);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.6rem;
+  overflow: clip;
+  container-type: inline-size;
+  background: var(--p-bg, var(--paper));
+  /* Type sits on photography behind a scrim, so it is always paper-white regardless
+     of the brand's own ground colour. The brand shows in the accent and the tint. */
+  color: #ffffff;
+  transition: background var(--flood);
+}
+
+/* Everything in the brand layer sits above the photograph and its scrim. */
+.lp-poster__top,
+.lp-poster__headline,
+.lp-poster__foot {
+  position: relative;
+  z-index: 2;
+}
+
+.lp-poster__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.lp-poster__brand {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(0.72rem, 4.4cqi, 1.05rem);
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+
+/* Full strength white over the scrim: at reduced opacity it failed AA on the photos. */
+.lp-poster__kicker {
+  font-family: var(--f-mono);
+  font-size: clamp(0.5rem, 2.8cqi, 0.7rem);
+  letter-spacing: 0.05em;
+  color: #ffffff;
+}
+
+.lp-poster__headline {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(1.1rem, 11cqi, 2.4rem);
+  line-height: 0.86;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  align-self: end;
+  position: relative;
+  z-index: 2;
+  text-wrap: balance;
+}
+
+.lp-poster__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 2;
+  font-family: var(--f-mono);
+  font-size: clamp(0.5rem, 2.7cqi, 0.7rem);
+  letter-spacing: 0.04em;
+}
+
+/* The price is the one place the brand's accent shows on the photograph, and it is
+   also the field a real customer must fill in themselves. */
+.lp-poster__price {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--p-accent, var(--field));
+  color: #15130f;
+  padding: 0.25em 0.6em;
+  border-radius: 999px;
+  transition: background var(--flood);
+}
+
+/* A tinted poster's accent is whichever ink the rail is on, and the dark inks
+   (cobalt, violet) fail against #15130f. Those pills invert to paper on the deep
+   shade instead, which clears AA for every ink in INKS. */
+.lp-poster[data-tint='true'] .lp-poster__price {
+  background: var(--field-deep);
+  color: var(--deep-ink);
+}
+
+/* The product photograph fills the sheet; the brand layer sits over it. */
+.lp-poster__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+/* Scrim: type sits over photography, so it needs a guaranteed contrast floor.
+   Weighted to the bottom, where the headline and price live. */
+.lp-poster__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(to top, rgb(0 0 0 / 0.78) 0%, rgb(0 0 0 / 0.42) 38%, rgb(0 0 0 / 0.08) 66%),
+    linear-gradient(to bottom, rgb(0 0 0 / 0.42) 0%, transparent 34%);
+}
+
+/* A tinted poster wears the brand ink over the same photograph, which is exactly
+   what the product does: one image, many brands. */
+.lp-poster[data-tint='true'] .lp-poster__scrim {
+  background:
+    linear-gradient(to top, var(--field-deep) 0%, rgb(0 0 0 / 0.5) 44%, rgb(0 0 0 / 0.12) 72%),
+    linear-gradient(to bottom, rgb(0 0 0 / 0.4) 0%, transparent 34%);
+  mix-blend-mode: multiply;
+}
+.lp-poster[data-tint='true'] .lp-poster__img {
+  filter: saturate(0.55);
+}
+
+/* --- Sections ------------------------------------------------------------ */
+
+.lp-section {
+  padding-block: clamp(4.5rem, 11vh, 9.5rem);
+}
+.lp-section--tight {
+  padding-block: clamp(3rem, 7vh, 6rem);
+}
+
+/* Field sections bleed edge to edge and flip their ink. */
+.lp-section--field {
+  background: var(--field);
+  color: var(--field-ink);
+  transition: background var(--flood);
+}
+/* On a field background --muted (tuned for paper) drops to 1.75:1. Anything inside a
+   field inherits the field ink instead, at an opacity that still clears AA. */
+.lp-section--field .lp-body,
+.lp-section--field .lp-label,
+.lp-hero .lp-body,
+.lp-hero .lp-label,
+.lp-footer .lp-body,
+.lp-footer .lp-label {
+  color: inherit;
+  opacity: 0.86;
+}
+
+.lp-section__head {
+  display: grid;
+  gap: calc(var(--u) * 1.4);
+  margin-bottom: calc(var(--u) * 4);
+  max-width: 46rem;
+}
+
+/* A heading that would otherwise leave half the row empty takes a supporting
+   column beside it, carrying the two-column rhythm the hero sets. */
+.lp-section__head--wide {
+  max-width: none;
+  margin-bottom: calc(var(--u) * 4);
+}
+@media (min-width: 900px) {
+  .lp-section__head--wide {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    align-items: end;
+    gap: calc(var(--u) * 5);
+  }
+  .lp-section__head--wide > :first-child {
+    max-width: 18ch;
+  }
+}
+
+/* --- Proof row: three posters, same layout, different brands ------------- */
+
+.lp-proof {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: calc(var(--u) * 2.2);
+}
+
+.lp-proof__item {
+  display: grid;
+  gap: calc(var(--u) * 1.2);
+}
+
+.lp-proof__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.lp-tag {
+  font-family: var(--f-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.2em 0.6em;
+  white-space: nowrap;
+}
+
+/* --- Steps: a real sequence, so the numbers earn their place ------------- */
+
+.lp-steps {
+  display: grid;
+  gap: calc(var(--u) * 3);
+  counter-reset: step;
+}
+@media (min-width: 820px) {
+  .lp-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: calc(var(--u) * 3.5);
+  }
+}
+
+.lp-step {
+  display: grid;
+  gap: 0.7rem;
+  padding-top: calc(var(--u) * 1.6);
+  border-top: 2px solid currentColor;
+}
+
+.lp-step__n {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Audiences ----------------------------------------------------------- */
+
+.lp-audiences {
+  display: grid;
+  gap: calc(var(--u) * 3);
+}
+@media (min-width: 880px) {
+  .lp-audiences {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: calc(var(--u) * 3.5);
+  }
+}
+
+.lp-audience {
+  display: grid;
+  gap: 0.7rem;
+  align-content: start;
+  padding-top: calc(var(--u) * 1.6);
+  border-top: 2px solid var(--ink);
+}
+
+/* --- Limits (on the field) ------------------------------------------------ */
+
+.lp-limits {
+  display: grid;
+  gap: calc(var(--u) * 2.4);
+  margin: 0;
+}
+@media (min-width: 880px) {
+  .lp-limits {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: calc(var(--u) * 3.5);
+  }
+}
+
+.lp-limit {
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+  padding-top: calc(var(--u) * 1.5);
+  border-top: 2px solid currentColor;
+}
+.lp-limit dd {
+  margin: 0;
+}
+
+/* --- Colophon ------------------------------------------------------------- */
+
+/* Full strength: at 0.78 this measured 4.34:1 on the ember field. */
+.lp-colophon {
+  font-size: var(--t-xs);
+  line-height: 1.6;
+  max-width: 64ch;
+  margin-top: calc(var(--u) * 2);
+}
+.lp-colophon .lp-link {
+  font-size: inherit;
+  min-height: 0;
+  display: inline;
+}
+
+/* --- Honesty: two columns, calm and positive ----------------------------- */
+
+.lp-split {
+  display: grid;
+  gap: calc(var(--u) * 3);
+}
+@media (min-width: 820px) {
+  .lp-split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: calc(var(--u) * 5);
+  }
+}
+
+.lp-list {
+  display: grid;
+  gap: 0;
+  margin-top: calc(var(--u) * 1.5);
+}
+
+.lp-list__item {
+  display: flex;
+  gap: 0.8rem;
+  align-items: baseline;
+  padding-block: calc(var(--u) * 1.1);
+  border-bottom: 1px solid var(--line);
+}
+
+.lp-list__mark {
+  font-family: var(--f-mono);
+  font-size: 0.8125rem;
+  color: var(--field);
+  flex: none;
+  transition: color var(--flood);
+}
+
+/* --- Pricing: deliberately unequal --------------------------------------- */
+
+.lp-plans {
+  display: grid;
+  gap: calc(var(--u) * 2.5);
+  align-items: start;
+}
+@media (min-width: 980px) {
+  .lp-plans {
+    grid-template-columns: 0.85fr 1.3fr 0.85fr;
+  }
+}
+
+.lp-plan {
+  display: grid;
+  gap: calc(var(--u) * 1.6);
+  padding: calc(var(--u) * 2.6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.lp-plan--lead {
+  background: var(--field);
+  color: var(--field-ink);
+  border-color: var(--field);
+  transition: background var(--flood);
+}
+.lp-plan--lead .lp-plan__lines,
+.lp-plan--lead .lp-label {
+  color: inherit;
+  opacity: 0.88;
+}
+
+/* "Not open yet" is said in words, not by dimming: a blanket opacity pushed every
+   colour inside below AA. */
+.lp-plan--soon {
+  border-style: dashed;
+}
+
+.lp-plan__price {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(2.4rem, 5.4vw, 3.8rem);
+  line-height: 0.85;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-plan__renders {
+  font-family: var(--f-mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.lp-plan__lines {
+  display: grid;
+  gap: 0.55rem;
+  color: var(--muted);
+  font-size: var(--t-s);
+}
+
+/* --- FAQ ----------------------------------------------------------------- */
+
+.lp-faq {
+  display: grid;
+  border-top: 1px solid var(--line);
+}
+
+.lp-faq__item {
+  padding-block: calc(var(--u) * 2);
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 0.6rem;
+}
+@media (min-width: 820px) {
+  .lp-faq__item {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: calc(var(--u) * 3);
+  }
+}
+
+/* --- Footer -------------------------------------------------------------- */
+
+.lp-footer {
+  background: var(--field);
+  color: var(--field-ink);
+  padding-block: calc(var(--u) * 5) calc(var(--u) * 3);
+  display: grid;
+  gap: calc(var(--u) * 3);
+  transition: background var(--flood);
+  overflow: clip;
+}
+
+.lp-footer__mark {
+  font-size: clamp(3.4rem, 1rem + 15.5vw, 15rem);
+  line-height: 0.78;
+  margin-left: -0.055em;
+}
+
+.lp-footer__cols {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: calc(var(--u) * 2.5);
+  align-items: end;
+}
+
+.lp-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 2);
+}
+
+/* Utility links: a colour change is enough (art-direction.md) */
+.lp .lp-util {
+  font-size: var(--t-s);
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  opacity: 0.82;
+  transition: opacity 0.3s ease;
+}
+@media (hover: hover) {
+  .lp-util:hover {
+    opacity: 1;
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+}
+.lp-util:focus-visible {
+  opacity: 1;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+/* Inline links in body text keep an underline at rest (WCAG 1.4.1) */
+.lp .lp-link {
+  color: inherit;
+  background: linear-gradient(currentColor 0 0) left bottom / 100% 1px no-repeat;
+  transition: background-size 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  width: fit-content;
+}
+@media (hover: hover) {
+  .lp-link:hover {
+    background-size: 100% 0.3em;
+  }
+}
+.lp-link:focus-visible {
+  background-size: 100% 0.3em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-link {
+    transition: none;
+  }
+}
+
+/* --- 404 ----------------------------------------------------------------- */
+
+.lp-404 {
+  min-height: 100svh;
+  display: grid;
+  align-content: center;
+  gap: calc(var(--u) * 2.5);
+  padding-block: 18vh 10vh;
+}
+
+/* Focus ring in the system's own colour, visible on both paper and field. */
+.lp :focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ===========================================================================
+   Auth pages. Deliberately the landing page's palette and type, because the
+   previous sign-in screen was a dark navy SaaS card that shared nothing with
+   the marketing site and made the transition feel like a different product.
+   =========================================================================== */
+
+.auth {
+  --paper: #fbf7f0;
+  --paper-2: #f2ece1;
+  --ink: #15130f;
+  --muted: #514d46;
+  --line: rgb(21 19 15 / 0.16);
+  --field: #ff4d2e;
+  --field-ink: #1a0b06;
+  --field-deep: #a62612;
+
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: 1fr;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-switzer), system-ui, sans-serif;
+}
+
+@media (min-width: 900px) {
+  .auth {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  }
+}
+
+.auth__panel {
+  display: grid;
+  align-content: start;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 27rem;
+  margin-inline: auto;
+  padding: clamp(2rem, 6vh, 4rem) clamp(1.25rem, 4vw, 3rem);
+  align-self: center;
+}
+
+.auth__mark {
+  font-family: var(--font-display-lp), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  width: fit-content;
+  font-variation-settings: 'wdth' 100;
+  transition: font-variation-settings 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (hover: hover) {
+  .auth__mark:hover {
+    font-variation-settings: 'wdth' 125;
+  }
+}
+
+.auth__title {
+  font-family: var(--font-display-lp), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.auth__sub {
+  margin-top: 0.7rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  max-width: 34ch;
+}
+
+.auth__form,
+.auth__sent {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.auth__field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.auth__labelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.auth__label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.auth__input {
+  width: 100%;
+  min-height: 50px;
+  padding: 0.8em 1em;
+  background: #fff;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  font-size: 1rem;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.auth__input::placeholder {
+  color: #938d83;
+}
+.auth__input:focus-visible {
+  outline: none;
+  border-color: var(--field);
+  box-shadow: 0 0 0 4px rgb(255 77 46 / 0.18);
+}
+
+/* Strength meter: four bars that fill as the password gets harder to guess. */
+.auth__strength {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.1rem;
+}
+.auth__meter {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.auth__meter span {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+  transition: background 0.3s ease;
+}
+.auth__meter span[data-on='true'] {
+  background: var(--field);
+}
+
+.auth__hint {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.auth__error {
+  font-size: 0.875rem;
+  color: #a62612;
+  background: rgb(255 77 46 / 0.1);
+  border: 1px solid rgb(255 77 46 / 0.3);
+  border-radius: 10px;
+  padding: 0.7em 0.9em;
+  line-height: 1.45;
+}
+
+.auth__submit {
+  min-height: 52px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: 2px solid var(--ink);
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    transform 0.2s ease;
+}
+@media (hover: hover) {
+  .auth__submit:hover:not(:disabled) {
+    background: var(--field);
+    border-color: var(--field);
+    color: var(--field-ink);
+  }
+}
+.auth__submit:active:not(:disabled) {
+  transform: scale(0.985);
+}
+.auth__submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.auth__link {
+  color: var(--ink);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  text-decoration-thickness: 1px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  width: fit-content;
+  transition: color 0.25s ease;
+}
+@media (hover: hover) {
+  .auth__link:hover {
+    color: var(--field-deep);
+  }
+}
+
+.auth__divider {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.9rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.auth__divider::before,
+.auth__divider::after {
+  content: '';
+  height: 1px;
+  background: var(--line);
+}
+
+.auth__alts {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.auth__alt {
+  min-height: 48px;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease;
+}
+@media (hover: hover) {
+  .auth__alt:hover:not(:disabled) {
+    border-color: var(--ink);
+    background: var(--paper-2);
+  }
+}
+.auth__alt:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.auth__switch,
+.auth__fine {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.auth__switch .auth__link,
+.auth__fine .auth__link {
+  font-size: inherit;
+  min-height: 0;
+}
+
+.auth__sent {
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.1rem 1.2rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* The showcase half: a poster in the product's own language. */
+.auth__show {
+  display: none;
+  background: var(--field);
+  color: var(--field-ink);
+  padding: clamp(2rem, 5vw, 4rem);
+  align-content: center;
+  justify-items: start;
+  gap: 2.5rem;
+}
+@media (min-width: 900px) {
+  .auth__show {
+    display: grid;
+  }
+}
+
+.auth__poster {
+  width: 100%;
+  max-width: 22rem;
+  aspect-ratio: 4 / 5;
+  border-radius: 14px;
+  background:
+    linear-gradient(to top, rgb(0 0 0 / 0.72) 0%, rgb(0 0 0 / 0.25) 45%, transparent 70%),
+    linear-gradient(150deg, #2f6b45, #15130f);
+  padding: 1.3rem;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  color: #fff;
+}
+
+.auth__posterBrand {
+  font-family: var(--font-display-lp), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+
+.auth__posterHead {
+  align-self: end;
+  font-family: var(--font-display-lp), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 2rem;
+  line-height: 0.88;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.auth__posterPrice {
+  justify-self: start;
+  margin-top: 0.7rem;
+  background: #f2b705;
+  color: #15130f;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3em 0.7em;
+  border-radius: 999px;
+}
+
+.auth__showCopy {
+  font-family: var(--font-display-lp), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  max-width: 16ch;
+}
+.auth__showCopy span {
+  display: block;
+  margin-top: 0.9rem;
+  font-family: var(--font-switzer), system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-transform: none;
+  max-width: 34ch;
+}
+
+.auth :focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
