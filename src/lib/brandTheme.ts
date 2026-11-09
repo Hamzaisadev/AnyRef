@@ -48,7 +48,7 @@ export function getContrastForeground(hex: string): string {
   const lum = getLuminance(hex);
   const contrastWithWhite = 1.05 / (lum + 0.05);
   const contrastWithDark = (lum + 0.05) / 0.055;
-  return contrastWithDark >= contrastWithWhite ? '#0F1020' : '#FFFFFF';
+  return contrastWithDark >= contrastWithWhite ? '#15130F' : '#FBF7F0';
 }
 
 /**
@@ -89,18 +89,26 @@ export function ensureDarkContrast(hex: string, minContrast: number = 4.5): stri
   return '#93C5FD';
 }
 
+/**
+ * The product's own colours, used whenever a brand has not supplied its own.
+ *
+ * These are the landing page's ember and amber (see src/app/globals.css). This object
+ * is injected as a style block by the app layout on every request, so it overrides the
+ * CSS tokens: leaving the old violet here would have undone the palette unification
+ * the moment anyone signed in.
+ */
 export const DEFAULT_THEME: BrandTheme = {
-  primary: '#4B2BFF',
-  primaryRgb: '75 43 255',
-  primaryFg: '#FFFFFF',
-  darkPrimary: ensureDarkContrast('#4B2BFF'),
-  darkPrimaryRgb: hexToRgb(ensureDarkContrast('#4B2BFF')).rgbString,
-  darkPrimaryFg: getContrastForeground(ensureDarkContrast('#4B2BFF')),
-  accent: '#FF8A3D',
-  accentRgb: '255 138 61',
-  accentFg: '#0F1020',
-  brandLayer: '#2B7BFF',
-  brandLayerRgb: '43 123 255',
+  primary: '#FF4D2E',
+  primaryRgb: '255 77 46',
+  primaryFg: '#1A0B06',
+  darkPrimary: ensureDarkContrast('#FF4D2E'),
+  darkPrimaryRgb: hexToRgb(ensureDarkContrast('#FF4D2E')).rgbString,
+  darkPrimaryFg: getContrastForeground(ensureDarkContrast('#FF4D2E')),
+  accent: '#F2B705',
+  accentRgb: '242 183 5',
+  accentFg: '#241A00',
+  brandLayer: '#1B4DFF',
+  brandLayerRgb: '27 77 255',
 };
 
 /**
@@ -136,7 +144,7 @@ export function resolveBrandTheme(brand?: Brand | null): BrandTheme {
   if (colors.length === 1) {
     primary = colors[0]!;
     brandLayer = colors[0]!;
-    accent = getLuminance(primary) > 0.4 ? '#0F1020' : '#FF8A3D';
+    accent = getLuminance(primary) > 0.4 ? '#15130F' : '#F2B705';
   } else if (colors.length === 2) {
     if (isNeutralInk(colors[0]!) && !isNeutralInk(colors[1]!)) {
       primary = colors[1]!;

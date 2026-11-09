@@ -45,3 +45,7 @@ frame.md
 /screenshots/
 /public/screenshot*.png
 /public/lighthouse-mobile.json
+
+# QA artifacts (awwwards shoot/audit output and photo contact sheets)
+/.shots/
+/.photos/
