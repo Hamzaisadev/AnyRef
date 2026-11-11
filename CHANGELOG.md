@@ -7,6 +7,113 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-09
+
+First tagged release. Anyref renders finished posters instead of handing over a
+prompt, accounts are created with a password instead of an email round trip, and
+the product and its landing page finally look like the same company.
+
+### Added
+
+- **In-app poster rendering** (`POST /api/render`). Reference layout, product cutout
+  and brand logo are attached automatically with named roles, replacing the manual
+  Attach Checklist. Prompt export to Midjourney, Flux and Ideogram remains available,
+  and `ENABLE_RENDER=false` degrades cleanly to prompt-only mode.
+- **Pre-render honesty gate** (`src/domain/renderGuard.ts`). A render is refused when a
+  required never-invent slot is empty or holds a placeholder (`TBD`, `N/A`, `$XX`,
+  `<price>`, a bare `0`), and when any `{{token}}` survives substitution. The check runs
+  before the paid image call, so a blocked render costs **$0.00** and does not consume
+  the user's monthly allowance.
+- **Password authentication**: sign-up, sign-in and reset. Creating an account takes an
+  email and a password and signs you in immediately, with no confirmation gate. Hashing
+  stays in Supabase Auth (bcrypt, per-user salt, stored in `auth.users`), so no plaintext
+  password or hash reaches application tables, logs or telemetry.
+- **Password policy** (`src/services/passwordPolicy.ts`), shared by the client strength
+  meter and the server so the meter can never promise what the API will reject. 10–72
+  characters, a common-password list, and rejection of the email local part, repeated
+  characters and keyboard runs. Length may substitute for character classes.
+- **Auth throttling** (`src/services/authThrottle.ts`). Independent per-email and per-IP
+  sliding windows, because they stop different attacks. IPs are hashed with a server-side
+  pepper before storage. Only failed attempts count toward a limit.
+- **Render quotas**: `render_per_day` and `render_per_month` per plan, with a `renders`
+  table under RLS recording every attempt, its outcome and its cost.
+- **Landing page**, rebuilt around an interactive colour rail: one brand ink floods the
+  hero, the posters, the steps section, the Pro card and the footer together.
+- **Designed 404** and a phone navigation overlay with focus trap, Escape to close and
+  scroll lock.
+- Migrations `0009_render_images.sql` and `0010_password_auth.sql`.
+
+### Changed
+
+- **Pro is now $15/mo** (was $19) with 30 renders, and is purchasable. Studio stays at
+  $49 with 100 renders and stays closed until Pro users ask for it.
+- **`minPlanMargin` 0.55 → 0.50**, deliberately. At a 55% worst-case floor, Pro at $15
+  supported 9 renders a month, which is not a sellable product. Result: 50.5% worst case,
+  79.3% typical.
+- **`maxFreeBudgetUsd` $0.50 → $0.60** to fit 3 free renders; free text quotas trimmed
+  from 5/5 to 3/3 daily to compensate. Free-tier exposure: $0.58 per user per month.
+- **One palette across the product.** The app's blue-black and violet scheme
+  (`#0F1020` / `#4B2BFF`) is replaced by the landing page's warm paper and ember. Variable
+  names are unchanged, so existing components inherit the new look untouched.
+- **Loader**, rewritten. A blank sheet gains a poster's parts in order, narrated by a step
+  label, with the price field struck out and stamped "Needs you" until the final beat when
+  it resolves. Beats follow real progress rather than a fixed timeline. On exit the sheet
+  flies to the hero poster's position. ~2.7s on desktop and on a 4x-throttled phone.
+- **Page transitions**, rewritten as a press run: four ink bands sweep in sequence and
+  lift in reverse, in the visitor's current brand colour.
+- Typography moved from Inter to Archivo (variable width) and Switzer.
+- `/login` rebuilt: one page, three modes (sign in, sign up, reset), password-first, with
+  magic link and Google demoted to fallbacks.
+- Plan economics now model renders as a monthly term, since the monthly cap is the binding
+  constraint. `pnpm plan:economics` reports per-image cost and render caps.
+
+### Fixed
+
+- **`checkMonthlyBudget` could under-charge renders.** The dynamic cost average was taken
+  across all users and could fall below a render's real $0.134, waving through a call the
+  budget could not cover. It is now floored at the per-kind benchmark.
+- **`bg-primary-hover` was never defined**, so those studio buttons had no hover state.
+- **Images were served unoptimised.** `sharp` was missing, so Next silently passed the
+  originals through. With `sharp` installed, AVIF enabled and `sizes` corrected, landing
+  imagery went from **634 KB to 91 KB**.
+- **Loader could not start until React hydrated**, pushing first load past 3.8s. It now
+  begins from an inline script placed after its own markup and the engine adopts the
+  running value and clock.
+- The landing page's "Upgrade to Pro" call to action routed to `/billing`, which throws
+  `UNAUTHORIZED` for signed-out visitors instead of redirecting. It now routes through
+  `/login?next=/billing`.
+- Several contrast failures: body copy darkened to 8.6:1 on paper, and tinted poster price
+  pills now invert on the deep shade so every brand ink clears AA.
+
+### Security
+
+- Password hashing delegated to Supabase Auth (bcrypt with per-user salt). Passwords are
+  rejected above 72 bytes rather than silently truncated to bcrypt's limit.
+- Sign-in moved server-side. Throttling enforced in a client is not throttling, and the
+  attempt log needs the real IP.
+- Credential failures return a single generic message, so an attacker cannot learn which
+  half of the pair was correct.
+- Password reset always reports success whether or not the address exists, so the endpoint
+  cannot be used to enumerate accounts.
+- `auth_attempts` has RLS enabled with no policies: service role only. Rows are pruned
+  after 30 days.
+- The inline pre-paint script is a static `<script>` child rather than
+  `dangerouslySetInnerHTML`, which this repo bans outright.
+
+### Documentation
+
+- ADR 0005 (in-app rendering) supersedes ADR 0001 (no app-side image generation), with the
+  cost and buyer reasoning that changed.
+- `DESIGN.md` records the landing concept, art direction, QA passes and independent critic
+  scores (7.1 → 7.4 → 7.9).
+
+### Known issues
+
+- `/login` is restyled, but other authenticated routes still carry pre-existing semantic
+  gaps (missing `<h1>` and `<main>` landmarks on `/library`, `/workspace/*` and `/guides/*`).
+- The colour rail drives the hero pair and one example poster, not yet every card.
+
+
 ### Added
 - **Cost Safety, Sustainable Plans (Pro & Studio) & Monthly AI Dollar Budget**:
   - **Per-User Monthly AI Budget Engine**:
@@ -254,3 +361,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Pure prompt rendering engine (`src/domain/renderPrompt.ts`).
   - Brand assets and logo vector graphics (`public/brand/`).
   - TDD test suites with Vitest (15 tests covering seams 1, 2, and 3).
+
+[Unreleased]: https://github.com/Hamzaisadev/AnyRef/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Hamzaisadev/AnyRef/releases/tag/v0.1.0

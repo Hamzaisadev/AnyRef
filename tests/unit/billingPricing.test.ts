@@ -4,9 +4,11 @@ import { LANDING_CONTENT } from '@/lib/landing/content';
 
 describe('Pricing & Plan Presentation Alignment', () => {
   describe('Plans Configuration (Authoritative Store)', () => {
-    it('stores prices in plan rows with $19 Pro and $49 Studio [A]', () => {
-      expect(PLANS_CONFIG.pro.priceUsdMonth).toBe(19);
-      expect(PLANS_CONFIG.pro.priceUsdYear).toBe(190);
+    it('stores prices in plan rows with $15 Pro and $49 Studio [A]', () => {
+      // Pro moved $19 -> $15 to sit at parity with Canva Pro while Anyref has no
+      // brand equity. Studio stays $49 but is not yet purchasable.
+      expect(PLANS_CONFIG.pro.priceUsdMonth).toBe(15);
+      expect(PLANS_CONFIG.pro.priceUsdYear).toBe(150);
       expect(PLANS_CONFIG.studio.priceUsdMonth).toBe(49);
       expect(PLANS_CONFIG.studio.priceUsdYear).toBe(490);
       expect(PLANS_CONFIG.free.priceUsdMonth).toBe(0);
@@ -21,15 +23,34 @@ describe('Pricing & Plan Presentation Alignment', () => {
     });
 
     it('pro and studio plan limits align with specification', () => {
-      expect(DEFAULT_PRO_LIMITS.generate_per_day).toBe(20);
-      expect(DEFAULT_PRO_LIMITS.autofill_per_day).toBe(40);
-      expect(DEFAULT_PRO_LIMITS.brand_draft_per_day).toBe(5);
-      expect(DEFAULT_PRO_LIMITS.monthly_ai_budget_usd).toBe(4.00);
+      expect(DEFAULT_PRO_LIMITS.generate_per_day).toBe(10);
+      expect(DEFAULT_PRO_LIMITS.autofill_per_day).toBe(20);
+      expect(DEFAULT_PRO_LIMITS.brand_draft_per_day).toBe(3);
+      expect(DEFAULT_PRO_LIMITS.monthly_ai_budget_usd).toBe(6.20);
 
-      expect(DEFAULT_STUDIO_LIMITS.generate_per_day).toBe(60);
-      expect(DEFAULT_STUDIO_LIMITS.autofill_per_day).toBe(120);
-      expect(DEFAULT_STUDIO_LIMITS.brand_draft_per_day).toBe(20);
-      expect(DEFAULT_STUDIO_LIMITS.monthly_ai_budget_usd).toBe(12.00);
+      expect(DEFAULT_STUDIO_LIMITS.generate_per_day).toBe(30);
+      expect(DEFAULT_STUDIO_LIMITS.autofill_per_day).toBe(60);
+      expect(DEFAULT_STUDIO_LIMITS.brand_draft_per_day).toBe(10);
+      expect(DEFAULT_STUDIO_LIMITS.monthly_ai_budget_usd).toBe(20.00);
+    });
+
+    it('render caps are set and priced as the dominant cost driver', () => {
+      // Renders cost ~$0.134 each vs ~$0.003 for a text call, so these caps —
+      // not the text quotas — determine plan margins.
+      expect(DEFAULT_PRO_LIMITS.render_per_month).toBe(30);
+      expect(DEFAULT_PRO_LIMITS.render_per_day).toBe(5);
+      expect(DEFAULT_STUDIO_LIMITS.render_per_month).toBe(100);
+      expect(DEFAULT_STUDIO_LIMITS.render_per_day).toBe(15);
+
+      // A daily cap must never silently exceed the monthly cap.
+      expect(DEFAULT_PRO_LIMITS.render_per_day! * 30).toBeGreaterThanOrEqual(
+        DEFAULT_PRO_LIMITS.render_per_month!
+      );
+    });
+
+    it('makes Pro purchasable and keeps Studio gated until there is demand', () => {
+      expect(PLANS_CONFIG.pro.isAvailable).toBe(true);
+      expect(PLANS_CONFIG.studio.isAvailable).toBe(false);
     });
   });
 
@@ -42,8 +63,8 @@ describe('Pricing & Plan Presentation Alignment', () => {
       expect(pricing.studioCard.title).toBe('Studio');
     });
 
-    it('paid plans indicate Coming Soon state', () => {
-      expect(pricing.proCard.buttonLabel).toBe('Coming soon');
+    it('offers Pro for purchase while Studio remains Coming Soon', () => {
+      expect(pricing.proCard.buttonLabel).toBe('Upgrade to Pro');
       expect(pricing.studioCard.buttonLabel).toBe('Coming soon');
     });
 

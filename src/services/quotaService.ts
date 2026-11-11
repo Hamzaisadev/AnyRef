@@ -89,7 +89,7 @@ export class QuotaService {
    */
   static async checkDailyQuota(
     userId: string,
-    actionType: 'generate_per_day' | 'autofill_per_day' | 'brand_draft_per_day',
+    actionType: 'generate_per_day' | 'autofill_per_day' | 'brand_draft_per_day' | 'render_per_day',
     requestedCount: number = 1
   ): Promise<QuotaCheckResult> {
     const entitlements = await getEntitlements(userId);
@@ -117,6 +117,8 @@ export class QuotaService {
         ? 'generate'
         : actionType === 'autofill_per_day'
         ? 'autofill'
+        : actionType === 'render_per_day'
+        ? 'render'
         : 'brand_draft';
     const supabase = createAdminClient();
     const todayMidnight = new Date();
@@ -138,6 +140,8 @@ export class QuotaService {
           ? 'prompt generation'
           : actionType === 'autofill_per_day'
           ? 'autofill'
+          : actionType === 'render_per_day'
+          ? 'poster render'
           : 'brand draft';
       throw new QuotaExceededError(
         `Daily ${actionName} limit reached (${used}/${limit}). Adding ${requestedCount} item(s) would exceed your daily limit. Upgrade to Pro for higher limits or wait for reset at 00:00 UTC.`,
@@ -168,7 +172,7 @@ export class QuotaService {
    */
   static async checkMonthlyBudget(
     userId: string,
-    actionKind: 'generate' | 'autofill' | 'brand_draft' = 'generate'
+    actionKind: 'generate' | 'autofill' | 'brand_draft' | 'render' = 'generate'
   ): Promise<void> {
     const entitlements = await getEntitlements(userId);
     const budget = entitlements.limits.monthly_ai_budget_usd;
@@ -202,6 +206,8 @@ export class QuotaService {
       generate: 0.003493,
       autofill: 0.001675,
       brand_draft: 0.001125,
+      // Nano Banana Pro 1K/2K flat rate: ~40x a text call, so this dominates the budget.
+      render: 0.134,
     };
 
     let estimatedNextCost = BENCHMARK_COSTS[actionKind] ?? 0.0035;
@@ -216,7 +222,11 @@ export class QuotaService {
 
     if (recentCalls && recentCalls.length > 0) {
       const sum = recentCalls.reduce((acc, c) => acc + Number(c.est_cost_usd || 0), 0);
-      estimatedNextCost = sum / recentCalls.length;
+      const observedAverage = sum / recentCalls.length;
+      // Never estimate below the known benchmark. For renders the benchmark is a hard
+      // per-image floor ($0.134), so a low observed average must not be allowed to
+      // wave through a call we cannot cover.
+      estimatedNextCost = Math.max(observedAverage, BENCHMARK_COSTS[actionKind] ?? 0);
     }
 
     // Check if at or above budget, or if the next call would exceed budget
@@ -234,6 +244,53 @@ export class QuotaService {
           code: 'MONTHLY_BUDGET_EXCEEDED',
         },
         'MONTHLY_BUDGET_EXCEEDED'
+      );
+    }
+  }
+
+  /**
+   * Enforces the per-user calendar-month render cap.
+   *
+   * Separate from the dollar budget on purpose: the cap is the number users see and
+   * reason about ("60 renders a month"), while the budget is the backstop that
+   * protects us if per-image pricing changes underneath us. Both must pass.
+   *
+   * Only successful renders count. Blocked renders (unresolved prices/dates) and
+   * provider failures cost nothing and must not consume a user's allowance.
+   */
+  static async checkMonthlyRenderCap(userId: string): Promise<void> {
+    const entitlements = await getEntitlements(userId);
+    const cap = entitlements.limits.render_per_month;
+
+    if (cap === null || cap === undefined) return; // Unlimited staff
+
+    const now = new Date();
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
+    const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0));
+
+    const supabase = createAdminClient();
+    const { count } = await supabase
+      .from('renders')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'succeeded')
+      .gte('created_at', monthStart.toISOString());
+
+    const used = count || 0;
+    if (used >= cap) {
+      const planName = entitlements.planId.charAt(0).toUpperCase() + entitlements.planId.slice(1);
+      throw new QuotaExceededError(
+        `You have used all ${cap} poster renders on your ${planName} plan this month. ` +
+          `Your allowance resets on ${nextMonthStart.toISOString().split('T')[0]}. ` +
+          `You can still reuse saved Winner templates and export prompts at zero cost.`,
+        {
+          limit: cap,
+          used,
+          resetAt: nextMonthStart.toISOString(),
+          planId: entitlements.planId,
+          code: 'MONTHLY_RENDER_CAP_EXCEEDED',
+        },
+        'MONTHLY_RENDER_CAP_EXCEEDED'
       );
     }
   }
@@ -354,7 +411,7 @@ export class QuotaService {
    */
   static async recordAiUsage(params: {
     userId: string;
-    kind: 'generate' | 'autofill' | 'brand_draft';
+    kind: 'generate' | 'autofill' | 'brand_draft' | 'render';
     inputTokens: number;
     outputTokens: number;
     costUsd: number;
@@ -371,9 +428,10 @@ export class QuotaService {
 
     // If migration 0006_brand_draft.sql has not yet been executed in the remote database,
     // gracefully record telemetry under 'generate' so usage accounting and cost caps remain unbroken.
-    if (error && error.code === '23514' && params.kind === 'brand_draft') {
+    if (error && error.code === '23514' && (params.kind === 'brand_draft' || params.kind === 'render')) {
       console.warn(
-        '[QuotaService] Migration 0006_brand_draft.sql pending in database: recording usage under generate until check constraint is updated.'
+        `[QuotaService] Migration pending in database for kind "${params.kind}": recording usage under generate until the check constraint is updated. ` +
+          `Apply 0009_render_images.sql to restore accurate per-kind accounting.`
       );
       const fallback = await admin.from('ai_usage').insert({
         user_id: params.userId,

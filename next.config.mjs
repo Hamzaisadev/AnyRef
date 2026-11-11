@@ -3,6 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
+    // AVIF first, WebP fallback: the landing posters are two thirds of the page weight
+    // as JPEG, and they render at ~280px on desktop so the large source is wasted.
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',

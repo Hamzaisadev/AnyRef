@@ -1,429 +1,311 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { Suspense, useEffect, useId, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Mail, CheckCircle2, AlertCircle, Loader2, ArrowRight, Lock, KeyRound, Sparkles } from 'lucide-react';
 import { createBrowserClientInstance } from '@/lib/supabaseBrowser';
 import { sanitizeRedirectPath } from '@/lib/sanitizeRedirect';
-import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
+import { checkPassword } from '@/services/passwordPolicy';
 
-function LoginFormContent() {
-  const searchParams = useSearchParams();
-  const rawRedirect = searchParams.get('redirectTo') || searchParams.get('next');
-  const safeRedirect = sanitizeRedirectPath(rawRedirect);
+type Mode = 'signin' | 'signup' | 'forgot';
+type Status = 'idle' | 'working' | 'sent' | 'error';
 
+/**
+ * One page, three modes. Password is the default path in both directions: the previous
+ * build could sign in with a password but had no way to ever create one, so magic link
+ * was the only real option.
+ *
+ * Magic link stays, demoted to a fallback, so anyone who already has an account without
+ * a password is never locked out.
+ */
+function AuthForm() {
+  const params = useSearchParams();
+  const safeRedirect = sanitizeRedirectPath(params.get('redirectTo') || params.get('next'));
+
+  const [mode, setMode] = useState<Mode>(params.get('mode') === 'signup' ? 'signup' : 'signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [authMode, setAuthMode] = useState<'instant' | 'password'>('instant');
-  const [agreedTerms, setAgreedTerms] = useState(true);
-  const [ageConfirmed, setAgeConfirmed] = useState(true);
-  const [turnstileToken, setTurnstileToken] = useState<string>('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [fallbackLink, setFallbackLink] = useState('');
+  const [show, setShow] = useState(false);
+  const [status, setStatus] = useState<Status>('idle');
+  const [message, setMessage] = useState('');
 
-  const supabase = createBrowserClientInstance();
+  const emailId = useId();
+  const pwId = useId();
 
-  function getCallbackUrl(): string {
-    const callbackUrl = new URL('/api/auth/callback', window.location.origin);
-    if (safeRedirect && safeRedirect !== '/library') {
-      callbackUrl.searchParams.set('redirectTo', safeRedirect);
-    }
-    callbackUrl.searchParams.set('tos_accepted', 'true');
-    callbackUrl.searchParams.set('age_confirmed', 'true');
-    callbackUrl.searchParams.set('tos_version', '2026-01');
-    return callbackUrl.toString();
+  // Live feedback from the same module the server validates with, so the meter can
+  // never promise something the API will then reject.
+  const strength = useMemo(
+    () => (mode === 'signup' && password ? checkPassword(password, email) : null),
+    [mode, password, email]
+  );
+
+  useEffect(() => {
+    setStatus('idle');
+    setMessage('');
+  }, [mode]);
+
+  async function post(url: string, body: unknown) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return { res, json: await res.json().catch(() => ({})) };
   }
 
-  async function handleGoogleSignIn() {
-    setStatus('loading');
-    setErrorMessage('');
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus('working');
+    setMessage('');
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: getCallbackUrl(),
-        },
-      });
-
-      if (error) {
-        setStatus('error');
-        setErrorMessage(error.message || 'Google sign-in failed. Please try again.');
+      if (mode === 'forgot') {
+        const { json } = await post('/api/auth/reset', { email });
+        setStatus('sent');
+        setMessage(json.message || 'If that address has an account, a reset link is on its way.');
+        return;
       }
+
+      const endpoint = mode === 'signup' ? '/api/auth/signup' : '/api/auth/signin';
+      const { res, json } = await post(endpoint, { email, password, redirectTo: safeRedirect });
+
+      if (!res.ok) {
+        setStatus('error');
+        setMessage(json.error || 'Something went wrong. Please try again.');
+        return;
+      }
+
+      // Full navigation, not router.push: the session cookies were set on this response
+      // and the app layout reads them server-side.
+      window.location.href = json.redirectTo || safeRedirect;
     } catch {
       setStatus('error');
-      setErrorMessage('An unexpected network error occurred.');
+      setMessage('Could not reach the server. Check your connection and try again.');
     }
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-
-    if (!email || !email.includes('@')) {
-      setErrorMessage('Please enter a valid email address.');
+  /** Fallback for accounts that pre-date passwords. */
+  async function sendMagicLink() {
+    if (!email) {
       setStatus('error');
+      setMessage('Enter your email address first.');
       return;
     }
-
-    setStatus('loading');
-    setErrorMessage('');
-
-    // 1. Password sign-in mode
-    if (authMode === 'password') {
-      if (!password) {
-        setErrorMessage('Please enter your password.');
-        setStatus('error');
-        return;
-      }
-
-      try {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) {
-          setStatus('error');
-          setErrorMessage(error.message || 'Invalid email or password.');
-          return;
-        }
-
-        setStatus('success');
-        setFallbackLink(safeRedirect);
-        window.location.href = safeRedirect;
-        return;
-      } catch {
-        setStatus('error');
-        setErrorMessage('An unexpected network error occurred.');
-        return;
-      }
-    }
-
-    // 2. Instant Email Sign-in mode (Bypasses Supabase email rate limits completely)
+    setStatus('working');
     try {
-      const res = await fetch('/api/auth/email-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          redirectTo: safeRedirect,
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (res.ok && data.success) {
-        setFallbackLink(data.actionLink || safeRedirect);
-
-        // Immediate browser token verification to establish session cookies
-        if (data.tokenHash) {
-          try {
-            const { error: verifyErr } = await supabase.auth.verifyOtp({
-              token_hash: data.tokenHash,
-              type: 'email',
-            });
-
-            if (!verifyErr) {
-              setStatus('success');
-              window.location.href = safeRedirect;
-              return;
-            }
-          } catch (err) {
-            console.warn('[login] client verifyOtp error, falling back to direct link:', err);
-          }
-        }
-
-        // Direct action_link redirect fallback
-        if (data.actionLink) {
-          setStatus('success');
-          window.location.href = data.actionLink;
-          return;
-        }
-
-        setStatus('success');
-        window.location.href = safeRedirect;
+      const { res, json } = await post('/api/auth/email-login', { email, redirectTo: safeRedirect });
+      if (!res.ok) {
+        setStatus('error');
+        setMessage(json.error || 'Could not send the link.');
         return;
       }
-
-      // If server route failed, attempt client-side fallback
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: getCallbackUrl(),
-          data: {
-            tos_accepted: true,
-            age_confirmed: true,
-            tos_version: '2026-01',
-          },
-        },
-      });
-
-      if (error) {
-        setStatus('error');
-        setErrorMessage(
-          error.message?.toLowerCase().includes('rate')
-            ? 'Email rate limit reached on mail server. Please try signing in with Google or password.'
-            : error.message || 'Failed to send login link. Please try again.'
-        );
-      } else {
-        setStatus('success');
-      }
+      setStatus('sent');
+      setMessage('Check your inbox for a one-time sign-in link.');
     } catch {
       setStatus('error');
-      setErrorMessage('An unexpected network error occurred.');
+      setMessage('Could not reach the server.');
     }
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-paper px-4 py-12">
-      <div className="max-w-md w-full space-y-8 bg-surface p-8 sm:p-10 rounded-2xl border border-border-subtle shadow-sm">
-        {/* Logo and Header */}
-        <div className="text-center space-y-3">
-          <Link href="/" className="inline-block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl">
-            <div className="mx-auto w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 text-primary shadow-2xs hover:scale-105 transition-transform">
-              <svg
-                className="w-7 h-7"
-                viewBox="0 0 64 64"
-                fill="none"
-                role="img"
-                aria-label="Anyref logo"
-              >
-                <rect x="6" y="6" width="52" height="52" rx="12" stroke="currentColor" strokeWidth="4" />
-                <path
-                  d="M24 20h-6v24h6M40 20h6v24h-6"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="32" cy="32" r="4" fill="var(--accent)" />
-              </svg>
-            </div>
-          </Link>
+  async function withGoogle() {
+    setStatus('working');
+    const supabase = createBrowserClientInstance();
+    const cb = new URL('/api/auth/callback', window.location.origin);
+    if (safeRedirect) cb.searchParams.set('redirectTo', safeRedirect);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: cb.toString() },
+    });
+    if (error) {
+      setStatus('error');
+      setMessage(error.message || 'Google sign-in failed.');
+    }
+  }
 
-          <h1 className="font-tight font-bold text-2xl sm:text-3xl text-ink tracking-tight">
-            Sign in to Anyref
-          </h1>
-          <p className="text-layout-layer text-sm font-sans leading-relaxed">
-            AI-powered prompt engineering studio. Instant email sign-in, Google, or password.
-          </p>
+  const busy = status === 'working';
+  const title =
+    mode === 'signup' ? 'Make an account' : mode === 'forgot' ? 'Reset password' : 'Welcome back';
+  const blurb =
+    mode === 'signup'
+      ? 'An email and a password. You are in straight away, no inbox trip.'
+      : mode === 'forgot'
+        ? 'We will email a link to set a new password.'
+        : 'Sign in and pick up where you left off.';
+
+  return (
+    <div className="auth">
+      <div className="auth__panel">
+        <Link href="/" className="auth__mark" aria-label="Anyref home">
+          Anyref
+        </Link>
+
+        <div>
+          <h1 className="auth__title">{title}</h1>
+          <p className="auth__sub">{blurb}</p>
         </div>
 
-        {status === 'success' ? (
-          <div
-            role="status"
-            aria-live="polite"
-            className="p-6 rounded-2xl bg-success/10 border border-success/20 text-ink text-center space-y-4"
-          >
-            <div className="w-12 h-12 rounded-full bg-success/20 text-success mx-auto flex items-center justify-center">
-              <CheckCircle2 className="w-7 h-7" />
-            </div>
-            <div className="space-y-1.5">
-              <h2 className="font-tight font-bold text-lg text-ink">Signed in successfully</h2>
-              <p className="text-sm text-layout-layer leading-relaxed">
-                Redirecting you to your workspace...
-              </p>
-            </div>
-
-            <div className="pt-2">
-              <a
-                href={fallbackLink || safeRedirect}
-                className="inline-flex items-center space-x-2 text-xs font-semibold text-primary underline hover:text-primary/80"
-              >
-                <span>Click here if you are not automatically redirected</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </a>
-            </div>
+        {status === 'sent' ? (
+          <div className="auth__sent" role="status">
+            <p>{message}</p>
+            <button type="button" className="auth__link" onClick={() => setMode('signin')}>
+              Back to sign in
+            </button>
           </div>
         ) : (
-          <div className="space-y-6">
-            {status === 'error' && (
-              <div
-                role="alert"
-                aria-live="assertive"
-                className="flex items-center space-x-2.5 p-3.5 rounded-xl bg-danger/10 border border-danger/20 text-danger text-sm font-medium"
-              >
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{errorMessage}</span>
+          <form className="auth__form" onSubmit={onSubmit} noValidate>
+            <div className="auth__field">
+              <label className="auth__label" htmlFor={emailId}>
+                Email
+              </label>
+              <input
+                id={emailId}
+                className="auth__input"
+                type="email"
+                autoComplete="email"
+                inputMode="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@studio.com"
+              />
+            </div>
+
+            {mode !== 'forgot' && (
+              <div className="auth__field">
+                <div className="auth__labelRow">
+                  <label className="auth__label" htmlFor={pwId}>
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    className="auth__link"
+                    onClick={() => setShow((v) => !v)}
+                    aria-pressed={show}
+                  >
+                    {show ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                <input
+                  id={pwId}
+                  className="auth__input"
+                  type={show ? 'text' : 'password'}
+                  // Tells a password manager to offer a new strong password on signup
+                  // and the saved one on return.
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                  required
+                  minLength={mode === 'signup' ? 10 : undefined}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={mode === 'signup' ? 'At least 10 characters' : 'Your password'}
+                  aria-describedby={mode === 'signup' ? `${pwId}-hint` : undefined}
+                />
+
+                {mode === 'signup' && (
+                  <div className="auth__strength" id={`${pwId}-hint`}>
+                    <div className="auth__meter" aria-hidden="true">
+                      {[0, 1, 2, 3].map((i) => (
+                        <span key={i} data-on={(strength?.score ?? 0) > i ? 'true' : 'false'} />
+                      ))}
+                    </div>
+                    <p className="auth__hint">
+                      {password
+                        ? (strength?.problems[0] ?? 'Strong enough. Good to go.')
+                        : 'Ten characters or more. A long phrase beats a short scramble.'}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Google OAuth Button */}
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={status === 'loading'}
-              className="w-full py-2.5 px-4 bg-surface hover:bg-surface-muted text-ink border border-border font-medium rounded-xl transition-all duration-150 flex items-center justify-center space-x-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-2xs active:scale-[0.98] min-h-[44px]"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                />
-              </svg>
-              <span>Continue with Google</span>
+            {status === 'error' && (
+              <p className="auth__error" role="alert">
+                {message}
+              </p>
+            )}
+
+            <button type="submit" className="auth__submit" disabled={busy}>
+              {busy
+                ? 'One moment…'
+                : mode === 'signup'
+                  ? 'Create account'
+                  : mode === 'forgot'
+                    ? 'Send reset link'
+                    : 'Sign in'}
             </button>
 
-            <div className="relative flex items-center justify-center">
-              <div className="border-t border-border-subtle w-full" />
-              <span className="bg-surface px-3 text-xs text-layout-layer uppercase tracking-wider font-semibold absolute">
-                Or with email
-              </span>
-            </div>
-
-            {/* Auth Mode Toggle: Instant Email vs Password */}
-            <div className="flex p-1 bg-surface-muted rounded-xl border border-border-subtle text-xs font-medium">
-              <button
-                type="button"
-                onClick={() => setAuthMode('instant')}
-                className={`flex-1 py-1.5 px-3 rounded-lg flex items-center justify-center space-x-1.5 transition-all ${
-                  authMode === 'instant'
-                    ? 'bg-surface text-ink shadow-2xs font-semibold'
-                    : 'text-layout-layer hover:text-ink'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-primary" />
-                <span>Instant Sign-In</span>
+            {mode === 'signin' && (
+              <button type="button" className="auth__link" onClick={() => setMode('forgot')}>
+                Forgot your password?
               </button>
-              <button
-                type="button"
-                onClick={() => setAuthMode('password')}
-                className={`flex-1 py-1.5 px-3 rounded-lg flex items-center justify-center space-x-1.5 transition-all ${
-                  authMode === 'password'
-                    ? 'bg-surface text-ink shadow-2xs font-semibold'
-                    : 'text-layout-layer hover:text-ink'
-                }`}
-              >
-                <KeyRound className="w-3.5 h-3.5 text-layout-layer" />
-                <span>Password</span>
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-              <div className="space-y-1.5 text-left">
-                <label
-                  htmlFor="email"
-                  className="block text-xs font-semibold text-ink uppercase tracking-wider"
-                >
-                  Email address
-                </label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-layout-layer absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@company.com"
-                    disabled={status === 'loading'}
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-muted text-ink placeholder:text-layout-layer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm transition-all"
-                  />
-                </div>
-              </div>
-
-              {authMode === 'password' && (
-                <div className="space-y-1.5 text-left">
-                  <label
-                    htmlFor="password"
-                    className="block text-xs font-semibold text-ink uppercase tracking-wider"
-                  >
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-layout-layer absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      id="password"
-                      name="password"
-                      type="password"
-                      autoComplete="current-password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••••••"
-                      disabled={status === 'loading'}
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-muted text-ink placeholder:text-layout-layer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm transition-all"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Bot Protection Widget (passive/non-blocking) */}
-              <TurnstileWidget
-                onVerify={(token) => setTurnstileToken(token)}
-                onError={() => {
-                  // Non-blocking for seamless login
-                }}
-              />
-
-              <button
-                type="submit"
-                disabled={status === 'loading'}
-                className="w-full py-3 px-4 bg-primary text-primary-fg font-semibold rounded-xl hover:bg-primary/95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 disabled:opacity-50 text-sm shadow-sm flex items-center justify-center space-x-2 active:scale-[0.98] min-h-[44px]"
-              >
-                {status === 'loading' ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Signing in...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>{authMode === 'password' ? 'Sign In with Password' : 'Sign In with Email'}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-
-              {/* Legal Notice */}
-              <div className="pt-2 text-center text-[11px] text-layout-layer leading-relaxed">
-                By signing in, you agree to our{' '}
-                <Link href="/terms" className="text-primary underline hover:text-primary/80">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link href="/privacy" className="text-primary underline hover:text-primary/80">
-                  Privacy Policy
-                </Link>
-                , and confirm you are at least 16 years of age.
-              </div>
-            </form>
-          </div>
+            )}
+          </form>
         )}
 
-        <div className="text-center text-xs text-layout-layer pt-2 border-t border-border-subtle">
-          Protected by Anyref security protocols. No passwords required.
+        <div className="auth__divider" aria-hidden="true">
+          <span>or</span>
         </div>
+
+        <div className="auth__alts">
+          <button type="button" className="auth__alt" onClick={withGoogle} disabled={busy}>
+            Continue with Google
+          </button>
+          <button type="button" className="auth__alt" onClick={sendMagicLink} disabled={busy}>
+            Email me a one-time link
+          </button>
+        </div>
+
+        <p className="auth__switch">
+          {mode === 'signup' ? (
+            <>
+              Already have an account?{' '}
+              <button type="button" className="auth__link" onClick={() => setMode('signin')}>
+                Sign in
+              </button>
+            </>
+          ) : (
+            <>
+              New here?{' '}
+              <button type="button" className="auth__link" onClick={() => setMode('signup')}>
+                Make an account
+              </button>
+            </>
+          )}
+        </p>
+
+        <p className="auth__fine">
+          By continuing you agree to the{' '}
+          <Link href="/terms" className="auth__link">
+            terms
+          </Link>{' '}
+          and{' '}
+          <Link href="/privacy" className="auth__link">
+            privacy policy
+          </Link>
+          .
+        </p>
       </div>
+
+      {/* The right half speaks the landing page's poster language, so signing in looks
+          like the same company rather than a different product. */}
+      <aside className="auth__show" aria-hidden="true">
+        <div className="auth__poster">
+          <span className="auth__posterBrand">Verda</span>
+          <p className="auth__posterHead">Everything greener</p>
+          <span className="auth__posterPrice">20% off</span>
+        </div>
+        <p className="auth__showCopy">
+          Your brand. Every post.
+          <span>Anyref never invents a price, a discount or a date.</span>
+        </p>
+      </aside>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-paper">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      }
-    >
-      <LoginFormContent />
+    <Suspense fallback={<div className="auth" />}>
+      <AuthForm />
     </Suspense>
   );
 }

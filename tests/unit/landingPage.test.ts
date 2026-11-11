@@ -16,7 +16,9 @@ describe('Anyref Landing Page - Truth Rules & Specification Compliance', () => {
       expect(freeCard.limits.storageMb).toBe(DEFAULT_FREE_LIMITS.max_storage_mb);
 
       // Verify features bullet points reflect these exact numbers
-      expect(freeCard.features).toContain(`${DEFAULT_FREE_LIMITS.max_brands} brands`);
+      // Pluralised correctly: the free tier is 1 brand, not "1 brands".
+      const brandLabel = DEFAULT_FREE_LIMITS.max_brands === 1 ? 'brand' : 'brands';
+      expect(freeCard.features).toContain(`${DEFAULT_FREE_LIMITS.max_brands} ${brandLabel}`);
       expect(freeCard.features).toContain(`${DEFAULT_FREE_LIMITS.max_entries} saved entries`);
       expect(freeCard.features).toContain(
         `${DEFAULT_FREE_LIMITS.generate_per_day} prompt generations per day`
@@ -26,26 +28,35 @@ describe('Anyref Landing Page - Truth Rules & Specification Compliance', () => {
       );
     });
 
-    it('enforces Pro and Studio tier pre-launch rules (button disabled with Coming soon)', () => {
+    it('offers Pro for purchase and keeps Studio gated until there is demand', () => {
       const proCard = LANDING_CONTENT.pricing.proCard;
       const studioCard = LANDING_CONTENT.pricing.studioCard;
 
-      expect(proCard.buttonLabel).toBe('Coming soon');
+      expect(proCard.buttonLabel).toBe('Upgrade to Pro');
       expect(studioCard.buttonLabel).toBe('Coming soon');
       expect(proCard.bullets).toContain('Up to 5 brands');
       expect(studioCard.bullets).toContain('Up to 25 brands');
     });
 
-    it('clarifies that Anyref does not generate or edit images', () => {
-      // Truth rule: Anyref writes prompts; users generate images in another tool
+    it('states the render allowance on every pricing card', () => {
+      // The render count is what users actually buy, so it must be the first bullet.
+      expect(LANDING_CONTENT.pricing.freeCard.features[0]).toContain('3 finished posters');
+      expect(LANDING_CONTENT.pricing.proCard.bullets[0]).toContain('30 finished posters');
+      expect(LANDING_CONTENT.pricing.studioCard.bullets[0]).toContain('100 finished posters');
+    });
+
+    it('advertises in-app rendering while keeping prompt export available', () => {
+      // Truth rule change: Anyref now renders in-app. The honesty guarantee moved
+      // from "we never touch the image" to "we never invent commercial facts".
+      expect(LANDING_CONTENT.pricing.noteBelow).toContain('Renders finished posters in-app');
+      expect(LANDING_CONTENT.faq.items[0]?.answer).toContain('Yes. Anyref renders the finished poster in-app');
+      // Export must remain a documented escape hatch for Midjourney/Flux users.
+      expect(LANDING_CONTENT.faq.items[0]?.answer).toMatch(/Midjourney/);
+    });
+
+    it('leads with the never-invent guarantee as the core trust claim', () => {
       expect(LANDING_CONTENT.hero.proofLine).toBe(
-        'You generate the image in your favorite tool. Anyref never touches it.'
-      );
-      expect(LANDING_CONTENT.pricing.noteBelow).toContain(
-        'Anyref writes the prompts. You use your own image tool'
-      );
-      expect(LANDING_CONTENT.faq.items[0]?.answer).toContain(
-        'No. Anyref writes the prompt and helps you organize the results.'
+        'Anyref never invents a price, a discount, or a date. Those are always yours to fill in.'
       );
     });
 

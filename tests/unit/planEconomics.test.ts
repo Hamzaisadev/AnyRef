@@ -31,37 +31,48 @@ describe('Plan Unit Economics Calculations', () => {
     expect(pro).toBeDefined();
     expect(studio).toBeDefined();
 
-    // Free plan: 5 gen, 5 autofill, 2 draft per day -> 150/150/60 per mo
-    // Worst-case AI cost = 150*0.003493 + 150*0.001675 + 60*0.001125 = ~$0.84
-    expect(free!.worstCaseDailyQuotaAiCost).toBeCloseTo(0.84, 1);
-    expect(free!.budgetCappedAiCost).toBe(0.40);
+    // Free plan: 3 gen, 3 autofill, 2 draft per day -> 90/90/60 per mo, + 3 renders
+    // Worst-case = 90*0.003493 + 90*0.001675 + 60*0.001125 + 3*0.134 = ~$0.93
+    expect(free!.worstCaseDailyQuotaAiCost).toBeCloseTo(0.93, 1);
+    expect(free!.budgetCappedAiCost).toBe(0.58);
     expect(free!.budgetCappedAiCost).toBeLessThanOrEqual(DEFAULT_PLAN_ECONOMICS.maxFreeBudgetUsd);
 
-    // Pro plan: 20 gen, 40 autofill, 5 draft per day -> 600/1200/150 per mo
-    // Worst-case AI cost = 600*0.003493 + 1200*0.001675 + 150*0.001125 = ~$4.27
-    expect(pro!.worstCaseDailyQuotaAiCost).toBeCloseTo(4.27, 1);
-    expect(pro!.budgetCappedAiCost).toBe(4.00);
-    expect(pro!.priceMonth).toBe(19);
-    // Net revenue: 19 - (19*0.05 + 0.50) = 19 - 1.45 = $17.55
-    expect(pro!.netRevenueAfterFees).toBeCloseTo(17.55, 2);
-    // Worst-case margin: (17.55 - 4.00) / 19 = 13.55 / 19 = 71.3%
+    // Pro: 10 gen, 20 autofill, 3 draft per day + 30 renders/mo
+    // Worst-case = 30*(10*0.003493 + 20*0.001675 + 3*0.001125) + 30*0.134 = ~$6.17
+    // Renders alone are $4.02 of that — the dominant line item.
+    expect(pro!.worstCaseDailyQuotaAiCost).toBeCloseTo(6.17, 1);
+    expect(pro!.priceMonth).toBe(15);
+    // Net revenue: 15 - (15*0.05 + 0.50) = 15 - 1.25 = $13.75
+    expect(pro!.netRevenueAfterFees).toBeCloseTo(13.75, 2);
+    // Worst-case margin: (13.75 - 6.17) / 15 = 50.5%
     expect(pro!.worstCaseMarginPct).toBeGreaterThanOrEqual(DEFAULT_PLAN_ECONOMICS.minPlanMargin * 100);
-    expect(pro!.worstCaseMarginPct).toBeCloseTo(71.3, 1);
-    // Typical margin (at 30% utilization): ~85.6%
-    expect(pro!.typicalMarginPct).toBeCloseTo(85.6, 1);
+    expect(pro!.worstCaseMarginPct).toBeCloseTo(50.5, 1);
+    expect(pro!.typicalMarginPct).toBeCloseTo(79.3, 1);
 
-    // Studio plan: 60 gen, 120 autofill, 20 draft per day -> 1800/3600/600 per mo
-    // Worst-case AI cost = 1800*0.003493 + 3600*0.001675 + 600*0.001125 = ~$12.99
-    expect(studio!.worstCaseDailyQuotaAiCost).toBeCloseTo(12.99, 1);
-    expect(studio!.budgetCappedAiCost).toBe(12.00);
+    // Studio: 30 gen, 60 autofill, 10 draft per day + 100 renders/mo
+    // Worst-case = 30*(30*0.003493 + 60*0.001675 + 10*0.001125) + 100*0.134 = ~$19.90
+    expect(studio!.worstCaseDailyQuotaAiCost).toBeCloseTo(19.90, 1);
     expect(studio!.priceMonth).toBe(49);
     // Net revenue: 49 - (49*0.05 + 0.50) = 49 - 2.95 = $46.05
     expect(studio!.netRevenueAfterFees).toBeCloseTo(46.05, 2);
-    // Worst-case margin: (46.05 - 12.00) / 49 = 34.05 / 49 = 69.5%
+    // Worst-case margin: (46.05 - 19.90) / 49 = 53.4%
     expect(studio!.worstCaseMarginPct).toBeGreaterThanOrEqual(DEFAULT_PLAN_ECONOMICS.minPlanMargin * 100);
-    expect(studio!.worstCaseMarginPct).toBeCloseTo(69.5, 1);
-    // Typical margin (at 30% utilization): ~86.0%
-    expect(studio!.typicalMarginPct).toBeCloseTo(86.0, 1);
+    expect(studio!.worstCaseMarginPct).toBeCloseTo(53.4, 1);
+    expect(studio!.typicalMarginPct).toBeCloseTo(81.8, 1);
+  });
+
+  it('counts render spend as the dominant cost driver on every paid plan', async () => {
+    const economics = await calculatePlanEconomics({ useBenchmarkFile: true });
+
+    for (const plan of economics.plans.filter((p) => p.priceMonth > 0)) {
+      const renderSpend = (plan.limits.render_per_month ?? 0) * economics.costsPerCall.render;
+      // Renders must account for more than half of worst-case AI spend; if they
+      // ever don't, the text quotas have drifted too high.
+      expect(
+        renderSpend / plan.worstCaseDailyQuotaAiCost,
+        `${plan.name}: renders should dominate worst-case AI cost`
+      ).toBeGreaterThan(0.5);
+    }
   });
 
   it('demonstrates that the legacy Plus plan without budget cap is economically non-viable', () => {

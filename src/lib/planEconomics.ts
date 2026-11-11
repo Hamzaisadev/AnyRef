@@ -14,6 +14,10 @@ export const DEFAULT_BENCHMARK_COSTS = {
   generate: 0.003493,
   autofill: 0.001675,
   brand_draft: 0.001125,
+  // Nano Banana Pro 1K/2K flat output rate. Not a token benchmark: image models
+  // bill per image, so this is a published list price rather than a measured average.
+  // Source: https://aistudio.google.com/docs/pricing (retrieved 2026-11-07)
+  render: 0.134,
   reuse: 0.0,
 };
 
@@ -48,6 +52,8 @@ export interface EconomicsSummary {
     generate: number;
     autofill: number;
     brand_draft: number;
+    /** Flat per-image render cost. Dominates every other line item. */
+    render: number;
     reuse: number;
   };
   plans: PlanEconomicsResult[];
@@ -68,7 +74,12 @@ export async function calculatePlanEconomics(
 
   let dbPlans: Array<{ id: string; name: string; price_usd_month: number; price_usd_year: number; limits: PlanLimits }> | null = null;
   let aiUsageCount = 0;
-  const dynamicCosts: { generate?: number; autofill?: number; brand_draft?: number } = {};
+  const dynamicCosts: {
+    generate?: number;
+    autofill?: number;
+    brand_draft?: number;
+    render?: number;
+  } = {};
 
   if (!options?.useBenchmarkFile) {
     try {
@@ -88,7 +99,7 @@ export async function calculatePlanEconomics(
         aiUsageCount = count || 0;
 
         if (aiUsageCount >= 50) {
-          for (const kind of ['generate', 'autofill', 'brand_draft'] as const) {
+          for (const kind of ['generate', 'autofill', 'brand_draft', 'render'] as const) {
             const { data: rows } = await sb
               .from('ai_usage')
               .select('est_cost_usd')
@@ -115,6 +126,8 @@ export async function calculatePlanEconomics(
       generate: bench.summaries?.generate?.avgCostLiteUsd ?? DEFAULT_BENCHMARK_COSTS.generate,
       autofill: bench.summaries?.autofill?.avgCostLiteUsd ?? DEFAULT_BENCHMARK_COSTS.autofill,
       brand_draft: bench.summaries?.brand_draft?.avgCostLiteUsd ?? DEFAULT_BENCHMARK_COSTS.brand_draft,
+      // Renders are priced from the published per-image rate, not the token benchmark.
+      render: DEFAULT_BENCHMARK_COSTS.render,
       reuse: 0.0,
     };
   } catch {
@@ -132,6 +145,7 @@ export async function calculatePlanEconomics(
         generate: dynamicCosts.generate!,
         autofill: dynamicCosts.autofill!,
         brand_draft: dynamicCosts.brand_draft ?? benchmarkCosts.brand_draft,
+        render: dynamicCosts.render ?? benchmarkCosts.render,
         reuse: 0.0,
       }
     : benchmarkCosts;
@@ -178,12 +192,22 @@ export async function calculatePlanEconomics(
     const draftPerDay = limits.brand_draft_per_day || 0;
     const monthlyBudget = limits.monthly_ai_budget_usd ?? Infinity;
 
-    // 30-day worst-case daily quota AI cost
+    // Renders are capped per MONTH, not per day, so they are added as a monthly
+    // term rather than multiplied by 30. The monthly cap is the binding constraint:
+    // render_per_day * 30 would wildly overstate the real worst case.
+    const rendersPerMonth = Math.min(
+      limits.render_per_month ?? 0,
+      (limits.render_per_day ?? 0) * 30
+    );
+    const worstCaseRenderCost = rendersPerMonth * costsPerCall.render;
+
+    // 30-day worst-case daily quota AI cost, plus the monthly render allowance
     const worstCaseDailyQuotaAiCost =
       30 *
-      (genPerDay * costsPerCall.generate +
-        autoPerDay * costsPerCall.autofill +
-        draftPerDay * costsPerCall.brand_draft);
+        (genPerDay * costsPerCall.generate +
+          autoPerDay * costsPerCall.autofill +
+          draftPerDay * costsPerCall.brand_draft) +
+      worstCaseRenderCost;
 
     // Budget-capped AI cost
     const budgetCappedAiCost = Math.min(worstCaseDailyQuotaAiCost, monthlyBudget);

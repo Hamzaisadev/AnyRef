@@ -17,6 +17,8 @@ async function main() {
   console.log(`Cost Ground Truth: ${summary.costSource} (${summary.costSource === 'cost_benchmark_json' ? '25 verified spike runs' : 'Live database telemetry'})`);
   console.log('-----------------------------------------------------------------------------');
   console.log(`Per-Call Costs: generate=$${summary.costsPerCall.generate.toFixed(6)} | autofill=$${summary.costsPerCall.autofill.toFixed(6)} | brand_draft=$${summary.costsPerCall.brand_draft.toFixed(6)} | reuse=$0.000000`);
+  console.log(`Per-Image Render Cost: $${summary.costsPerCall.render.toFixed(6)} (flat, per image — ${(summary.costsPerCall.render / summary.costsPerCall.generate).toFixed(0)}x a generate call)`);
+  console.log(`Render Caps/Mo: ${summary.plans.map((p) => `${p.name}=${p.limits.render_per_month ?? 'unlimited'}`).join(' | ')}`);
   console.log(`Fee Assumptions [A]: ${DEFAULT_PLAN_ECONOMICS.paymentFeePercent * 100}% + $${DEFAULT_PLAN_ECONOMICS.paymentFeeFixedUsd.toFixed(2)} fixed | Typical Usage [A]: ${DEFAULT_PLAN_ECONOMICS.typicalUtilizationRatio * 100}%`);
   console.log('=============================================================================');
 

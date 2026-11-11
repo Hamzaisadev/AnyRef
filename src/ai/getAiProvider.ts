@@ -14,7 +14,7 @@ export function getAiProvider(): AiProvider {
     if (!env.GEMINI_API_KEY) {
       throw new Error('GEMINI_API_KEY is required to initialize GeminiProvider');
     }
-    providerInstance = new GeminiProvider(env.GEMINI_API_KEY, env.AI_MODEL);
+    providerInstance = new GeminiProvider(env.GEMINI_API_KEY, env.AI_MODEL, env.AI_IMAGE_MODEL);
     return providerInstance;
   }
 

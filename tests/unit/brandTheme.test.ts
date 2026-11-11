@@ -55,16 +55,18 @@ describe('brandTheme', () => {
     const theme = resolveBrandTheme(riwayat);
     expect(theme.primary).toBe('#4A1521');
     expect(theme.accent).toBe('#D4AF37');
-    expect(theme.primaryFg).toBe('#FFFFFF'); // Burgundy is dark, needs white text
-    expect(theme.accentFg).toBe('#0F1020'); // Gold is bright, needs dark ink text
+    // Paper and ink are the product's warm neutrals now, not pure white and navy:
+    // the behaviour (dark grounds take paper, bright grounds take ink) is unchanged.
+    expect(theme.primaryFg).toBe('#FBF7F0'); // Burgundy is dark, needs paper text
+    expect(theme.accentFg).toBe('#15130F'); // Gold is bright, needs ink text
   });
 
   it('calculates contrast foreground accurately', () => {
-    expect(getContrastForeground('#FFFFFF')).toBe('#0F1020'); // Bright
-    expect(getContrastForeground('#D4AF37')).toBe('#0F1020'); // Gold (bright)
-    expect(getContrastForeground('#000000')).toBe('#FFFFFF'); // Dark
-    expect(getContrastForeground('#4B2BFF')).toBe('#FFFFFF'); // Dark blue
-    expect(getContrastForeground('#4A1521')).toBe('#FFFFFF'); // Dark wine
+    expect(getContrastForeground('#FFFFFF')).toBe('#15130F'); // Bright
+    expect(getContrastForeground('#D4AF37')).toBe('#15130F'); // Gold (bright)
+    expect(getContrastForeground('#000000')).toBe('#FBF7F0'); // Dark
+    expect(getContrastForeground('#4B2BFF')).toBe('#FBF7F0'); // Dark blue
+    expect(getContrastForeground('#4A1521')).toBe('#FBF7F0'); // Dark wine
   });
 
   it('generates valid CSS variables string for HTML style tag including dark mode overrides', () => {

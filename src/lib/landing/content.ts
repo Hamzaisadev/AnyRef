@@ -103,7 +103,7 @@ export const LANDING_CONTENT = {
       label: 'Start free',
     },
     secondaryCta: 'See how it works',
-    proofLine: 'You generate the image in your favorite tool. Anyref never touches it.',
+    proofLine: 'Anyref never invents a price, a discount, or a date. Those are always yours to fill in.',
     scrollCue: 'Scroll',
   },
   howItWorks: {
@@ -115,7 +115,7 @@ export const LANDING_CONTENT = {
   pricing: {
     eyebrow: 'PRICING',
     h2: 'Simple, transparent pricing',
-    noteBelow: 'Anyref writes the prompts. You use your own image tool for creation.',
+    noteBelow: 'Renders finished posters in-app. Export the prompt to Midjourney or Flux instead whenever you prefer.',
     freeCard: {
       title: 'Free',
       subline: 'For individuals getting started',
@@ -124,27 +124,29 @@ export const LANDING_CONTENT = {
         label: 'Start free',
       },
       limits: {
-        maxBrands: 2,
-        maxEntries: 50,
-        generatePerDay: 5,
-        autofillPerDay: 5,
+        maxBrands: 1,
+        maxEntries: 25,
+        generatePerDay: 3,
+        autofillPerDay: 3,
         storageMb: 200,
       },
+      // Keep in sync with DEFAULT_FREE_LIMITS; landingPage.test.ts asserts equality.
       features: [
-        '2 brands',
-        '50 saved entries',
-        '5 prompt generations per day',
-        '5 product autofills per day',
+        '3 finished posters per month',
+        '1 brand',
+        '25 saved entries',
+        '3 prompt generations per day',
+        '3 product autofills per day',
         'Standard community support',
       ],
     },
     proCard: {
       title: 'Pro',
-      buttonLabel: 'Coming soon',
+      buttonLabel: 'Upgrade to Pro',
       bullets: [
+        '30 finished posters per month',
         'Up to 5 brands',
         'Unlimited saved templates in library',
-        'High daily generation throughput',
         'Batch multi-image processing',
         'Priority queue processing',
       ],
@@ -154,6 +156,7 @@ export const LANDING_CONTENT = {
       subline: 'For heavy creators and solo visual directors',
       buttonLabel: 'Coming soon',
       bullets: [
+        '100 finished posters per month',
         'Up to 25 brands',
         'Highest daily throughput allocation',
         'Advanced visual deconstruction controls',
@@ -172,7 +175,7 @@ export const LANDING_CONTENT = {
     items: [
       {
         question: 'Does Anyref generate images directly?',
-        answer: 'No. Anyref writes the prompt and helps you organize the results. You bring your own image generator like Midjourney, Flux, or Ideogram.',
+        answer: 'Yes. Anyref renders the finished poster in-app, so you never have to copy a prompt into another tool. You can still export the prompt to Midjourney, Flux, or Ideogram if you prefer to generate there.',
       },
       {
         question: 'How does reference poster deconstruction work?',
@@ -184,7 +187,7 @@ export const LANDING_CONTENT = {
       },
       {
         question: 'What image tools can I use with these prompts?',
-        answer: 'The generated prompts are specifically tuned for Midjourney, Flux, Ideogram, and general diffusion engines.',
+        answer: 'Anyref renders posters in-app by default. Exported prompts are also tuned for Midjourney, Flux, Ideogram, and general diffusion engines.',
       },
       {
         question: 'Do you store my uploaded product photos permanently?',

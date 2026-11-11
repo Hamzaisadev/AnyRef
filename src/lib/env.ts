@@ -20,6 +20,18 @@ export const envSchema = z
       }),
     AI_INPUT_PRICE_PER_1M_USD: z.coerce.number().nonnegative().default(0.30),
     AI_OUTPUT_PRICE_PER_1M_USD: z.coerce.number().nonnegative().default(2.50),
+    // Image rendering (closes the loop in-app instead of exporting to Midjourney/Flux).
+    AI_IMAGE_MODEL: z
+      .string()
+      .trim()
+      .min(1)
+      .refine((val) => !val.endsWith('-latest'), {
+        message: 'AI_IMAGE_MODEL must be a pinned model identifier and cannot end with "-latest"',
+      })
+      .default('gemini-3-pro-image'),
+    // Flat cost per rendered image. Image models bill per-image, not per-token.
+    AI_IMAGE_PRICE_PER_IMAGE_USD: z.coerce.number().nonnegative().default(0.134),
+    ENABLE_RENDER: z.coerce.boolean().default(true),
     GEMINI_API_KEY: z.string().optional(),
     ANTHROPIC_API_KEY: z.string().optional(),
     AI_DAILY_CALL_LIMIT: z.coerce.number().int().positive().default(50),

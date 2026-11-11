@@ -2,36 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===========================================================================
+   One palette for the whole product.
+   These are the landing page's values (see landing.css and DESIGN.md). The app
+   previously ran a separate blue-black + violet scheme, so signing in felt like
+   arriving at a different company. The variable NAMES are unchanged, so every
+   existing component picks up the new look without being touched.
+   =========================================================================== */
+
 :root {
-  /* Landing design tokens - dark first */
-  --ink: #0F1020;
-  --ink-2: #171935;
-  --paper: #F7F6F2;
-  --primary: #4B2BFF;
-  --primary-rgb: 75 43 255;
-  --primary-fg: #FFFFFF;
-  --accent: #FF8A3D;
-  --accent-rgb: 255 138 61;
-  --accent-fg: #0F1020;
-  --brand-blue: #2B7BFF;
-  --brand-blue-rgb: 43 123 255;
-  --layout-gray: #9AA0AE;
-  --success: #1E9E6A;
-  --danger: #D64545;
-  --text-on-ink: #F2F1FA;
-  --text-muted-on-ink: #A9ABC4;
-  --text-on-paper: #14152B;
-  --text-muted-on-paper: #5B5D75;
+  /* Paper and ink, warm rather than blue. */
+  --ink: #15130f;
+  --ink-2: #211e19;
+  --paper: #fbf7f0;
+  --paper-2: #f2ece1;
+
+  /* Ember is the product's primary. It replaces the #4B2BFF violet. */
+  --primary: #ff4d2e;
+  --primary-rgb: 255 77 46;
+  --primary-fg: #1a0b06;
+  --primary-deep: #a62612;
+  /* Referenced by bg-primary-hover in the studio; was never defined, so those
+     buttons had no hover state at all. */
+  --primary-hover: #e8411f;
+
+  /* The accent is the amber from the landing's ink set, not the old orange,
+     which sat too close to the ember primary to read as a second colour. */
+  --accent: #f2b705;
+  --accent-rgb: 242 183 5;
+  --accent-fg: #241a00;
+
+  /* Slot encoding. Cobalt and fern come from the landing's five inks, so the
+     workspace and the marketing site share one colour vocabulary. */
+  --brand-blue: #1b4dff;
+  --brand-blue-rgb: 27 77 255;
+  --layout-gray: #8d887e;
+  --success: #0e8f5e;
+  --danger: #c7331a;
+
+  --text-on-ink: #fbf7f0;
+  --text-muted-on-ink: #a9a398;
+  --text-on-paper: #15130f;
+  --text-muted-on-paper: #514d46; /* 8.6:1 on paper */
+
   --nav-h: 72px;
   --radius-card: 14px;
   --radius-pill: 999px;
 
-  /* App surfaces and layers */
-  --surface: #171935;
-  --surface-hover: #1f2247;
-  --surface-muted: #131428;
-  --border-subtle: rgba(242, 241, 250, 0.08);
-  --border-strong: rgba(242, 241, 250, 0.16);
+  /* App surfaces. Dark mode is a warm near-black, matching the landing's posters
+     rather than the old navy. */
+  --surface: #211e19;
+  --surface-hover: #2b2721;
+  --surface-muted: #1a1714;
+  --border-subtle: rgba(251, 247, 240, 0.1);
+  --border-strong: rgba(251, 247, 240, 0.2);
   --brand-layer: var(--brand-blue);
   --layout-layer: var(--layout-gray);
 
@@ -42,19 +66,19 @@
 }
 
 .light {
-  --surface: #FFFFFF;
-  --surface-hover: #F8F9FA;
-  --surface-muted: #F1F0EB;
-  --border-subtle: rgba(15, 16, 32, 0.08);
-  --border-strong: rgba(15, 16, 32, 0.16);
+  --surface: #ffffff;
+  --surface-hover: #f7f3ec;
+  --surface-muted: #f2ece1;
+  --border-subtle: rgba(21, 19, 15, 0.1);
+  --border-strong: rgba(21, 19, 15, 0.2);
 }
 
 .dark {
-  --surface: #171935;
-  --surface-hover: #1f2247;
-  --surface-muted: #131428;
-  --border-subtle: rgba(242, 241, 250, 0.08);
-  --border-strong: rgba(242, 241, 250, 0.16);
+  --surface: #211e19;
+  --surface-hover: #2b2721;
+  --surface-muted: #1a1714;
+  --border-subtle: rgba(251, 247, 240, 0.1);
+  --border-strong: rgba(251, 247, 240, 0.2);
 }
 
 html {
@@ -124,4 +148,260 @@ body {
 select option {
   background-color: var(--surface);
   color: var(--text-on-ink);
+}
+
+/* ===========================================================================
+   Motion engine foundation (src/engine). Behaviour only; the landing page look
+   lives in landing.css. See references/engine.md.
+   =========================================================================== */
+
+/* Lenis */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis:not(.lenis-autoToggle).lenis-stopped {
+  overflow: clip;
+}
+.lenis [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* Skip link */
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 200;
+  padding: 0.6em 1em;
+  background: var(--text-on-ink);
+  color: var(--ink);
+  border-radius: 2px;
+  font-size: 0.875rem;
+  transform: translateY(-250%);
+}
+.skip-link:focus-visible {
+  transform: none;
+}
+
+#main:focus {
+  outline: none;
+}
+
+/* Hidden-until-revealed: only when JS runs AND motion is allowed, so content
+   stays visible for crawlers, no-JS visitors and reduced-motion users. */
+.motion [data-split],
+.motion [data-reveal] {
+  visibility: hidden;
+}
+
+/* The LCP element must not wait for SplitText. The h1 paints immediately and its
+   own words animate in via GSAP once split; hiding it costs ~1s of LCP for no
+   visual gain, because the mask reveal starts from the same frame either way. */
+.motion h1[data-split][data-intro] {
+  visibility: visible;
+}
+.split-line {
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em; /* descender room inside masks */
+}
+[data-split] > *,
+[data-split] > * > * {
+  text-indent: 0;
+}
+[data-split] > :first-child,
+[data-split] > :first-child > :first-child {
+  text-indent: inherit;
+}
+
+/* Curtain (page transitions) */
+#curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  visibility: hidden;
+  overflow: hidden;
+}
+/* No CSS transform here: GSAP owns it. */
+.curtain__panel {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+}
+
+/* Four ink bands, swept in sequence like plates on a press. Each sits off-screen
+   until the transition drives it, and GSAP owns the horizontal transform. */
+.curtain__band {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* No CSS transform or translate: GSAP sets xPercent and the two would stack.
+     The leave tween starts from xPercent -101, so off-screen is the initial state. */
+}
+/* --- Loader -------------------------------------------------------------
+   The product performing its own act. A blank sheet fills with a poster's
+   parts in order, and the price field stays struck out until the last beat.
+   Watching it is the fastest explanation of what Anyref does. */
+#loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: clamp(1rem, 3vh, 2rem);
+  padding: clamp(1.25rem, 1.9vw, 3rem);
+  background: #ff4d2e;
+  color: #1a0b06;
+  clip-path: inset(0% 0% 0% 0%);
+  font-family: var(--font-switzer), system-ui, sans-serif;
+}
+html:not(.js) #loader,
+#loader[hidden] {
+  display: none;
+}
+
+.loader__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  overflow: clip;
+}
+
+.loader__name {
+  font-family: var(--font-display-lp), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.loader__count {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+}
+
+.loader__stage {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+}
+
+/* The sheet starts as bare paper and gains a layer per beat. */
+.loader__sheet {
+  position: relative;
+  width: min(72vw, 30vh * 0.8, 20rem);
+  aspect-ratio: 4 / 5;
+  background: #fbf7f0;
+  border-radius: 14px;
+  overflow: clip;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: clamp(0.7rem, 2.2cqi, 1.1rem);
+  container-type: inline-size;
+  box-shadow: 0 24px 60px -24px rgb(26 11 6 / 0.55);
+}
+
+.loader__layer {
+  opacity: 0;
+  position: relative;
+  z-index: 2;
+}
+
+/* 1. The reference image arrives first. */
+.loader__layer--image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(to top, rgb(0 0 0 / 0.72) 0%, rgb(0 0 0 / 0.2) 48%, transparent 72%),
+    linear-gradient(155deg, #5e9e62, #15130f);
+}
+
+/* 2. Then the brand wordmark. */
+.loader__layer--brand {
+  align-self: start;
+  font-family: var(--font-display-lp), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(0.7rem, 4.5cqi, 1rem);
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+/* 3. Then the headline. */
+.loader__layer--head {
+  align-self: end;
+  font-family: var(--font-display-lp), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(1.1rem, 11cqi, 2.1rem);
+  line-height: 0.86;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+/* 4. The price. Struck out and stamped until the final beat. */
+.loader__layer--price {
+  justify-self: start;
+  margin-top: 0.55rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: clamp(0.55rem, 2.9cqi, 0.72rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.3em 0.7em;
+  border-radius: 999px;
+  border: 1px dashed #ff8166;
+  color: #ff8166;
+  background: rgb(216 68 42 / 0.16);
+  transition:
+    color 0.4s ease,
+    background 0.4s ease,
+    border-color 0.4s ease;
+}
+/* Resolved on the last beat: the dash becomes solid and the stamp goes quiet. */
+.loader__layer--price[data-resolved="true"] {
+  border-style: solid;
+  border-color: #f2b705;
+  background: #f2b705;
+  color: #15130f;
+}
+
+.loader__foot {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.loader__step {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.loader__bar {
+  height: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.curtain__label {
+  position: absolute;
+  left: clamp(1.25rem, 1.9vw, 2.75rem);
+  bottom: clamp(1.25rem, 1.9vw, 2.75rem);
+  color: #111110;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
